@@ -88,6 +88,9 @@ Ingredientテーブルと関連付けることで、各食材の現在の在庫�
 - Inventory.ingredient_id を外部キー（FK）として Ingredient.id を参照する
 - Ingredient：Inventory = 1：N のリレーションとする
 
+Phase1では同一食材の在庫を1件として扱う。
+将来的に購入日・消費期限単位で在庫を分ける可能性を考慮し、Ingredient と Inventory は 1:N とする。
+
 ---
 
 # 6. 設計方針
