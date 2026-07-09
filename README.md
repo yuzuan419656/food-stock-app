@@ -23,62 +23,117 @@ Webアプリケーション開発の流れを学ぶことも目的としてい�
 
 ### Phase1
 
-- 食材マスタ管理
-- 在庫管理
-- 食材登録
-- 食材編集
-- 食材削除
-- 在庫一覧表示
-- 在庫数量更新
+* 食材マスタ管理
+* 在庫管理
+* 食材登録
+* 食材編集
+* 食材削除
+* 在庫一覧表示
+* 在庫数量更新
 
 ### Phase2以降
 
-- レシートOCR
-- レシピマスタ
-- レシピ検索
-- 調理履歴
-- 不足食材表示
-- 家計簿
-- 消費期限管理
-- AWSデプロイ
-- Docker対応
-- ログイン機能
-- マルチユーザー対応
-- スマートフォン対応
+* レシートOCR
+* レシピマスタ
+* レシピ検索
+* 調理履歴
+* 不足食材表示
+* 家計簿
+* 消費期限管理
+* AWSデプロイ
+* Docker対応
+* ログイン機能
+* マルチユーザー対応
+* スマートフォン対応
 
 ## 使用技術
 
-| 分野 | 使用技術 |
-|---|---|
-| 言語 | Python |
-| フレームワーク | FastAPI |
-| データベース | SQLite |
-| ORM | SQLAlchemy |
+| 分野      | 使用技術                    |
+| ------- | ----------------------- |
+| 言語      | Python                  |
+| フレームワーク | FastAPI                 |
+| データベース  | SQLite                  |
+| ORM     | SQLAlchemy              |
 | フロントエンド | HTML / CSS / JavaScript |
-| バージョン管理 | Git / GitHub |
-| デプロイ | AWS（予定） |
+| バージョン管理 | Git / GitHub            |
+| デプロイ    | AWS（予定）                 |
+
+## ローカルでの起動方法
+
+### 1. リポジトリをクローンする
+
+```bash
+git clone git@github.com:yuzuan419656/food-stock-app.git
+cd food-stock-app
+```
+
+### 2. 仮想環境を作成する
+
+```bash
+python -m venv .venv
+```
+
+### 3. 仮想環境を有効化する
+
+WSL / Linux / macOS の場合：
+
+```bash
+source .venv/bin/activate
+```
+
+Windows PowerShell の場合：
+
+```powershell
+.venv\Scripts\Activate.ps1
+```
+
+### 4. 必要なライブラリをインストールする
+
+```bash
+pip install -r requirements.txt
+```
+
+### 5. FastAPIアプリケーションを起動する
+
+```bash
+uvicorn app.main:app --reload
+```
+
+### 6. ブラウザで確認する
+
+以下のURLにアクセスする。
+
+```text
+http://127.0.0.1:8000
+```
+
+以下のようなレスポンスが表示されれば起動成功です。
+
+```json
+{"message":"Hello, food-stock-app!"}
+```
 
 ## ドキュメント
 
 設計書は `docs/` ディレクトリで管理します。
 
-| ファイル | 内容 |
-|---|---|
-| `docs/00_ProjectOverview.md` | プロジェクト概要 |
-| `docs/01_Requirements.md` | 要件定義 |
-| `docs/02_Diagram.md` | ER図 |
-| `docs/03_DBDesign.md` | データベース設計 |
-| `docs/04_ScreenDesign.md` | 画面設計 |
+| ファイル                            | 内容       |
+| ------------------------------- | -------- |
+| `docs/00_ProjectOverview.md`    | プロジェクト概要 |
+| `docs/01_Requirements.md`       | 要件定義     |
+| `docs/02_Diagram.md`            | ER図      |
+| `docs/03_DBDesign.md`           | データベース設計 |
+| `docs/04_ScreenDesign.md`       | 画面設計     |
 | `docs/05_DirectoryStructure.md` | ディレクトリ構成 |
-| `docs/06_CodingRule.md` | コーディング規約 |
+| `docs/06_CodingRule.md`         | コーディング規約 |
 
 ## 開発方針
 
-- 小さく作る
-- まずは動くものを完成させる
-- Phase1では食材在庫管理に集中する
-- 設計書と実装内容の整合性を保つ
-- featureブランチを作成して開発する
+* 小さく作る
+* まずは動くものを完成させる
+* Phase1では食材在庫管理に集中する
+* 設計書と実装内容の整合性を保つ
+* featureブランチを作成して開発する
 
 ## ブランチ運用
 
@@ -88,3 +143,34 @@ Webアプリケーション開発の流れを学ぶことも目的としてい�
 main
  └── develop
       └── feature/*
+```
+
+基本的な流れは以下の通りです。
+
+```text
+Issue作成
+↓
+featureブランチ作成
+↓
+設計・実装
+↓
+commit
+↓
+push
+↓
+Pull Request
+↓
+developへマージ
+↓
+区切りのよいタイミングでmainへマージ
+```
+
+## 今後の予定
+
+1. DB接続設定の作成
+2. SQLAlchemyモデルの作成
+3. CRUD処理の作成
+4. 食材一覧画面の実装
+5. 食材登録機能の実装
+6. 食材編集機能の実装
+7. 食材削除機能の実装
