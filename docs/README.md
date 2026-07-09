@@ -14,13 +14,13 @@
 
 | No. | ファイル | 内容 | 状態 |
 |----|----------|------|------|
-| 00 | ProjectOverview.md | プロジェクト概要・開発方針 | ✅ |
-| 01 | Requirements.md | 要件定義 | ✅ |
-| 02 | Diagram.md | ER図・テーブル概要 | ✅ |
-| 03 | DBDesign.md | データベース詳細設計 | ✅ |
-| 04 | ScreenDesign.md | 画面設計 | ⬜ |
-| 05 | DirectoryStructure.md | ディレクトリ構成 | ⬜ |
-| 06 | CodingRule.md | コーディング規約 | ⬜ |
+| 00 | 00_ProjectOverview.md | プロジェクト概要・開発方針 | ✅ |
+| 01 | 01_Requirements.md | 要件定義 | ✅ |
+| 02 | 02_Diagram.md | ER図・テーブル概要 | ✅ |
+| 03 | 03_DBDesign.md | データベース詳細設計 | ✅ |
+| 04 | 04_ScreenDesign.md | 画面設計 | ⬜ |
+| 05 | 05_DirectoryStructure.md | ディレクトリ構成 | ⬜ |
+| 06 | 06_CodingRule.md | コーディング規約 | ⬜ |
 
 ---
 
@@ -161,19 +161,22 @@ mainへマージ
 在庫管理機能を拡張する。
 
 - レシートOCR
-- 消費期限管理
-- 家計簿
-- AWSデプロイ
+- レシピマスタ
+- レシピ検索
+- 調理履歴
+- 不足食材表示
 
 ## Phase3
 
 アプリケーションをサービスとして拡張する。
 
+- AWSデプロイ
+- Docker対応
+- 家計簿
+- 消費期限管理
 - ログイン機能
 - マルチユーザー対応
 - スマートフォン対応
-- レシピ提案機能
-- AI推薦
 
 ---
 
