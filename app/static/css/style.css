@@ -35,3 +35,27 @@ th {
 a {
     margin-right: 8px;
 }
+
+form div {
+    margin-bottom: 16px;
+}
+
+label {
+    display: inline-block;
+    width: 100px;
+}
+
+input {
+    padding: 6px;
+    width: 240px;
+}
+
+button {
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+}
