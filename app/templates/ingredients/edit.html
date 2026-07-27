@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+    <h2>食材編集</h2>
+
+    {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+    {% endif %}
+
+    <form action="/ingredients/{{ ingredient.id }}/edit" method="post">
+        <div>
+            <label for="name">食材名</label>
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{ ingredient.name }}"
+                required
+            >
+        </div>
+
+        <div>
+            <label for="category">カテゴリ</label>
+            <input
+                type="text"
+                id="category"
+                name="category"
+                value="{{ ingredient.category or '' }}"
+            >
+        </div>
+
+        <div>
+            <label for="default_unit">単位</label>
+            <input
+                type="text"
+                id="default_unit"
+                name="default_unit"
+                value="{{ ingredient.default_unit or '' }}"
+            >
+        </div>
+
+        <div>
+            <label for="quantity">在庫数量</label>
+            <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                min="0"
+                step="0.1"
+                value="{% if ingredient.inventories %}{{ ingredient.inventories[0].quantity }}{% else %}0{% endif %}"
+                required
+            >
+        </div>
+
+        <div>
+            <button type="submit">更新</button>
+            <a href="/">キャンセル</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
