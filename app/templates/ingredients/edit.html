@@ -8,7 +8,7 @@
         <p class="error-message">{{ error_message }}</p>
     {% endif %}
 
-    <form action="/ingredients/{{ ingredient.id }}/edit" method="post">
+    <form action="/ingredients/{{ ingredient.id }}/edit" method="post" autocomplete="off">
         <div>
             <label for="name">食材名</label>
             <input
@@ -26,8 +26,15 @@
                 type="text"
                 id="category"
                 name="category"
+                list="category-options"
                 value="{{ ingredient.category or '' }}"
             >
+
+            <datalist id="category-options">
+                {% for category in categories %}
+                    <option value="{{ category }}">
+                {% endfor %}
+            </datalist>
         </div>
 
         <div>
@@ -36,8 +43,15 @@
                 type="text"
                 id="default_unit"
                 name="default_unit"
+                list="unit-options"
                 value="{{ ingredient.default_unit or '' }}"
             >
+
+            <datalist id="unit-options">
+                {% for unit in units %}
+                    <option value="{{ unit }}">
+                {% endfor %}
+            </datalist>
         </div>
 
         <div>
@@ -47,7 +61,7 @@
                 id="quantity"
                 name="quantity"
                 min="0"
-                step="0.1"
+                step="0.5"
                 value="{% if ingredient.inventories %}{{ ingredient.inventories[0].quantity }}{% else %}0{% endif %}"
                 required
             >

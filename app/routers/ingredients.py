@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Form, Request
+from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
@@ -6,37 +6,61 @@ from sqlalchemy.orm import Session
 
 from app.crud.ingredient import (
     create_ingredient,
-    delete_ingredient, 
-    get_ingredients, 
-    get_ingredient_by_id, 
+    delete_ingredient,
+    get_categories,
+    get_default_units,
+    get_ingredient_by_id,
+    get_ingredients,
+    search_ingredients,
     update_ingredient,
 )
+
 from app.database import get_db
 
 router = APIRouter()
 
 templates = Jinja2Templates(directory="app/templates")
 
+def is_valid_quantity_step(quantity: float) -> bool:
+    """数量が0.5刻みかどうかを判定する。"""
+    return abs(quantity * 2 - round(quantity * 2)) < 1e-9
+
 
 @router.get("/")
-def list_ingredients(request: Request, db: Session = Depends(get_db)):
-    ingredients = get_ingredients(db)
+def list_ingredients(
+    request: Request,
+    keyword: str | None = Query(None),
+    db: Session = Depends(get_db),
+):
+    if keyword:
+        ingredients = search_ingredients(db, keyword)
+    else:
+        ingredients = get_ingredients(db)
 
     return templates.TemplateResponse(
-        request=request, 
+        request=request,
         name="ingredients/list.html",
         context={
-            "ingredients": ingredients
+            "ingredients": ingredients,
+            "keyword": keyword or "",
         },
     )
 
-
 @router.get("/ingredients/new")
-def new_ingredient(request: Request):
+def new_ingredient(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    categories = get_categories(db)
+    units = get_default_units(db)
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/new.html",
-        context={},
+        context={
+            "categories": categories,
+            "units": units,
+        },
     )
 
 
@@ -46,25 +70,41 @@ def create_ingredient_route(
     name: str = Form(...),
     category: str | None = Form(None),
     default_unit: str | None = Form(None),
-    quantity: float | None = Form(None),
+    quantity: float = Form(...),
     db: Session = Depends(get_db),
 ):
+    categories = get_categories(db)
+    units = get_default_units(db)
+
     if quantity < 0:
         return templates.TemplateResponse(
             request=request,
             name="ingredients/new.html",
             context={
-                "error_message": "在庫数量は0以上で入力してください"
+                "categories": categories,
+                "units": units,
+                "error_message": "在庫数量は0以上で入力してください。",
             },
         )
-    
-    try: 
+
+    if not is_valid_quantity_step(quantity):
+        return templates.TemplateResponse(
+            request=request,
+            name="ingredients/new.html",
+            context={
+                "categories": categories,
+                "units": units,
+                "error_message": "在庫数量は0.5刻みで入力してください。",
+            },
+        )
+
+    try:
         create_ingredient(
             db=db,
             name=name,
             category=category,
             default_unit=default_unit,
-            quantity=quantity
+            quantity=quantity,
         )
     except IntegrityError:
         db.rollback()
@@ -72,7 +112,9 @@ def create_ingredient_route(
             request=request,
             name="ingredients/new.html",
             context={
-                "error_message": "その食材は既に存在します。"
+                "categories": categories,
+                "units": units,
+                "error_message": "同じ名前の食材は登録できません。",
             },
         )
 
@@ -90,14 +132,18 @@ def edit_ingredient(
     if ingredient is None:
         return RedirectResponse(url="/", status_code=303)
 
+    categories = get_categories(db)
+    units = get_default_units(db)
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/edit.html",
         context={
             "ingredient": ingredient,
+            "categories": categories,
+            "units": units,
         },
     )
-
 
 @router.post("/ingredients/{ingredient_id}/edit")
 def update_ingredient_route(
@@ -114,13 +160,30 @@ def update_ingredient_route(
     if ingredient is None:
         return RedirectResponse(url="/", status_code=303)
 
+    categories = get_categories(db)
+    units = get_default_units(db)
+
     if quantity < 0:
         return templates.TemplateResponse(
             request=request,
             name="ingredients/edit.html",
             context={
                 "ingredient": ingredient,
+                "categories": categories,
+                "units": units,
                 "error_message": "在庫数量は0以上で入力してください。",
+            },
+        )
+
+    if not is_valid_quantity_step(quantity):
+        return templates.TemplateResponse(
+            request=request,
+            name="ingredients/edit.html",
+            context={
+                "ingredient": ingredient,
+                "categories": categories,
+                "units": units,
+                "error_message": "在庫数量は0.5刻みで入力してください。",
             },
         )
 
@@ -140,12 +203,13 @@ def update_ingredient_route(
             name="ingredients/edit.html",
             context={
                 "ingredient": ingredient,
+                "categories": categories,
+                "units": units,
                 "error_message": "同じ名前の食材は登録できません。",
             },
         )
 
     return RedirectResponse(url="/", status_code=303)
-
 
 @router.get("/ingredients/{ingredient_id}/delete")
 def confirm_delete_ingredient(

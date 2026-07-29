@@ -11,6 +11,16 @@ def get_ingredients(db: Session)-> list[Ingredient]:
         .order_by(Ingredient.id)
         .all()
         )
+
+def search_ingredients(db: Session, keyword: str) -> list[Ingredient]:
+    """食材名で部分一致検索する。"""
+    return (
+        db.query(Ingredient)
+        .options(joinedload(Ingredient.inventories))
+        .filter(Ingredient.name.contains(keyword))
+        .order_by(Ingredient.id)
+        .all()
+    )
         
 def get_ingredient_by_id(db: Session, ingredient_id: int)-> Ingredient | None:
     return(
@@ -93,3 +103,30 @@ def delete_ingredient(db: Session, ingredient_id: int) -> bool:
     db.delete(ingredient)
     db.commit()
     return True
+
+def get_categories(db: Session) -> list[str]:
+    """登録済み食材からカテゴリ一覧を取得する。"""
+    results = (
+        db.query(Ingredient.category)
+        .filter(Ingredient.category.isnot(None))
+        .filter(Ingredient.category != "")
+        .distinct()
+        .order_by(Ingredient.category)
+        .all()
+    )
+
+    return [result[0] for result in results]
+
+
+def get_default_units(db: Session) -> list[str]:
+    """登録済み食材から単位一覧を取得する。"""
+    results = (
+        db.query(Ingredient.default_unit)
+        .filter(Ingredient.default_unit.isnot(None))
+        .filter(Ingredient.default_unit != "")
+        .distinct()
+        .order_by(Ingredient.default_unit)
+        .all()
+    )
+
+    return [result[0] for result in results]

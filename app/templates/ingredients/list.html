@@ -4,6 +4,19 @@
 <section>
     <h2>食材一覧</h2>
 
+    <form action="/" method="get" autocomplete="off">
+        <label for="keyword">食材名検索</label>
+        <input
+            type="text"
+            id="keyword"
+            name="keyword"
+            value="{{ keyword }}"
+            autocomplete="off"
+        >
+        <button type="submit">検索</button>
+        <a href="/">クリア</a>
+    </form>
+
     <p>
         <a href="/ingredients/new">新しい食材を登録する</a>
     </p>
@@ -43,7 +56,11 @@
             </tbody>
         </table>
     {% else %}
-        <p>登録されている食材はありません。</p>
+        {% if keyword %}
+            <p>「{{ keyword }}」に一致する食材はありません。</p>
+        {% else %}
+            <p>登録されている食材はありません。</p>
+        {% endif %}
     {% endif %}
 </section>
 {% endblock %}
