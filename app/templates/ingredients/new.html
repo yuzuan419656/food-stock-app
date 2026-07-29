@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+    <h2>食材登録</h2>
+
+    {% if error_message %}
+        <p class="error-message">{{ error_message }}</p>
+    {% endif %}
+
+    <form action="/ingredients" method="post" autocomplete="off">
+        <div>
+            <label for="name">食材名</label>
+            <input type="text" id="name" name="name" autocomplete="off" required>
+        </div>
+
+        <div>
+            <label for="category">カテゴリ</label>
+            <input type="text" id="category" name="category" list="category-options" autocomplete="off">
+
+            <datalist id="category-options">
+                {% for category in categories %}
+                    <option value="{{ category }}">
+                {% endfor %}
+            </datalist>
+        </div>
+
+        <div>
+            <label for="default_unit">単位</label>
+            <input type="text" id="default_unit" name="default_unit" list="unit-options" autocomplete="off">
+
+            <datalist id="unit-options">
+                {% for unit in units %}
+                    <option value="{{ unit }}">
+                {% endfor %}
+            </datalist>
+        </div>
+
+        <div>
+            <label for="quantity">在庫数量</label>
+            <input type="number" id="quantity" name="quantity" min="0" step="0.5" value="0" autocomplete="off" required>
+        </div>
+
+        <div>
+            <button type="submit">登録</button>
+            <a href="/">キャンセル</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

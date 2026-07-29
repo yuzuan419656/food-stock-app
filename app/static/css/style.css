@@ -1,0 +1,72 @@
+body {
+    font-family: sans-serif;
+    margin: 40px;
+    background-color: #f8f8f8;
+    color: #333;
+}
+
+header {
+    margin-bottom: 24px;
+}
+
+main {
+    background-color: #fff;
+    padding: 24px;
+    border-radius: 8px;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    background-color: #fff;
+}
+
+th,
+td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+    text-align: left;
+}
+
+th {
+    background-color: #f0f0f0;
+}
+
+a {
+    margin-right: 8px;
+}
+
+form div {
+    margin-bottom: 16px;
+}
+
+label {
+    display: inline-block;
+    width: 100px;
+}
+
+input {
+    padding: 6px;
+    width: 240px;
+}
+
+button {
+    padding: 6px 12px;
+    cursor: pointer;
+}
+
+.error-message {
+    color: red;
+    font-weight: bold;
+}
+
+.danger-button {
+    background-color: #d9534f;
+    color: white;
+    border: none;
+    border-radius: 4px;
+}
+
+.danger-button:hover {
+    background-color: #c9302c;
+}
