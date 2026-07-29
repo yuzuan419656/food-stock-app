@@ -14,6 +14,10 @@
             autocomplete="off"
         >
 
+        {% for category in category_filters %}
+            <input type="hidden" name="category_filters" value="{{ category }}">
+        {% endfor %}
+
         <label for="sort">並び替え</label>
         <select id="sort" name="sort">
             <option value="id" {% if sort == "id" %}selected{% endif %}>登録順</option>
@@ -35,7 +39,39 @@
                 <tr>
                     <th>ID</th>
                     <th>食材名</th>
-                    <th>カテゴリ</th>
+                    <th>
+                        <div class="table-header-filter">
+                            <span>カテゴリ</span>
+
+                            <details class="category-header-filter">
+                                <summary>▼</summary>
+
+                                <form action="/" method="get" autocomplete="off" class="category-filter-form">
+                                    <input type="hidden" name="keyword" value="{{ keyword }}">
+                                    <input type="hidden" name="sort" value="{{ sort }}">
+
+                                    <div class="category-filter-content">
+                                        {% for category in categories %}
+                                            <label class="checkbox-label">
+                                                <input
+                                                    type="checkbox"
+                                                    name="category_filters"
+                                                    value="{{ category }}"
+                                                    {% if category in category_filters %}checked{% endif %}
+                                                >
+                                                {{ category }}
+                                            </label>
+                                        {% endfor %}
+
+                                        <div class="category-filter-actions">
+                                            <button type="submit">絞り込み</button>
+                                            <a href="/?keyword={{ keyword }}&sort={{ sort }}" class="filter-clear-link">解除</a>
+                                        </div>
+                                    </div>
+                                </form>
+                            </details>
+                        </div>
+                    </th>
                     <th>在庫数量</th>
                     <th>単位</th>
                     <th>操作</th>
@@ -64,8 +100,8 @@
             </tbody>
         </table>
     {% else %}
-        {% if keyword %}
-            <p>「{{ keyword }}」に一致する食材はありません。</p>
+        {% if keyword or category_filters %}
+            <p>指定した条件に一致する食材はありません。</p>
         {% else %}
             <p>登録されている食材はありません。</p>
         {% endif %}
