@@ -142,3 +142,28 @@ def get_default_units(db: Session) -> list[str]:
     )
 
     return [result[0] for result in results]
+
+
+def get_filtered_ingredients(
+    db: Session,
+    keyword: str | None = None,
+    category_filters: list[str] | None = None,
+    sort: str = "id",
+) -> list[Ingredient]:
+    """食材一覧を検索・カテゴリ絞り込み・並び替え条件付きで取得する。"""
+    query = db.query(Ingredient).options(joinedload(Ingredient.inventories))
+
+    if keyword:
+        query = query.filter(Ingredient.name.contains(keyword))
+
+    if category_filters:
+        query = query.filter(Ingredient.category.in_(category_filters))
+
+    if sort == "name":
+        query = query.order_by(Ingredient.name)
+    elif sort == "category":
+        query = query.order_by(Ingredient.category, Ingredient.name)
+    else:
+        query = query.order_by(Ingredient.id)
+
+    return query.all()

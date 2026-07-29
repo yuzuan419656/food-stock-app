@@ -70,3 +70,113 @@ button {
 .danger-button:hover {
     background-color: #c9302c;
 }
+
+.category-filter {
+    display: inline-block;
+    margin: 0 12px;
+    position: relative;
+}
+
+.category-filter summary {
+    cursor: pointer;
+    padding: 6px 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.category-filter-content {
+    margin-top: 8px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 4px;
+    min-width: 160px;
+}
+
+.checkbox-label {
+    display: block;
+    margin-bottom: 8px;
+    width: auto;
+}
+
+.table-header-filter {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    position: relative;
+}
+
+.category-header-filter {
+    position: relative;
+    display: inline-block;
+}
+
+.category-header-filter summary {
+    list-style: none;
+    cursor: pointer;
+    padding: 2px 6px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    background-color: #fff;
+    font-size: 12px;
+}
+
+.category-header-filter summary::-webkit-details-marker {
+    display: none;
+}
+
+.category-filter-form {
+    position: absolute;
+    top: 28px;
+    left: 0;
+    z-index: 10;
+}
+
+.category-filter-content {
+    padding: 12px;
+    border: 1px solid #ccc;
+    background-color: #fff;
+    border-radius: 4px;
+    min-width: 160px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+}
+
+.checkbox-label {
+    display: block;
+    margin-bottom: 8px;
+    width: auto;
+    font-weight: normal;
+}
+
+.category-filter-content button {
+    margin-top: 8px;
+    margin-right: 8px;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+    margin-bottom: 8px;
+    font-weight: normal;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+    padding: 0;
+    margin: 0;
+}
+
+.category-filter-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.filter-clear-link {
+    display: inline-block;
+}
