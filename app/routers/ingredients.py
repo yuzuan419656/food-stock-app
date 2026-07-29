@@ -13,6 +13,7 @@ from app.crud.ingredient import (
     get_ingredients,
     search_ingredients,
     update_ingredient,
+    get_filtered_ingredients,
 )
 
 from app.database import get_db
@@ -30,12 +31,21 @@ def is_valid_quantity_step(quantity: float) -> bool:
 def list_ingredients(
     request: Request,
     keyword: str | None = Query(None),
+    category_filters: list[str] = Query(default=[]),
+    sort: str = Query("id"),
     db: Session = Depends(get_db),
 ):
-    if keyword:
-        ingredients = search_ingredients(db, keyword)
-    else:
-        ingredients = get_ingredients(db)
+    if sort not in ["id", "name", "category"]:
+        sort = "id"
+
+    categories = get_categories(db)
+
+    ingredients = get_filtered_ingredients(
+        db=db,
+        keyword=keyword,
+        category_filters=category_filters,
+        sort=sort,
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -43,6 +53,9 @@ def list_ingredients(
         context={
             "ingredients": ingredients,
             "keyword": keyword or "",
+            "category_filters": category_filters,
+            "categories": categories,
+            "sort": sort,
         },
     )
 
