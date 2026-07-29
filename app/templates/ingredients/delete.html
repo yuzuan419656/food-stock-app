@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+    <h2>食材削除確認</h2>
+
+    <p>以下の食材を削除してもよろしいですか？</p>
+
+    <table>
+        <tr>
+            <th>ID</th>
+            <td>{{ ingredient.id }}</td>
+        </tr>
+        <tr>
+            <th>食材名</th>
+            <td>{{ ingredient.name }}</td>
+        </tr>
+        <tr>
+            <th>カテゴリ</th>
+            <td>{{ ingredient.category or "-" }}</td>
+        </tr>
+        <tr>
+            <th>在庫数量</th>
+            <td>
+                {% if ingredient.inventories %}
+                    {{ ingredient.inventories[0].quantity }}
+                {% else %}
+                    0
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <th>単位</th>
+            <td>{{ ingredient.default_unit or "-" }}</td>
+        </tr>
+    </table>
+
+    <form action="/ingredients/{{ ingredient.id }}/delete" method="post">
+        <button type="submit" class="danger-button">削除する</button>
+        <a href="/">キャンセル</a>
+    </form>
+</section>
+{% endblock %}
