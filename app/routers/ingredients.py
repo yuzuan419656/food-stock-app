@@ -5,7 +5,8 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.ingredient import (
-    create_ingredient, 
+    create_ingredient,
+    delete_ingredient, 
     get_ingredients, 
     get_ingredient_by_id, 
     update_ingredient,
@@ -142,5 +143,35 @@ def update_ingredient_route(
                 "error_message": "同じ名前の食材は登録できません。",
             },
         )
+
+    return RedirectResponse(url="/", status_code=303)
+
+
+@router.get("/ingredients/{ingredient_id}/delete")
+def confirm_delete_ingredient(
+    ingredient_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    ingredient = get_ingredient_by_id(db, ingredient_id)
+
+    if ingredient is None:
+        return RedirectResponse(url="/", status_code=303)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="ingredients/delete.html",
+        context={
+            "ingredient": ingredient,
+        },
+    )
+
+
+@router.post("/ingredients/{ingredient_id}/delete")
+def delete_ingredient_route(
+    ingredient_id: int,
+    db: Session = Depends(get_db),
+):
+    delete_ingredient(db=db, ingredient_id=ingredient_id)
 
     return RedirectResponse(url="/", status_code=303)
