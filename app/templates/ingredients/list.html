@@ -13,6 +13,14 @@
             value="{{ keyword }}"
             autocomplete="off"
         >
+
+        <label for="sort">並び替え</label>
+        <select id="sort" name="sort">
+            <option value="id" {% if sort == "id" %}selected{% endif %}>登録順</option>
+            <option value="name" {% if sort == "name" %}selected{% endif %}>食材名順</option>
+            <option value="category" {% if sort == "category" %}selected{% endif %}>カテゴリ順</option>
+        </select>
+
         <button type="submit">検索</button>
         <a href="/">クリア</a>
     </form>

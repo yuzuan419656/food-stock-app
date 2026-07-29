@@ -30,12 +30,16 @@ def is_valid_quantity_step(quantity: float) -> bool:
 def list_ingredients(
     request: Request,
     keyword: str | None = Query(None),
+    sort: str = Query("id"),
     db: Session = Depends(get_db),
 ):
+    if sort not in ["id", "name", "category"]:
+        sort = "id"
+
     if keyword:
-        ingredients = search_ingredients(db, keyword)
+        ingredients = search_ingredients(db, keyword, sort)
     else:
-        ingredients = get_ingredients(db)
+        ingredients = get_ingredients(db, sort)
 
     return templates.TemplateResponse(
         request=request,
@@ -43,6 +47,7 @@ def list_ingredients(
         context={
             "ingredients": ingredients,
             "keyword": keyword or "",
+            "sort": sort,
         },
     )
 
