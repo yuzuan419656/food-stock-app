@@ -1,3 +1,4 @@
+from sqlalchemy import case
 from sqlalchemy.orm import Session, joinedload
 
 from app.models.ingredient import Ingredient
@@ -151,19 +152,79 @@ def get_filtered_ingredients(
     sort: str = "id",
 ) -> list[Ingredient]:
     """食材一覧を検索・カテゴリ絞り込み・並び替え条件付きで取得する。"""
-    query = db.query(Ingredient).options(joinedload(Ingredient.inventories))
+    query = db.query(Ingredient).options(
+        joinedload(Ingredient.inventories)
+    )
 
     if keyword:
-        query = query.filter(Ingredient.name.contains(keyword))
+        query = query.filter(
+            Ingredient.name.contains(keyword)
+        )
 
     if category_filters:
-        query = query.filter(Ingredient.category.in_(category_filters))
+        query = query.filter(
+            Ingredient.category.in_(category_filters)
+        )
 
     if sort == "name":
         query = query.order_by(Ingredient.name)
+
     elif sort == "category":
-        query = query.order_by(Ingredient.category, Ingredient.name)
+        query = query.order_by(
+            Ingredient.category,
+            Ingredient.name,
+        )
+
+    elif sort == "out_of_stock":
+        query = (
+            query
+            .outerjoin(Inventory)
+            .order_by(
+                case(
+                    (
+                        (Inventory.quantity.is_(None))
+                        | (Inventory.quantity <= 0),
+                        0,
+                    ),
+                    else_=1,
+                ),
+                Ingredient.category,
+                Ingredient.name
+            )
+        )
+
     else:
         query = query.order_by(Ingredient.id)
 
     return query.all()
+
+
+def change_inventory_quantity(
+    db: Session,
+    ingredient_id: int,
+    amount: float,
+) -> Ingredient | None:
+    """指定した食材の在庫数量を増減する。"""
+    ingredient = get_ingredient_by_id(db, ingredient_id)
+
+    if ingredient is None:
+        return None
+
+    if ingredient.inventories:
+        inventory = ingredient.inventories[0]
+    else:
+        inventory = Inventory(
+            ingredient_id=ingredient.id,
+            quantity=0,
+        )
+        db.add(inventory)
+
+    new_quantity = inventory.quantity + amount
+
+    # 在庫数量が0未満になる場合は0にする
+    inventory.quantity = max(0, new_quantity)
+
+    db.commit()
+    db.refresh(ingredient)
+
+    return ingredient

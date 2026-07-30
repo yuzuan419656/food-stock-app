@@ -6,6 +6,7 @@
 
     <form action="/" method="get" autocomplete="off">
         <label for="keyword">食材名検索</label>
+
         <input
             type="text"
             id="keyword"
@@ -15,19 +16,58 @@
         >
 
         {% for category in category_filters %}
-            <input type="hidden" name="category_filters" value="{{ category }}">
+            <input
+                type="hidden"
+                name="category_filters"
+                value="{{ category }}"
+            >
         {% endfor %}
 
         <label for="sort">並び替え</label>
+
         <select id="sort" name="sort">
-            <option value="id" {% if sort == "id" %}selected{% endif %}>登録順</option>
-            <option value="name" {% if sort == "name" %}selected{% endif %}>食材名順</option>
-            <option value="category" {% if sort == "category" %}selected{% endif %}>カテゴリ順</option>
+            <option
+                value="id"
+                {% if sort == "id" %}selected{% endif %}
+            >
+                登録順
+            </option>
+
+            <option
+                value="name"
+                {% if sort == "name" %}selected{% endif %}
+            >
+                食材名順
+            </option>
+
+            <option
+                value="category"
+                {% if sort == "category" %}selected{% endif %}
+            >
+                カテゴリ順
+            </option>
         </select>
 
         <button type="submit">検索</button>
         <a href="/">クリア</a>
     </form>
+<div class="inventory-filter-actions">
+    {% if sort == "out_of_stock" %}
+        <a
+            href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=id"
+            class="inventory-filter-button active"
+        >
+            登録順に戻す
+        </a>
+    {% else %}
+        <a
+            href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=out_of_stock"
+            class="inventory-filter-button"
+        >
+            在庫なしを先頭
+        </a>
+    {% endif %}
+</div>
 
     <p>
         <a href="/ingredients/new">新しい食材を登録する</a>
@@ -39,6 +79,7 @@
                 <tr>
                     <th>ID</th>
                     <th>食材名</th>
+
                     <th>
                         <div class="table-header-filter">
                             <span>カテゴリ</span>
@@ -46,9 +87,23 @@
                             <details class="category-header-filter">
                                 <summary>▼</summary>
 
-                                <form action="/" method="get" autocomplete="off" class="category-filter-form">
-                                    <input type="hidden" name="keyword" value="{{ keyword }}">
-                                    <input type="hidden" name="sort" value="{{ sort }}">
+                                <form
+                                    action="/"
+                                    method="get"
+                                    autocomplete="off"
+                                    class="category-filter-form"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="keyword"
+                                        value="{{ keyword }}"
+                                    >
+
+                                    <input
+                                        type="hidden"
+                                        name="sort"
+                                        value="{{ sort }}"
+                                    >
 
                                     <div class="category-filter-content">
                                         {% for category in categories %}
@@ -57,43 +112,150 @@
                                                     type="checkbox"
                                                     name="category_filters"
                                                     value="{{ category }}"
-                                                    {% if category in category_filters %}checked{% endif %}
+                                                    {% if category in category_filters %}
+                                                        checked
+                                                    {% endif %}
                                                 >
                                                 {{ category }}
                                             </label>
                                         {% endfor %}
 
                                         <div class="category-filter-actions">
-                                            <button type="submit">絞り込み</button>
-                                            <a href="/?keyword={{ keyword }}&sort={{ sort }}" class="filter-clear-link">解除</a>
+                                            <button type="submit">
+                                                絞り込み
+                                            </button>
+
+                                            <a
+                                                href="/?keyword={{ keyword }}&sort={{ sort }}"
+                                                class="filter-clear-link"
+                                            >
+                                                解除
+                                            </a>
                                         </div>
                                     </div>
                                 </form>
                             </details>
                         </div>
                     </th>
+
                     <th>在庫数量</th>
                     <th>単位</th>
                     <th>操作</th>
                 </tr>
             </thead>
+
             <tbody>
                 {% for ingredient in ingredients %}
+                    {% if ingredient.inventories %}
+                        {% set quantity = ingredient.inventories[0].quantity %}
+                    {% else %}
+                        {% set quantity = 0 %}
+                    {% endif %}
+
                     <tr>
                         <td>{{ ingredient.id }}</td>
                         <td>{{ ingredient.name }}</td>
                         <td>{{ ingredient.category or "-" }}</td>
+
                         <td>
-                            {% if ingredient.inventories %}
-                                {{ ingredient.inventories[0].quantity }}
-                            {% else %}
-                                0
-                            {% endif %}
+                            <div class="quantity-control">
+                                <form
+                                    action="/ingredients/{{ ingredient.id }}/decrement"
+                                    method="post"
+                                    class="quantity-form"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="keyword"
+                                        value="{{ keyword }}"
+                                    >
+
+                                    {% for category in category_filters %}
+                                        <input
+                                            type="hidden"
+                                            name="category_filters"
+                                            value="{{ category }}"
+                                        >
+                                    {% endfor %}
+
+                                    <input
+                                        type="hidden"
+                                        name="sort"
+                                        value="{{ sort }}"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="quantity-button"
+                                        aria-label="{{ ingredient.name }}の在庫を0.5減らす"
+                                        {% if quantity <= 0 %}disabled{% endif %}
+                                    >
+                                        －
+                                    </button>
+                                </form>
+
+                                <div class="quantity-display">
+                                    <span>
+                                        {% if quantity == quantity|int %}
+                                            {{ quantity|int }}
+                                        {% else %}
+                                            {{ quantity }}
+                                        {% endif %}
+                                    </span>
+
+                                    {% if quantity <= 0 %}
+                                        <span class="out-of-stock-label">
+                                            在庫なし
+                                        </span>
+                                    {% endif %}
+                                </div>
+
+                                <form
+                                    action="/ingredients/{{ ingredient.id }}/increment"
+                                    method="post"
+                                    class="quantity-form"
+                                >
+                                    <input
+                                        type="hidden"
+                                        name="keyword"
+                                        value="{{ keyword }}"
+                                    >
+
+                                    {% for category in category_filters %}
+                                        <input
+                                            type="hidden"
+                                            name="category_filters"
+                                            value="{{ category }}"
+                                        >
+                                    {% endfor %}
+
+                                    <input
+                                        type="hidden"
+                                        name="sort"
+                                        value="{{ sort }}"
+                                    >
+
+                                    <button
+                                        type="submit"
+                                        class="quantity-button"
+                                        aria-label="{{ ingredient.name }}の在庫を0.5増やす"
+                                    >
+                                        ＋
+                                    </button>
+                                </form>
+                            </div>
                         </td>
+
                         <td>{{ ingredient.default_unit or "-" }}</td>
+
                         <td>
-                            <a href="/ingredients/{{ ingredient.id }}/edit">編集</a>
-                            <a href="/ingredients/{{ ingredient.id }}/delete">削除</a>
+                            <a href="/ingredients/{{ ingredient.id }}/edit">
+                                編集
+                            </a>
+
+                            <a href="/ingredients/{{ ingredient.id }}/delete">
+                                削除
+                            </a>
                         </td>
                     </tr>
                 {% endfor %}
