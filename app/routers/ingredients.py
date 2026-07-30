@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -5,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.ingredient import (
+    change_inventory_quantity,
     create_ingredient,
     delete_ingredient,
     get_categories,
@@ -26,6 +29,34 @@ def is_valid_quantity_step(quantity: float) -> bool:
     """数量が0.5刻みかどうかを判定する。"""
     return abs(quantity * 2 - round(quantity * 2)) < 1e-9
 
+def build_list_redirect_url(
+    keyword: str | None = None,
+    category_filters: list[str] | None = None,
+    sort: str = "id",
+) -> str:
+    """一覧画面の検索・絞り込み・並び替え条件を含むURLを作成する。"""
+    query_params: list[tuple[str, str]] = []
+
+    if keyword:
+        query_params.append(("keyword", keyword))
+
+    if category_filters:
+        for category in category_filters:
+            query_params.append(("category_filters", category))
+
+    if sort in [
+        "id",
+        "name",
+        "category",
+        "out_of_stock",
+    ]:
+        query_params.append(("sort", sort))
+
+    if not query_params:
+        return "/"
+
+    return f"/?{urlencode(query_params)}"
+
 
 @router.get("/")
 def list_ingredients(
@@ -35,7 +66,12 @@ def list_ingredients(
     sort: str = Query("id"),
     db: Session = Depends(get_db),
 ):
-    if sort not in ["id", "name", "category"]:
+    if sort not in [
+        "id",
+        "name",
+        "category",
+        "out_of_stock",
+    ]:
         sort = "id"
 
     categories = get_categories(db)
@@ -252,3 +288,49 @@ def delete_ingredient_route(
     delete_ingredient(db=db, ingredient_id=ingredient_id)
 
     return RedirectResponse(url="/", status_code=303)
+
+
+@router.post("/ingredients/{ingredient_id}/increment")
+def increment_inventory_quantity(
+    ingredient_id: int,
+    keyword: str | None = Form(None),
+    category_filters: list[str] = Form(default=[]),
+    sort: str = Form("id"),
+    db: Session = Depends(get_db),
+):
+    change_inventory_quantity(
+        db=db,
+        ingredient_id=ingredient_id,
+        amount=0.5,
+    )
+
+    redirect_url = build_list_redirect_url(
+        keyword=keyword,
+        category_filters=category_filters,
+        sort=sort,
+    )
+
+    return RedirectResponse(url=redirect_url, status_code=303)
+
+
+@router.post("/ingredients/{ingredient_id}/decrement")
+def decrement_inventory_quantity(
+    ingredient_id: int,
+    keyword: str | None = Form(None),
+    category_filters: list[str] = Form(default=[]),
+    sort: str = Form("id"),
+    db: Session = Depends(get_db),
+):
+    change_inventory_quantity(
+        db=db,
+        ingredient_id=ingredient_id,
+        amount=-0.5,
+    )
+
+    redirect_url = build_list_redirect_url(
+        keyword=keyword,
+        category_filters=category_filters,
+        sort=sort,
+    )
+
+    return RedirectResponse(url=redirect_url, status_code=303)
