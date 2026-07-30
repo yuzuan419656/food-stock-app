@@ -237,3 +237,33 @@ button {
     background-color: #e8e8e8;
     font-weight: bold;
 }
+
+.list-controls {
+    margin-bottom: 16px;
+}
+
+.search-control,
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.search-control label,
+.sort-control label {
+    width: 100px;
+}
+
+.search-control input {
+    width: 240px;
+}
+
+.sort-control select {
+    padding: 6px;
+    min-width: 140px;
+}
+
+.inventory-filter-actions {
+    margin: 12px 0;
+}

@@ -4,73 +4,98 @@
 <section>
     <h2>食材一覧</h2>
 
-    <form action="/" method="get" autocomplete="off">
-        <label for="keyword">食材名検索</label>
-
-        <input
-            type="text"
-            id="keyword"
-            name="keyword"
-            value="{{ keyword }}"
+    <div class="list-controls">
+        <form
+            action="/"
+            method="get"
             autocomplete="off"
+            class="list-control-form"
         >
+            {% for category in category_filters %}
+                <input
+                    type="hidden"
+                    name="category_filters"
+                    value="{{ category }}"
+                >
+            {% endfor %}
 
-        {% for category in category_filters %}
-            <input
-                type="hidden"
-                name="category_filters"
-                value="{{ category }}"
-            >
-        {% endfor %}
+            <div class="search-control">
+                <label for="keyword">食材名検索</label>
 
-        <label for="sort">並び替え</label>
+                <input
+                    type="text"
+                    id="keyword"
+                    name="keyword"
+                    value="{{ keyword }}"
+                    autocomplete="off"
+                >
 
-        <select id="sort" name="sort">
-            <option
-                value="id"
-                {% if sort == "id" %}selected{% endif %}
-            >
-                登録順
-            </option>
+                <button type="submit">
+                    検索
+                </button>
+            </div>
 
-            <option
-                value="name"
-                {% if sort == "name" %}selected{% endif %}
-            >
-                食材名順
-            </option>
+            <div class="sort-control">
+                <label for="sort">並び替え</label>
 
-            <option
-                value="category"
-                {% if sort == "category" %}selected{% endif %}
-            >
-                カテゴリ順
-            </option>
-        </select>
+                <select
+                    id="sort"
+                    name="sort"
+                    onchange="this.form.submit()"
+                >
+                    <option
+                        value="id"
+                        {% if sort == "id" %}selected{% endif %}
+                    >
+                        登録順
+                    </option>
 
-        <button type="submit">検索</button>
-        <a href="/">クリア</a>
-    </form>
-<div class="inventory-filter-actions">
-    {% if sort == "out_of_stock" %}
-        <a
-            href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=id"
-            class="inventory-filter-button active"
-        >
-            登録順に戻す
-        </a>
-    {% else %}
-        <a
-            href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=out_of_stock"
-            class="inventory-filter-button"
-        >
-            在庫なしを先頭
-        </a>
-    {% endif %}
-</div>
+                    <option
+                        value="name"
+                        {% if sort == "name" %}selected{% endif %}
+                    >
+                        食材名順
+                    </option>
+
+                    <option
+                        value="category"
+                        {% if sort == "category" %}selected{% endif %}
+                    >
+                        カテゴリ順
+                    </option>
+                </select>
+            </div>
+        </form>
+
+        <div class="inventory-filter-actions">
+            {% if sort == "out_of_stock" %}
+                <a
+                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=id"
+                    class="inventory-filter-button active"
+                >
+                    登録順に戻す
+                </a>
+            {% else %}
+                <a
+                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=out_of_stock"
+                    class="inventory-filter-button"
+                >
+                    在庫なしを先頭
+                </a>
+            {% endif %}
+        </div>
+
+        <div class="clear-all-conditions">
+            <a href="/">
+                条件をすべてクリア
+            </a>
+        </div>
+    </div>
 
     <p>
-        <a href="/ingredients/new">新しい食材を登録する</a>
+        <a href="/ingredients/new">
+            新しい食材を登録する
+        </a>
     </p>
 
     {% if ingredients %}
@@ -116,6 +141,7 @@
                                                         checked
                                                     {% endif %}
                                                 >
+
                                                 {{ category }}
                                             </label>
                                         {% endfor %}
@@ -126,7 +152,7 @@
                                             </button>
 
                                             <a
-                                                href="/?keyword={{ keyword }}&sort={{ sort }}"
+                                                href="/?keyword={{ keyword | urlencode }}&sort={{ sort }}"
                                                 class="filter-clear-link"
                                             >
                                                 解除
@@ -263,9 +289,13 @@
         </table>
     {% else %}
         {% if keyword or category_filters %}
-            <p>指定した条件に一致する食材はありません。</p>
+            <p>
+                指定した条件に一致する食材はありません。
+            </p>
         {% else %}
-            <p>登録されている食材はありません。</p>
+            <p>
+                登録されている食材はありません。
+            </p>
         {% endif %}
     {% endif %}
 </section>
