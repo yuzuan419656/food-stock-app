@@ -1,3 +1,5 @@
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -5,26 +7,54 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.crud.ingredient import (
+    change_inventory_quantity,
     create_ingredient,
     delete_ingredient,
     get_categories,
     get_default_units,
-    get_ingredient_by_id,
-    get_ingredients,
-    search_ingredients,
-    update_ingredient,
     get_filtered_ingredients,
+    get_ingredient_by_id,
+    update_ingredient,
 )
-
 from app.database import get_db
+
 
 router = APIRouter()
 
 templates = Jinja2Templates(directory="app/templates")
 
+
 def is_valid_quantity_step(quantity: float) -> bool:
     """数量が0.5刻みかどうかを判定する。"""
     return abs(quantity * 2 - round(quantity * 2)) < 1e-9
+
+
+def build_list_redirect_url(
+    keyword: str | None = None,
+    category_filters: list[str] | None = None,
+    sort: str = "id",
+    out_of_stock_first: bool = False,
+) -> str:
+    """一覧画面の表示条件を維持したリダイレクトURLを作成する。"""
+    query_params: list[tuple[str, str]] = []
+
+    if keyword:
+        query_params.append(("keyword", keyword))
+
+    if category_filters:
+        for category in category_filters:
+            query_params.append(("category_filters", category))
+
+    if sort in ["id", "name", "category"]:
+        query_params.append(("sort", sort))
+
+    if out_of_stock_first:
+        query_params.append(("out_of_stock_first", "true"))
+
+    if not query_params:
+        return "/"
+
+    return f"/?{urlencode(query_params)}"
 
 
 @router.get("/")
@@ -33,8 +63,10 @@ def list_ingredients(
     keyword: str | None = Query(None),
     category_filters: list[str] = Query(default=[]),
     sort: str = Query("id"),
+    out_of_stock_first: bool = Query(False),
     db: Session = Depends(get_db),
 ):
+    """食材一覧画面を表示する。"""
     if sort not in ["id", "name", "category"]:
         sort = "id"
 
@@ -45,6 +77,7 @@ def list_ingredients(
         keyword=keyword,
         category_filters=category_filters,
         sort=sort,
+        out_of_stock_first=out_of_stock_first,
     )
 
     return templates.TemplateResponse(
@@ -56,14 +89,17 @@ def list_ingredients(
             "category_filters": category_filters,
             "categories": categories,
             "sort": sort,
+            "out_of_stock_first": out_of_stock_first,
         },
     )
+
 
 @router.get("/ingredients/new")
 def new_ingredient(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    """食材登録画面を表示する。"""
     categories = get_categories(db)
     units = get_default_units(db)
 
@@ -86,6 +122,7 @@ def create_ingredient_route(
     quantity: float = Form(...),
     db: Session = Depends(get_db),
 ):
+    """食材を新規登録する。"""
     categories = get_categories(db)
     units = get_default_units(db)
 
@@ -121,6 +158,7 @@ def create_ingredient_route(
         )
     except IntegrityError:
         db.rollback()
+
         return templates.TemplateResponse(
             request=request,
             name="ingredients/new.html",
@@ -140,6 +178,7 @@ def edit_ingredient(
     request: Request,
     db: Session = Depends(get_db),
 ):
+    """食材編集画面を表示する。"""
     ingredient = get_ingredient_by_id(db, ingredient_id)
 
     if ingredient is None:
@@ -158,6 +197,7 @@ def edit_ingredient(
         },
     )
 
+
 @router.post("/ingredients/{ingredient_id}/edit")
 def update_ingredient_route(
     ingredient_id: int,
@@ -168,6 +208,7 @@ def update_ingredient_route(
     quantity: float = Form(...),
     db: Session = Depends(get_db),
 ):
+    """食材情報と在庫数量を更新する。"""
     ingredient = get_ingredient_by_id(db, ingredient_id)
 
     if ingredient is None:
@@ -211,6 +252,7 @@ def update_ingredient_route(
         )
     except IntegrityError:
         db.rollback()
+
         return templates.TemplateResponse(
             request=request,
             name="ingredients/edit.html",
@@ -224,12 +266,72 @@ def update_ingredient_route(
 
     return RedirectResponse(url="/", status_code=303)
 
+
+@router.post("/ingredients/{ingredient_id}/increment")
+def increment_inventory_quantity(
+    ingredient_id: int,
+    keyword: str | None = Form(None),
+    category_filters: list[str] = Form(default=[]),
+    sort: str = Form("id"),
+    out_of_stock_first: bool = Form(False),
+    db: Session = Depends(get_db),
+):
+    """対象食材の在庫数量を0.5増やす。"""
+    change_inventory_quantity(
+        db=db,
+        ingredient_id=ingredient_id,
+        amount=0.5,
+    )
+
+    redirect_url = build_list_redirect_url(
+        keyword=keyword,
+        category_filters=category_filters,
+        sort=sort,
+        out_of_stock_first=out_of_stock_first,
+    )
+
+    return RedirectResponse(
+        url=redirect_url,
+        status_code=303,
+    )
+
+
+@router.post("/ingredients/{ingredient_id}/decrement")
+def decrement_inventory_quantity(
+    ingredient_id: int,
+    keyword: str | None = Form(None),
+    category_filters: list[str] = Form(default=[]),
+    sort: str = Form("id"),
+    out_of_stock_first: bool = Form(False),
+    db: Session = Depends(get_db),
+):
+    """対象食材の在庫数量を0.5減らす。"""
+    change_inventory_quantity(
+        db=db,
+        ingredient_id=ingredient_id,
+        amount=-0.5,
+    )
+
+    redirect_url = build_list_redirect_url(
+        keyword=keyword,
+        category_filters=category_filters,
+        sort=sort,
+        out_of_stock_first=out_of_stock_first,
+    )
+
+    return RedirectResponse(
+        url=redirect_url,
+        status_code=303,
+    )
+
+
 @router.get("/ingredients/{ingredient_id}/delete")
 def confirm_delete_ingredient(
     ingredient_id: int,
     request: Request,
     db: Session = Depends(get_db),
 ):
+    """食材削除確認画面を表示する。"""
     ingredient = get_ingredient_by_id(db, ingredient_id)
 
     if ingredient is None:
@@ -249,6 +351,10 @@ def delete_ingredient_route(
     ingredient_id: int,
     db: Session = Depends(get_db),
 ):
-    delete_ingredient(db=db, ingredient_id=ingredient_id)
+    """食材を削除する。"""
+    delete_ingredient(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
 
     return RedirectResponse(url="/", status_code=303)

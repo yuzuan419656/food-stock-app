@@ -180,3 +180,90 @@ button {
 .filter-clear-link {
     display: inline-block;
 }
+
+.quantity-control {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.quantity-form {
+    margin: 0;
+}
+
+.quantity-button {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+}
+
+.quantity-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+.quantity-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 50px;
+}
+
+.out-of-stock-label {
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.inventory-filter-actions {
+    margin: 12px 0;
+}
+
+.inventory-filter-button {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    text-decoration: none;
+}
+
+.inventory-filter-button:hover {
+    background-color: #f0f0f0;
+}
+
+.inventory-filter-button.active {
+    background-color: #e8e8e8;
+    font-weight: bold;
+}
+
+.list-controls {
+    margin-bottom: 16px;
+}
+
+.search-control,
+.sort-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.search-control label,
+.sort-control label {
+    width: 100px;
+}
+
+.search-control input {
+    width: 240px;
+}
+
+.sort-control select {
+    padding: 6px;
+    min-width: 140px;
+}
+
+.inventory-filter-actions {
+    margin: 12px 0;
+}
