@@ -19,6 +19,14 @@
                 >
             {% endfor %}
 
+            {% if out_of_stock_first %}
+                <input
+                    type="hidden"
+                    name="out_of_stock_first"
+                    value="true"
+                >
+            {% endif %}
+
             <div class="search-control">
                 <label for="keyword">食材名検索</label>
 
@@ -68,16 +76,16 @@
         </form>
 
         <div class="inventory-filter-actions">
-            {% if sort == "out_of_stock" %}
+            {% if out_of_stock_first %}
                 <a
-                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=id"
+                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort={{ sort }}"
                     class="inventory-filter-button active"
                 >
-                    登録順に戻す
+                    在庫なし優先を解除
                 </a>
             {% else %}
                 <a
-                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort=out_of_stock"
+                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort={{ sort }}&out_of_stock_first=true"
                     class="inventory-filter-button"
                 >
                     在庫なしを先頭
@@ -130,6 +138,14 @@
                                         value="{{ sort }}"
                                     >
 
+                                    {% if out_of_stock_first %}
+                                        <input
+                                            type="hidden"
+                                            name="out_of_stock_first"
+                                            value="true"
+                                        >
+                                    {% endif %}
+
                                     <div class="category-filter-content">
                                         {% for category in categories %}
                                             <label class="checkbox-label">
@@ -152,7 +168,7 @@
                                             </button>
 
                                             <a
-                                                href="/?keyword={{ keyword | urlencode }}&sort={{ sort }}"
+                                                href="/?keyword={{ keyword | urlencode }}&sort={{ sort }}{% if out_of_stock_first %}&out_of_stock_first=true{% endif %}"
                                                 class="filter-clear-link"
                                             >
                                                 解除
@@ -210,6 +226,14 @@
                                         value="{{ sort }}"
                                     >
 
+                                    {% if out_of_stock_first %}
+                                        <input
+                                            type="hidden"
+                                            name="out_of_stock_first"
+                                            value="true"
+                                        >
+                                    {% endif %}
+
                                     <button
                                         type="submit"
                                         class="quantity-button"
@@ -261,6 +285,14 @@
                                         value="{{ sort }}"
                                     >
 
+                                    {% if out_of_stock_first %}
+                                        <input
+                                            type="hidden"
+                                            name="out_of_stock_first"
+                                            value="true"
+                                        >
+                                    {% endif %}
+
                                     <button
                                         type="submit"
                                         class="quantity-button"
@@ -272,7 +304,9 @@
                             </div>
                         </td>
 
-                        <td>{{ ingredient.default_unit or "-" }}</td>
+                        <td>
+                            {{ ingredient.default_unit or "-" }}
+                        </td>
 
                         <td>
                             <a href="/ingredients/{{ ingredient.id }}/edit">

@@ -150,8 +150,9 @@ def get_filtered_ingredients(
     keyword: str | None = None,
     category_filters: list[str] | None = None,
     sort: str = "id",
+    out_of_stock_first: bool = False,
 ) -> list[Ingredient]:
-    """食材一覧を検索・カテゴリ絞り込み・並び替え条件付きで取得する。"""
+    """検索・絞り込み・並び替え条件付きで食材一覧を取得する。"""
     query = db.query(Ingredient).options(
         joinedload(Ingredient.inventories)
     )
@@ -166,35 +167,37 @@ def get_filtered_ingredients(
             Ingredient.category.in_(category_filters)
         )
 
-    if sort == "name":
-        query = query.order_by(Ingredient.name)
+    order_conditions = []
 
-    elif sort == "category":
-        query = query.order_by(
-            Ingredient.category,
-            Ingredient.name,
-        )
+    if out_of_stock_first:
+        query = query.outerjoin(Inventory)
 
-    elif sort == "out_of_stock":
-        query = (
-            query
-            .outerjoin(Inventory)
-            .order_by(
-                case(
-                    (
-                        (Inventory.quantity.is_(None))
-                        | (Inventory.quantity <= 0),
-                        0,
-                    ),
-                    else_=1,
+        order_conditions.append(
+            case(
+                (
+                    (Inventory.quantity.is_(None))
+                    | (Inventory.quantity <= 0),
+                    0,
                 ),
-                Ingredient.category,
-                Ingredient.name
+                else_=1,
             )
         )
 
+    if sort == "name":
+        order_conditions.append(Ingredient.name)
+
+    elif sort == "category":
+        order_conditions.extend(
+            [
+                Ingredient.category,
+                Ingredient.name,
+            ]
+        )
+
     else:
-        query = query.order_by(Ingredient.id)
+        order_conditions.append(Ingredient.id)
+
+    query = query.order_by(*order_conditions)
 
     return query.all()
 
