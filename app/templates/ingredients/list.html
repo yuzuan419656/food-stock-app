@@ -28,7 +28,9 @@
             {% endif %}
 
             <div class="search-control">
-                <label for="keyword">食材名検索</label>
+                <label for="keyword">
+                    食材名検索
+                </label>
 
                 <input
                     type="text"
@@ -44,7 +46,9 @@
             </div>
 
             <div class="sort-control">
-                <label for="sort">並び替え</label>
+                <label for="sort">
+                    並び替え
+                </label>
 
                 <select
                     id="sort"
@@ -194,10 +198,16 @@
                         {% set quantity = 0 %}
                     {% endif %}
 
-                    <tr>
+                    <tr id="ingredient-{{ ingredient.id }}">
                         <td>{{ ingredient.id }}</td>
-                        <td>{{ ingredient.name }}</td>
-                        <td>{{ ingredient.category or "-" }}</td>
+
+                        <td>
+                            {{ ingredient.name }}
+                        </td>
+
+                        <td>
+                            {{ ingredient.category or "-" }}
+                        </td>
 
                         <td>
                             <div class="quantity-control">

@@ -5,72 +5,231 @@
     <h2>食材編集</h2>
 
     {% if error_message %}
-        <p class="error-message">{{ error_message }}</p>
+        <p class="error-message">
+            {{ error_message }}
+        </p>
     {% endif %}
 
-    <form action="/ingredients/{{ ingredient.id }}/edit" method="post" autocomplete="off">
-        <div>
-            <label for="name">食材名</label>
+    <form
+        action="/ingredients/{{ ingredient.id }}/edit"
+        method="post"
+        class="ingredient-form"
+    >
+        <div class="form-group">
+            <label for="name">
+                食材名
+            </label>
+
             <input
                 type="text"
                 id="name"
                 name="name"
-                value="{{ ingredient.name }}"
+                value="{{ form_data.name }}"
                 required
             >
         </div>
 
-        <div>
-            <label for="category">カテゴリ</label>
-            <input
-                type="text"
-                id="category"
-                name="category"
-                list="category-options"
-                value="{{ ingredient.category or '' }}"
-            >
+        <div class="form-group">
+            <label for="category_select">
+                カテゴリ
+            </label>
 
-            <datalist id="category-options">
-                {% for category in categories %}
-                    <option value="{{ category }}">
+            <select
+                id="category_select"
+                name="category_select"
+                required
+            >
+                <option value="">
+                    選択してください
+                </option>
+
+                {% for category in category_options %}
+                    <option
+                        value="{{ category }}"
+                        {% if form_data.category_select == category %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ category }}
+                    </option>
                 {% endfor %}
-            </datalist>
+
+                <option
+                    value="{{ other_option }}"
+                    {% if form_data.category_select == other_option %}
+                        selected
+                    {% endif %}
+                >
+                    {{ other_option }}
+                </option>
+            </select>
         </div>
 
-        <div>
-            <label for="default_unit">単位</label>
+        <div
+            id="category-other-group"
+            class="form-group other-input-group"
+            {% if form_data.category_select != other_option %}
+                hidden
+            {% endif %}
+        >
+            <label for="category_other">
+                その他のカテゴリ
+            </label>
+
             <input
                 type="text"
-                id="default_unit"
-                name="default_unit"
-                list="unit-options"
-                value="{{ ingredient.default_unit or '' }}"
+                id="category_other"
+                name="category_other"
+                value="{{ form_data.category_other }}"
             >
-
-            <datalist id="unit-options">
-                {% for unit in units %}
-                    <option value="{{ unit }}">
-                {% endfor %}
-            </datalist>
         </div>
 
-        <div>
-            <label for="quantity">在庫数量</label>
+        <div class="form-group">
+            <label for="quantity">
+                在庫数量
+            </label>
+
             <input
                 type="number"
                 id="quantity"
                 name="quantity"
+                value="{{ form_data.quantity }}"
                 min="0"
                 step="0.5"
-                value="{% if ingredient.inventories %}{{ ingredient.inventories[0].quantity }}{% else %}0{% endif %}"
                 required
             >
         </div>
 
-        <div>
-            <button type="submit">更新</button>
-            <a href="/">キャンセル</a>
+        <div class="form-group">
+            <label for="default_unit_select">
+                単位
+            </label>
+
+            <select
+                id="default_unit_select"
+                name="default_unit_select"
+                required
+            >
+                <option value="">
+                    選択してください
+                </option>
+
+                {% for unit in unit_options %}
+                    <option
+                        value="{{ unit }}"
+                        {% if form_data.default_unit_select == unit %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ unit }}
+                    </option>
+                {% endfor %}
+
+                <option
+                    value="{{ other_option }}"
+                    {% if form_data.default_unit_select == other_option %}
+                        selected
+                    {% endif %}
+                >
+                    {{ other_option }}
+                </option>
+            </select>
+        </div>
+
+        <div
+            id="unit-other-group"
+            class="form-group other-input-group"
+            {% if form_data.default_unit_select != other_option %}
+                hidden
+            {% endif %}
+        >
+            <label for="default_unit_other">
+                その他の単位
+            </label>
+
+            <input
+                type="text"
+                id="default_unit_other"
+                name="default_unit_other"
+                value="{{ form_data.default_unit_other }}"
+            >
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">
+                更新
+            </button>
+
+            <a href="/">
+                キャンセル
+            </a>
         </div>
     </form>
 </section>
+
+<script>
+    const otherOption = {{ other_option | tojson }};
+
+    function updateOtherInput(
+        selectElement,
+        inputGroupElement,
+        inputElement
+    ) {
+        const isOtherSelected =
+            selectElement.value === otherOption;
+
+        inputGroupElement.hidden = !isOtherSelected;
+        inputElement.required = isOtherSelected;
+
+        if (!isOtherSelected) {
+            inputElement.value = "";
+        }
+    }
+
+    const categorySelect =
+        document.getElementById("category_select");
+
+    const categoryOtherGroup =
+        document.getElementById("category-other-group");
+
+    const categoryOtherInput =
+        document.getElementById("category_other");
+
+    const unitSelect =
+        document.getElementById("default_unit_select");
+
+    const unitOtherGroup =
+        document.getElementById("unit-other-group");
+
+    const unitOtherInput =
+        document.getElementById("default_unit_other");
+
+    categorySelect.addEventListener("change", () => {
+        updateOtherInput(
+            categorySelect,
+            categoryOtherGroup,
+            categoryOtherInput
+        );
+    });
+
+    unitSelect.addEventListener("change", () => {
+        updateOtherInput(
+            unitSelect,
+            unitOtherGroup,
+            unitOtherInput
+        );
+    });
+
+    updateOtherInput(
+        categorySelect,
+        categoryOtherGroup,
+        categoryOtherInput
+    );
+
+    updateOtherInput(
+        unitSelect,
+        unitOtherGroup,
+        unitOtherInput
+    );
+</script>
 {% endblock %}
