@@ -5,46 +5,265 @@
     <h2>食材登録</h2>
 
     {% if error_message %}
-        <p class="error-message">{{ error_message }}</p>
+        <p class="error-message">
+            {{ error_message }}
+        </p>
     {% endif %}
 
-    <form action="/ingredients" method="post" autocomplete="off">
-        <div>
-            <label for="name">食材名</label>
-            <input type="text" id="name" name="name" autocomplete="off" required>
+    <form
+        action="/ingredients"
+        method="post"
+        class="ingredient-form"
+    >
+        <div class="form-group">
+            <label for="name">
+                食材名
+            </label>
+
+            <input
+                type="text"
+                id="name"
+                name="name"
+                value="{{ form_data.name }}"
+                required
+            >
         </div>
 
-        <div>
-            <label for="category">カテゴリ</label>
-            <input type="text" id="category" name="category" list="category-options" autocomplete="off">
+        <div class="form-group">
+            <label for="category_select">
+                カテゴリ
+            </label>
 
-            <datalist id="category-options">
-                {% for category in categories %}
-                    <option value="{{ category }}">
-                {% endfor %}
-            </datalist>
+            <div class="option-field">
+                <select
+                    id="category_select"
+                    name="category_select"
+                    required
+                    {% if form_data.category_select == other_option %}
+                        hidden
+                    {% endif %}
+                >
+                    <option value="">
+                        選択してください
+                    </option>
+
+                    {% for category in category_options %}
+                        <option
+                            value="{{ category }}"
+                            {% if form_data.category_select == category %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ category }}
+                        </option>
+                    {% endfor %}
+
+                    <option
+                        value="{{ other_option }}"
+                        {% if form_data.category_select == other_option %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ other_option }}
+                    </option>
+                </select>
+
+                <div
+                    id="category-custom-field"
+                    class="custom-option-field"
+                    {% if form_data.category_select != other_option %}
+                        hidden
+                    {% endif %}
+                >
+                    <input
+                        type="text"
+                        id="category_other"
+                        name="category_other"
+                        value="{{ form_data.category_other }}"
+                        placeholder="カテゴリを入力"
+                    >
+
+                    <button
+                        type="button"
+                        id="category-select-return"
+                        class="return-option-button"
+                    >
+                        候補から選び直す
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div>
-            <label for="default_unit">単位</label>
-            <input type="text" id="default_unit" name="default_unit" list="unit-options" autocomplete="off">
+        <div class="form-group">
+            <label for="quantity">
+                在庫数量
+            </label>
 
-            <datalist id="unit-options">
-                {% for unit in units %}
-                    <option value="{{ unit }}">
-                {% endfor %}
-            </datalist>
+            <input
+                type="number"
+                id="quantity"
+                name="quantity"
+                value="{{ form_data.quantity }}"
+                min="0"
+                step="0.5"
+                required
+            >
         </div>
 
-        <div>
-            <label for="quantity">在庫数量</label>
-            <input type="number" id="quantity" name="quantity" min="0" step="0.5" value="0" autocomplete="off" required>
+        <div class="form-group">
+            <label for="default_unit_select">
+                単位
+            </label>
+
+            <div class="option-field">
+                <select
+                    id="default_unit_select"
+                    name="default_unit_select"
+                    required
+                    {% if form_data.default_unit_select == other_option %}
+                        hidden
+                    {% endif %}
+                >
+                    <option value="">
+                        選択してください
+                    </option>
+
+                    {% for unit in unit_options %}
+                        <option
+                            value="{{ unit }}"
+                            {% if form_data.default_unit_select == unit %}
+                                selected
+                            {% endif %}
+                        >
+                            {{ unit }}
+                        </option>
+                    {% endfor %}
+
+                    <option
+                        value="{{ other_option }}"
+                        {% if form_data.default_unit_select == other_option %}
+                            selected
+                        {% endif %}
+                    >
+                        {{ other_option }}
+                    </option>
+                </select>
+
+                <div
+                    id="unit-custom-field"
+                    class="custom-option-field"
+                    {% if form_data.default_unit_select != other_option %}
+                        hidden
+                    {% endif %}
+                >
+                    <input
+                        type="text"
+                        id="default_unit_other"
+                        name="default_unit_other"
+                        value="{{ form_data.default_unit_other }}"
+                        placeholder="単位を入力"
+                    >
+
+                    <button
+                        type="button"
+                        id="unit-select-return"
+                        class="return-option-button"
+                    >
+                        候補から選び直す
+                    </button>
+                </div>
+            </div>
         </div>
 
-        <div>
-            <button type="submit">登録</button>
-            <a href="/">キャンセル</a>
+        <div class="form-actions">
+            <button type="submit">
+                登録
+            </button>
+
+            <a href="/">
+                キャンセル
+            </a>
         </div>
     </form>
 </section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const otherOption = {{ other_option | tojson }};
+
+        function setupCustomOptionField({
+            selectId,
+            customFieldId,
+            customInputId,
+            returnButtonId
+        }) {
+            const selectElement =
+                document.getElementById(selectId);
+
+            const customFieldElement =
+                document.getElementById(customFieldId);
+
+            const customInputElement =
+                document.getElementById(customInputId);
+
+            const returnButtonElement =
+                document.getElementById(returnButtonId);
+
+            function showCustomInput() {
+                selectElement.value = otherOption;
+                selectElement.hidden = true;
+
+                /*
+                 * selectは非表示になっても送信対象として残す。
+                 * 値は「その他」のまま送信する。
+                 */
+                selectElement.required = false;
+
+                customFieldElement.hidden = false;
+                customInputElement.required = true;
+                customInputElement.focus();
+            }
+
+            function showSelect() {
+                customFieldElement.hidden = true;
+
+                customInputElement.required = false;
+                customInputElement.value = "";
+
+                selectElement.hidden = false;
+                selectElement.required = true;
+                selectElement.value = "";
+                selectElement.focus();
+            }
+
+            selectElement.addEventListener("change", () => {
+                if (selectElement.value === otherOption) {
+                    showCustomInput();
+                }
+            });
+
+            returnButtonElement.addEventListener("click", () => {
+                showSelect();
+            });
+
+            if (selectElement.value === otherOption) {
+                showCustomInput();
+            }
+        }
+
+        setupCustomOptionField({
+            selectId: "category_select",
+            customFieldId: "category-custom-field",
+            customInputId: "category_other",
+            returnButtonId: "category-select-return"
+        });
+
+        setupCustomOptionField({
+            selectId: "default_unit_select",
+            customFieldId: "unit-custom-field",
+            customInputId: "default_unit_other",
+            returnButtonId: "unit-select-return"
+        });
+    });
+</script>
 {% endblock %}
