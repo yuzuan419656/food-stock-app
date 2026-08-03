@@ -12,16 +12,20 @@ from app.constants.ingredient_options import (
     UNIT_OPTIONS,
 )
 from app.crud.ingredient import (
-    change_inventory_quantity,
     create_ingredient,
     delete_ingredient,
     get_categories,
     get_filtered_ingredients,
     get_ingredient_by_id,
     get_ingredient_by_name,
-    get_inventory_quantity,
     update_ingredient,
 )
+
+from app.crud.inventory import (
+    change_inventory_quantity,
+    get_inventory_quantity,
+)
+
 from app.database import get_db
 from app.utils.ingredient_name import normalize_ingredient_name
 
