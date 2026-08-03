@@ -6,23 +6,24 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.crud.ingredient import (
-    change_inventory_quantity,
-    create_ingredient,
-    delete_ingredient,
-    get_categories,
-    get_default_units,
-    get_filtered_ingredients,
-    get_ingredient_by_id,
-    update_ingredient,
-)
-from app.database import get_db
-
 from app.constants.ingredient_options import (
     CATEGORY_OPTIONS,
     OTHER_OPTION,
     UNIT_OPTIONS,
 )
+from app.crud.ingredient import (
+    change_inventory_quantity,
+    create_ingredient,
+    delete_ingredient,
+    get_categories,
+    get_filtered_ingredients,
+    get_ingredient_by_id,
+    get_ingredient_by_name,
+    get_inventory_quantity,
+    update_ingredient,
+)
+from app.database import get_db
+from app.utils.ingredient_name import normalize_ingredient_name
 
 
 router = APIRouter()
@@ -64,21 +65,23 @@ def resolve_selected_option(
 
 
 def get_option_form_values(
-        current_value: str | None,
-        allowed_options: list[str],
+    current_value: str | None,
+    allowed_options: list[str],
 ) -> tuple[str, str]:
     """
-    登録済みの値から、プルダウンと「その他」入力欄の初期値を決定する。
+    登録済みの値から、
+    プルダウンと「その他」入力欄の初期値を決定する。
     """
     normalized_value = (current_value or "").strip()
 
     if not normalized_value:
         return "", ""
-    
+
     if normalized_value in allowed_options:
         return normalized_value, ""
 
     return OTHER_OPTION, normalized_value
+
 
 def build_list_redirect_url(
     keyword: str | None = None,
@@ -94,18 +97,118 @@ def build_list_redirect_url(
 
     if category_filters:
         for category in category_filters:
-            query_params.append(("category_filters", category))
+            query_params.append(
+                ("category_filters", category)
+            )
 
     if sort in ["id", "name", "category"]:
         query_params.append(("sort", sort))
 
     if out_of_stock_first:
-        query_params.append(("out_of_stock_first", "true"))
+        query_params.append(
+            ("out_of_stock_first", "true")
+        )
 
     if not query_params:
         return "/"
 
     return f"/?{urlencode(query_params)}"
+
+
+def build_duplicate_form_data(
+    name: str,
+    category: str,
+    quantity: float,
+    default_unit: str,
+) -> dict:
+    """
+    重複確認画面から確定処理へ引き継ぐ入力値を作成する。
+    """
+    return {
+        "name": name,
+        "category": category,
+        "quantity": quantity,
+        "default_unit": default_unit,
+    }
+
+
+def build_new_form_data(
+    name: str,
+    category_select: str,
+    category_other: str | None,
+    default_unit_select: str,
+    default_unit_other: str | None,
+    quantity: float,
+) -> dict:
+    """新規登録画面へ再表示するフォーム値を作成する。"""
+    return {
+        "name": name,
+        "category_select": category_select,
+        "category_other": category_other or "",
+        "default_unit_select": default_unit_select,
+        "default_unit_other": default_unit_other or "",
+        "quantity": quantity,
+    }
+
+
+def render_new_ingredient_error(
+    request: Request,
+    form_data: dict,
+    error_message: str,
+    status_code: int = 400,
+):
+    """食材登録画面へエラーメッセージを表示する。"""
+    return templates.TemplateResponse(
+        request=request,
+        name="ingredients/new.html",
+        context={
+            "category_options": CATEGORY_OPTIONS,
+            "unit_options": UNIT_OPTIONS,
+            "other_option": OTHER_OPTION,
+            "form_data": form_data,
+            "error_message": error_message,
+        },
+        status_code=status_code,
+    )
+
+
+def render_duplicate_confirmation(
+    request: Request,
+    existing_ingredient,
+    name: str,
+    category: str,
+    quantity: float,
+    default_unit: str,
+    error_message: str | None = None,
+    status_code: int = 409,
+):
+    """重複食材の確認画面を表示する。"""
+    existing_quantity = get_inventory_quantity(
+        existing_ingredient
+    )
+
+    duplicate_form_data = build_duplicate_form_data(
+        name=name,
+        category=category,
+        quantity=quantity,
+        default_unit=default_unit,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="ingredients/duplicate_confirm.html",
+        context={
+            "existing_ingredient": existing_ingredient,
+            "existing_quantity": existing_quantity,
+            "form_data": duplicate_form_data,
+            "can_add_quantity": (
+                existing_ingredient.default_unit
+                == default_unit
+            ),
+            "error_message": error_message,
+        },
+        status_code=status_code,
+    )
 
 
 @router.get("/")
@@ -181,29 +284,22 @@ def create_ingredient_route(
     db: Session = Depends(get_db),
 ):
     """食材を新規登録する。"""
-    name = name.strip()
+    normalized_name = normalize_ingredient_name(name)
 
-    form_data = {
-        "name": name,
-        "category_select": category_select,
-        "category_other": category_other or "",
-        "default_unit_select": default_unit_select,
-        "default_unit_other": default_unit_other or "",
-        "quantity": quantity,
-    }
+    form_data = build_new_form_data(
+        name=normalized_name,
+        category_select=category_select,
+        category_other=category_other,
+        default_unit_select=default_unit_select,
+        default_unit_other=default_unit_other,
+        quantity=quantity,
+    )
 
-    if not name:
-        return templates.TemplateResponse(
+    if not normalized_name:
+        return render_new_ingredient_error(
             request=request,
-            name="ingredients/new.html",
-            context={
-                "category_options": CATEGORY_OPTIONS,
-                "unit_options": UNIT_OPTIONS,
-                "other_option": OTHER_OPTION,
-                "form_data": form_data,
-                "error_message": "食材名を入力してください。",
-            },
-            status_code=400,
+            form_data=form_data,
+            error_message="食材名を入力してください。",
         )
 
     category, category_error = resolve_selected_option(
@@ -214,17 +310,10 @@ def create_ingredient_route(
     )
 
     if category_error:
-        return templates.TemplateResponse(
+        return render_new_ingredient_error(
             request=request,
-            name="ingredients/new.html",
-            context={
-                "category_options": CATEGORY_OPTIONS,
-                "unit_options": UNIT_OPTIONS,
-                "other_option": OTHER_OPTION,
-                "form_data": form_data,
-                "error_message": category_error,
-            },
-            status_code=400,
+            form_data=form_data,
+            error_message=category_error,
         )
 
     default_unit, unit_error = resolve_selected_option(
@@ -235,51 +324,57 @@ def create_ingredient_route(
     )
 
     if unit_error:
-        return templates.TemplateResponse(
+        return render_new_ingredient_error(
             request=request,
-            name="ingredients/new.html",
-            context={
-                "category_options": CATEGORY_OPTIONS,
-                "unit_options": UNIT_OPTIONS,
-                "other_option": OTHER_OPTION,
-                "form_data": form_data,
-                "error_message": unit_error,
-            },
-            status_code=400,
+            form_data=form_data,
+            error_message=unit_error,
         )
 
     if quantity < 0:
-        return templates.TemplateResponse(
+        return render_new_ingredient_error(
             request=request,
-            name="ingredients/new.html",
-            context={
-                "category_options": CATEGORY_OPTIONS,
-                "unit_options": UNIT_OPTIONS,
-                "other_option": OTHER_OPTION,
-                "form_data": form_data,
-                "error_message": "在庫数量は0以上で入力してください。",
-            },
-            status_code=400,
+            form_data=form_data,
+            error_message=(
+                "在庫数量は0以上で入力してください。"
+            ),
         )
 
     if not is_valid_quantity_step(quantity):
-        return templates.TemplateResponse(
+        return render_new_ingredient_error(
             request=request,
-            name="ingredients/new.html",
-            context={
-                "category_options": CATEGORY_OPTIONS,
-                "unit_options": UNIT_OPTIONS,
-                "other_option": OTHER_OPTION,
-                "form_data": form_data,
-                "error_message": "在庫数量は0.5刻みで入力してください。",
-            },
-            status_code=400,
+            form_data=form_data,
+            error_message=(
+                "在庫数量は0.5刻みで入力してください。"
+            ),
+        )
+
+    # ここまで正常に進んだ場合、
+    # categoryとdefault_unitには必ず文字列が入っている。
+    assert category is not None
+    assert default_unit is not None
+
+    # 食材を新規作成する前に、同名食材を検索する。
+    existing_ingredient = get_ingredient_by_name(
+        db=db,
+        name=normalized_name,
+    )
+
+    # 同名食材が存在する場合は登録せず、
+    # 上書き・数量加算・キャンセルの確認画面を表示する。
+    if existing_ingredient is not None:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
         )
 
     try:
         create_ingredient(
             db=db,
-            name=name,
+            name=normalized_name,
             category=category,
             default_unit=default_unit,
             quantity=quantity,
@@ -287,6 +382,178 @@ def create_ingredient_route(
     except IntegrityError:
         db.rollback()
 
+        # 重複確認後から登録までの間に、
+        # 同名食材が登録された場合に備えた再確認。
+        existing_ingredient = get_ingredient_by_name(
+            db=db,
+            name=normalized_name,
+        )
+
+        if existing_ingredient is not None:
+            return render_duplicate_confirmation(
+                request=request,
+                existing_ingredient=existing_ingredient,
+                name=normalized_name,
+                category=category,
+                quantity=quantity,
+                default_unit=default_unit,
+            )
+
+        return render_new_ingredient_error(
+            request=request,
+            form_data=form_data,
+            error_message=(
+                "食材の登録中にエラーが発生しました。"
+            ),
+        )
+
+    return RedirectResponse(
+        url="/",
+        status_code=303,
+    )
+
+
+@router.post("/ingredients/resolve-duplicate")
+def resolve_duplicate_ingredient_route(
+    request: Request,
+    existing_ingredient_id: int = Form(...),
+    action: str = Form(...),
+    name: str = Form(...),
+    category: str = Form(...),
+    quantity: float = Form(...),
+    default_unit: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    重複食材に対する上書き・数量加算・キャンセルを処理する。
+    """
+    normalized_name = normalize_ingredient_name(name)
+    category = category.strip()
+    default_unit = default_unit.strip()
+
+    category_select, category_other = (
+        get_option_form_values(
+            current_value=category,
+            allowed_options=CATEGORY_OPTIONS,
+        )
+    )
+
+    unit_select, unit_other = get_option_form_values(
+        current_value=default_unit,
+        allowed_options=UNIT_OPTIONS,
+    )
+
+    new_form_data = build_new_form_data(
+        name=normalized_name,
+        category_select=category_select,
+        category_other=category_other,
+        default_unit_select=unit_select,
+        default_unit_other=unit_other,
+        quantity=quantity,
+    )
+
+    existing_ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=existing_ingredient_id,
+    )
+
+    if existing_ingredient is None:
+        return render_new_ingredient_error(
+            request=request,
+            form_data=new_form_data,
+            error_message=(
+                "対象の食材が見つかりません。"
+                "もう一度登録してください。"
+            ),
+            status_code=404,
+        )
+
+    if not normalized_name:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            error_message="食材名を入力してください。",
+            status_code=400,
+        )
+
+    if not category:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            error_message="カテゴリを入力してください。",
+            status_code=400,
+        )
+
+    if not default_unit:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            error_message="単位を入力してください。",
+            status_code=400,
+        )
+
+    if quantity < 0:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            error_message=(
+                "在庫数量は0以上で入力してください。"
+            ),
+            status_code=400,
+        )
+
+    if not is_valid_quantity_step(quantity):
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            error_message=(
+                "在庫数量は0.5刻みで入力してください。"
+            ),
+            status_code=400,
+        )
+
+    # hiddenフィールドのIDが書き換えられていないか確認する。
+    duplicate_ingredient = get_ingredient_by_name(
+        db=db,
+        name=normalized_name,
+    )
+
+    if (
+        duplicate_ingredient is None
+        or duplicate_ingredient.id
+        != existing_ingredient_id
+    ):
+        return render_new_ingredient_error(
+            request=request,
+            form_data=new_form_data,
+            error_message=(
+                "重複する食材の状態が変更されました。"
+                "もう一度登録内容を確認してください。"
+            ),
+            status_code=409,
+        )
+
+    if action == "cancel":
         return templates.TemplateResponse(
             request=request,
             name="ingredients/new.html",
@@ -294,15 +561,89 @@ def create_ingredient_route(
                 "category_options": CATEGORY_OPTIONS,
                 "unit_options": UNIT_OPTIONS,
                 "other_option": OTHER_OPTION,
-                "form_data": form_data,
-                "error_message": "同じ名前の食材は登録できません。",
+                "form_data": new_form_data,
+                "error_message": (
+                    "登録をキャンセルしました。"
+                ),
             },
-            status_code=400,
         )
 
-    return RedirectResponse(
-        url="/",
-        status_code=303,
+    if action == "overwrite":
+        try:
+            update_ingredient(
+                db=db,
+                ingredient_id=existing_ingredient_id,
+                name=normalized_name,
+                category=category,
+                default_unit=default_unit,
+                quantity=quantity,
+            )
+        except IntegrityError:
+            db.rollback()
+
+            return render_duplicate_confirmation(
+                request=request,
+                existing_ingredient=existing_ingredient,
+                name=normalized_name,
+                category=category,
+                quantity=quantity,
+                default_unit=default_unit,
+                error_message=(
+                    "食材の上書き中にエラーが発生しました。"
+                ),
+                status_code=400,
+            )
+
+        return RedirectResponse(
+            url=(
+                f"/#ingredient-{existing_ingredient_id}"
+            ),
+            status_code=303,
+        )
+
+    if action == "add":
+        if (
+            existing_ingredient.default_unit
+            != default_unit
+        ):
+            return render_duplicate_confirmation(
+                request=request,
+                existing_ingredient=existing_ingredient,
+                name=normalized_name,
+                category=category,
+                quantity=quantity,
+                default_unit=default_unit,
+                error_message=(
+                    "既存の単位と今回入力した単位が"
+                    "異なるため、数量を加算できません。"
+                ),
+                status_code=400,
+            )
+
+        change_inventory_quantity(
+            db=db,
+            ingredient_id=existing_ingredient_id,
+            amount=quantity,
+        )
+
+        return RedirectResponse(
+            url=(
+                f"/#ingredient-{existing_ingredient_id}"
+            ),
+            status_code=303,
+        )
+
+    return render_duplicate_confirmation(
+        request=request,
+        existing_ingredient=existing_ingredient,
+        name=normalized_name,
+        category=category,
+        quantity=quantity,
+        default_unit=default_unit,
+        error_message=(
+            "選択された処理が正しくありません。"
+        ),
+        status_code=400,
     )
 
 
@@ -324,9 +665,11 @@ def edit_ingredient(
             status_code=303,
         )
 
-    category_select, category_other = get_option_form_values(
-        current_value=ingredient.category,
-        allowed_options=CATEGORY_OPTIONS,
+    category_select, category_other = (
+        get_option_form_values(
+            current_value=ingredient.category,
+            allowed_options=CATEGORY_OPTIONS,
+        )
     )
 
     unit_select, unit_other = get_option_form_values(
@@ -334,10 +677,7 @@ def edit_ingredient(
         allowed_options=UNIT_OPTIONS,
     )
 
-    if ingredient.inventories:
-        quantity = ingredient.inventories[0].quantity
-    else:
-        quantity = 0
+    quantity = get_inventory_quantity(ingredient)
 
     return templates.TemplateResponse(
         request=request,
@@ -357,7 +697,6 @@ def edit_ingredient(
             },
         },
     )
-
 
 
 @router.post("/ingredients/{ingredient_id}/edit")
@@ -384,18 +723,21 @@ def update_ingredient_route(
             status_code=303,
         )
 
-    name = name.strip()
+    normalized_name = normalize_ingredient_name(name)
 
-    form_data = {
-        "name": name,
-        "category_select": category_select,
-        "category_other": category_other or "",
-        "default_unit_select": default_unit_select,
-        "default_unit_other": default_unit_other or "",
-        "quantity": quantity,
-    }
+    form_data = build_new_form_data(
+        name=normalized_name,
+        category_select=category_select,
+        category_other=category_other,
+        default_unit_select=default_unit_select,
+        default_unit_other=default_unit_other,
+        quantity=quantity,
+    )
 
-    def render_edit_error(error_message: str):
+    def render_edit_error(
+        error_message: str,
+        status_code: int = 400,
+    ):
         return templates.TemplateResponse(
             request=request,
             name="ingredients/edit.html",
@@ -407,10 +749,10 @@ def update_ingredient_route(
                 "form_data": form_data,
                 "error_message": error_message,
             },
-            status_code=400,
+            status_code=status_code,
         )
 
-    if not name:
+    if not normalized_name:
         return render_edit_error(
             "食材名を入力してください。"
         )
@@ -445,11 +787,29 @@ def update_ingredient_route(
             "在庫数量は0.5刻みで入力してください。"
         )
 
+    assert category is not None
+    assert default_unit is not None
+
+    duplicate_ingredient = get_ingredient_by_name(
+        db=db,
+        name=normalized_name,
+        exclude_ingredient_id=ingredient_id,
+    )
+
+    if duplicate_ingredient is not None:
+        return render_edit_error(
+            (
+                f"「{normalized_name}」はすでに"
+                "別の食材として登録されています。"
+            ),
+            status_code=409,
+        )
+
     try:
         update_ingredient(
             db=db,
             ingredient_id=ingredient_id,
-            name=name,
+            name=normalized_name,
             category=category,
             default_unit=default_unit,
             quantity=quantity,
@@ -462,7 +822,7 @@ def update_ingredient_route(
         )
 
     return RedirectResponse(
-        url="/",
+        url=f"/#ingredient-{ingredient_id}",
         status_code=303,
     )
 
@@ -540,10 +900,16 @@ def confirm_delete_ingredient(
     db: Session = Depends(get_db),
 ):
     """食材削除確認画面を表示する。"""
-    ingredient = get_ingredient_by_id(db, ingredient_id)
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
 
     if ingredient is None:
-        return RedirectResponse(url="/", status_code=303)
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
 
     return templates.TemplateResponse(
         request=request,
@@ -565,4 +931,7 @@ def delete_ingredient_route(
         ingredient_id=ingredient_id,
     )
 
-    return RedirectResponse(url="/", status_code=303)
+    return RedirectResponse(
+        url="/",
+        status_code=303,
+    )
