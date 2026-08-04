@@ -1,6 +1,12 @@
-from datetime import datetime 
+from datetime import date, datetime
 
-from sqlalchemy import CheckConstraint, DateTime, Float, ForeignKey
+from sqlalchemy import (
+    CheckConstraint,
+    Date,
+    DateTime,
+    Float,
+    ForeignKey,
+)
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
@@ -9,18 +15,37 @@ from app.database import Base
 class Inventory(Base):
     __tablename__ = "inventories"
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        primary_key=True,
+        autoincrement=True,
+    )
+
     ingredient_id: Mapped[int] = mapped_column(
-        ForeignKey("ingredients.id", ondelete="RESTRICT"),
+        ForeignKey(
+            "ingredients.id",
+            ondelete="RESTRICT",
+        ),
         nullable=False,
         index=True,
     )
-    quantity: Mapped[float] = mapped_column(Float, nullable=False, default = 0)
+
+    quantity: Mapped[float] = mapped_column(
+        Float,
+        nullable=False,
+        default=0,
+    )
+
+    expiration_date: Mapped[date | None] = mapped_column(
+        Date,
+        nullable=True,
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.now,
         nullable=False,
     )
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
         default=datetime.now,
@@ -34,5 +59,8 @@ class Inventory(Base):
     )
 
     __table_args__ = (
-        CheckConstraint("quantity >= 0", name="check_quantity_non_negative"),
+        CheckConstraint(
+            "quantity >= 0",
+            name="check_quantity_non_negative",
+        ),
     )
