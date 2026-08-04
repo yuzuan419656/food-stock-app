@@ -343,4 +343,38 @@
         {% endif %}
     {% endif %}
 </section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const scrollStorageKey =
+            "ingredientListScrollPosition";
+
+        const savedScrollPosition =
+            sessionStorage.getItem(scrollStorageKey);
+
+        if (savedScrollPosition !== null) {
+            window.scrollTo({
+                top: Number(savedScrollPosition),
+                left: 0,
+                behavior: "auto",
+            });
+
+            sessionStorage.removeItem(
+                scrollStorageKey
+            );
+        }
+
+        const quantityForms =
+            document.querySelectorAll(".quantity-form");
+
+        quantityForms.forEach((form) => {
+            form.addEventListener("submit", () => {
+                sessionStorage.setItem(
+                    scrollStorageKey,
+                    String(window.scrollY)
+                );
+            });
+        });
+    });
+</script>
 {% endblock %}

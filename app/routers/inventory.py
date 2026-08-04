@@ -33,10 +33,6 @@ def increment_inventory_quantity(
         out_of_stock_first=out_of_stock_first,
     )
 
-    redirect_url = (
-        f"{redirect_url}#ingredient-{ingredient_id}"
-    )
-
     return RedirectResponse(
         url=redirect_url,
         status_code=303,
@@ -64,10 +60,6 @@ def decrement_inventory_quantity(
         category_filters=category_filters,
         sort=sort,
         out_of_stock_first=out_of_stock_first,
-    )
-
-    redirect_url = (
-        f"{redirect_url}#ingredient-{ingredient_id}"
     )
 
     return RedirectResponse(

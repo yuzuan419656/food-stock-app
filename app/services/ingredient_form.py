@@ -82,3 +82,30 @@ def build_duplicate_form_data(
         "quantity": quantity,
         "default_unit": default_unit,
     }
+
+
+def build_duplicate_context(
+    existing_ingredient,
+    existing_quantity: float,
+    name: str,
+    category: str,
+    quantity: float,
+    default_unit: str,
+    error_message: str | None = None,
+) -> dict:
+    """重複確認画面へ渡すcontextを作成する。"""
+    return {
+        "existing_ingredient": existing_ingredient,
+        "existing_quantity": existing_quantity,
+        "form_data": build_duplicate_form_data(
+            name=name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+        ),
+        "can_add_quantity": (
+            existing_ingredient.default_unit
+            == default_unit
+        ),
+        "error_message": error_message,
+    }
