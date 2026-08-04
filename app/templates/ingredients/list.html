@@ -56,10 +56,10 @@
                     onchange="this.form.submit()"
                 >
                     <option
-                        value="id"
-                        {% if sort == "id" %}selected{% endif %}
+                        value="category"
+                        {% if sort == "category" %}selected{% endif %}
                     >
-                        登録順
+                        カテゴリ順
                     </option>
 
                     <option
@@ -70,10 +70,10 @@
                     </option>
 
                     <option
-                        value="category"
-                        {% if sort == "category" %}selected{% endif %}
+                        value="id"
+                        {% if sort == "id" %}selected{% endif %}
                     >
-                        カテゴリ順
+                        登録順
                     </option>
                 </select>
             </div>
@@ -104,6 +104,49 @@
         </div>
     </div>
 
+    {% if
+        keyword
+        or category_filters
+        or out_of_stock_first
+        or sort != "category"
+    %}
+        <div class="active-conditions">
+            <p class="active-conditions-title">
+                適用中の条件
+            </p>
+
+            <ul class="active-condition-list">
+                {% if keyword %}
+                    <li>
+                        食材名：{{ keyword }}
+                    </li>
+                {% endif %}
+
+                {% for category in category_filters %}
+                    <li>
+                        カテゴリ：{{ category }}
+                    </li>
+                {% endfor %}
+
+                {% if out_of_stock_first %}
+                    <li>
+                        在庫なし優先
+                    </li>
+                {% endif %}
+
+                {% if sort == "name" %}
+                    <li>
+                        並び替え：食材名順
+                    </li>
+                {% elif sort == "id" %}
+                    <li>
+                        並び替え：登録順
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+
     <p>
         <a href="/ingredients/new">
             新しい食材を登録する
@@ -114,7 +157,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>食材名</th>
 
                     <th>
@@ -199,8 +241,6 @@
                     {% endif %}
 
                     <tr id="ingredient-{{ ingredient.id }}">
-                        <td>{{ ingredient.id }}</td>
-
                         <td>
                             {{ ingredient.name }}
                         </td>
@@ -256,8 +296,8 @@
 
                                 <div class="quantity-display">
                                     <span>
-                                        {% if quantity == quantity|int %}
-                                            {{ quantity|int }}
+                                        {% if quantity == quantity | int %}
+                                            {{ quantity | int }}
                                         {% else %}
                                             {{ quantity }}
                                         {% endif %}

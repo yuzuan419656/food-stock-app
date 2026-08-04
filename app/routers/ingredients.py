@@ -92,13 +92,13 @@ def list_ingredients(
     request: Request,
     keyword: str | None = Query(None),
     category_filters: list[str] = Query(default=[]),
-    sort: str = Query("id"),
+    sort: str = Query("category"),
     out_of_stock_first: bool = Query(False),
     db: Session = Depends(get_db),
 ):
     """食材一覧画面を表示する。"""
     if sort not in ["id", "name", "category"]:
-        sort = "id"
+        sort = "category"
 
     categories = get_categories(db)
 

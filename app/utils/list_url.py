@@ -4,7 +4,7 @@ from urllib.parse import urlencode
 def build_list_redirect_url(
     keyword: str | None = None,
     category_filters: list[str] | None = None,
-    sort: str = "id",
+    sort: str = "category",
     out_of_stock_first: bool = False,
 ) -> str:
     """一覧画面の表示条件を維持したURLを作成する。"""

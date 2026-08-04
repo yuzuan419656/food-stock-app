@@ -15,7 +15,7 @@ def increment_inventory_quantity(
     ingredient_id: int,
     keyword: str | None = Form(None),
     category_filters: list[str] = Form(default=[]),
-    sort: str = Form("id"),
+    sort: str = Form("category"),
     out_of_stock_first: bool = Form(False),
     db: Session = Depends(get_db),
 ):
@@ -44,7 +44,7 @@ def decrement_inventory_quantity(
     ingredient_id: int,
     keyword: str | None = Form(None),
     category_filters: list[str] = Form(default=[]),
-    sort: str = Form("id"),
+    sort: str = Form("category"),
     out_of_stock_first: bool = Form(False),
     db: Session = Depends(get_db),
 ):
