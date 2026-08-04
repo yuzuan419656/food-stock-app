@@ -6,6 +6,9 @@ from app.services.ingredient_form import (
     resolve_selected_option,
 )
 
+from datetime import date
+
+
 
 def test_resolve_selected_option_returns_selected_value():
     """通常の選択肢がそのまま返されることを確認する。"""
@@ -112,6 +115,7 @@ def test_build_new_form_data():
         "default_unit_select": "個",
         "default_unit_other": "",
         "quantity": 3,
+        "expiration_date": "",
     }
 
 
@@ -122,6 +126,7 @@ def test_build_duplicate_form_data():
         category="野菜",
         quantity=3,
         default_unit="個",
+        expiration_date=None,
     )
 
     assert result == {
@@ -129,4 +134,18 @@ def test_build_duplicate_form_data():
         "category": "野菜",
         "quantity": 3,
         "default_unit": "個",
+        "expiration_date": "",
     }
+
+
+    def test_build_duplicate_form_data_with_expiration_date():
+        """消費期限がYYYY-MM-DD形式で保持されることを確認する。"""
+        result = build_duplicate_form_data(
+            name="トマト",
+            category="野菜",
+            quantity=3,
+            default_unit="個",
+            expiration_date=date(2026, 8, 10),
+        )
+
+        assert result["expiration_date"] == "2026-08-10"
