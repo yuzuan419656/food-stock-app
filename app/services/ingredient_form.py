@@ -1,3 +1,5 @@
+from datetime import date
+
 from app.constants.ingredient_options import OTHER_OPTION
 
 
@@ -50,6 +52,44 @@ def get_option_form_values(
     return OTHER_OPTION, normalized_value
 
 
+def parse_optional_date(
+    value: str | None,
+) -> tuple[date | None, str | None]:
+    """
+    フォームから送信された日付文字列をdateへ変換する。
+
+    未入力の場合はNoneを返す。
+    """
+    normalized_value = (value or "").strip()
+
+    if not normalized_value:
+        return None, None
+
+    try:
+        parsed_date = date.fromisoformat(normalized_value)
+
+    except ValueError:
+        return (
+            None,
+            "消費期限の日付形式が正しくありません。",
+        )
+
+    return parsed_date, None
+
+
+def date_to_form_value(
+    value: date | None,
+) -> str:
+    """
+    dateをHTMLの日付入力欄で使用できる
+    YYYY-MM-DD形式へ変換する。
+    """
+    if value is None:
+        return ""
+
+    return value.isoformat()
+
+
 def build_new_form_data(
     name: str,
     category_select: str,
@@ -57,6 +97,7 @@ def build_new_form_data(
     default_unit_select: str,
     default_unit_other: str | None,
     quantity: float,
+    expiration_date: str | None = None,
 ) -> dict:
     """新規登録・編集画面へ渡すフォームデータを作成する。"""
     return {
@@ -66,6 +107,7 @@ def build_new_form_data(
         "default_unit_select": default_unit_select,
         "default_unit_other": default_unit_other or "",
         "quantity": quantity,
+        "expiration_date": expiration_date or "",
     }
 
 
@@ -74,6 +116,7 @@ def build_duplicate_form_data(
     category: str,
     quantity: float,
     default_unit: str,
+    expiration_date: date | None,
 ) -> dict:
     """重複確認画面へ渡すフォームデータを作成する。"""
     return {
@@ -81,27 +124,36 @@ def build_duplicate_form_data(
         "category": category,
         "quantity": quantity,
         "default_unit": default_unit,
+        "expiration_date": date_to_form_value(
+            expiration_date
+        ),
     }
 
 
 def build_duplicate_context(
     existing_ingredient,
     existing_quantity: float,
+    existing_expiration_date: date | None,
     name: str,
     category: str,
     quantity: float,
     default_unit: str,
+    expiration_date: date | None,
     error_message: str | None = None,
 ) -> dict:
     """重複確認画面へ渡すcontextを作成する。"""
     return {
         "existing_ingredient": existing_ingredient,
         "existing_quantity": existing_quantity,
+        "existing_expiration_date": (
+            existing_expiration_date
+        ),
         "form_data": build_duplicate_form_data(
             name=name,
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            expiration_date=expiration_date,
         ),
         "can_add_quantity": (
             existing_ingredient.default_unit

@@ -43,6 +43,17 @@
             </tr>
 
             <tr>
+                <th>消費期限</th>
+                <td>
+                    {% if existing_expiration_date %}
+                        {{ existing_expiration_date }}
+                    {% else %}
+                        未設定
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
                 <th>単位</th>
                 <td>
                     {{ existing_ingredient.default_unit or "-" }}
@@ -72,6 +83,17 @@
                         {{ form_data.quantity | int }}
                     {% else %}
                         {{ form_data.quantity }}
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>消費期限</th>
+                <td>
+                    {% if form_data.expiration_date %}
+                        {{ form_data.expiration_date }}
+                    {% else %}
+                        未設定
                     {% endif %}
                 </td>
             </tr>
@@ -117,6 +139,12 @@
             type="hidden"
             name="quantity"
             value="{{ form_data.quantity }}"
+        >
+
+        <input
+            type="hidden"
+            name="expiration_date"
+            value="{{ form_data.expiration_date }}"
         >
 
         <input

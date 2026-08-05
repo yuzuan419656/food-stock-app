@@ -1,3 +1,6 @@
+from datetime import date, timedelta
+from urllib.parse import urlencode
+
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -18,12 +21,18 @@ from app.crud.ingredient import (
     get_ingredient_by_name,
     update_ingredient,
 )
-from app.crud.inventory import get_inventory_quantity
+from app.crud.inventory import (
+    get_inventory_expiration_date,
+    get_inventory_quantity,
+    update_inventory_expiration_date,
+)
 from app.database import get_db
 from app.services.ingredient_form import (
     build_duplicate_context,
     build_new_form_data,
+    date_to_form_value,
     get_option_form_values,
+    parse_optional_date,
     resolve_selected_option,
 )
 from app.utils.ingredient_name import normalize_ingredient_name
@@ -33,6 +42,121 @@ from app.utils.quantity import is_valid_quantity_step
 router = APIRouter()
 
 templates = Jinja2Templates(directory="app/templates")
+
+
+EXPIRATION_WARNING_DAYS = 3
+
+
+def build_expiration_display_by_ingredient_id(
+    ingredients,
+) -> dict[int, dict[str, str]]:
+    """一覧画面用の消費期限表示情報を食材IDごとに作成する。"""
+    today = date.today()
+    warning_limit = today + timedelta(
+        days=EXPIRATION_WARNING_DAYS
+    )
+
+    expiration_display_by_ingredient_id = {}
+
+    for ingredient in ingredients:
+        expiration_date = get_inventory_expiration_date(
+            ingredient
+        )
+
+        if expiration_date is None:
+            expiration_display = {
+                "date": "未設定",
+                "status": "unset",
+                "label": "",
+            }
+
+        elif expiration_date < today:
+            expiration_display = {
+                "date": date_to_form_value(expiration_date),
+                "status": "expired",
+                "label": "期限切れ",
+            }
+
+        elif expiration_date <= warning_limit:
+            expiration_display = {
+                "date": date_to_form_value(expiration_date),
+                "status": "expiring-soon",
+                "label": "期限間近",
+            }
+
+        else:
+            expiration_display = {
+                "date": date_to_form_value(expiration_date),
+                "status": "normal",
+                "label": "",
+            }
+
+        expiration_display_by_ingredient_id[
+            ingredient.id
+        ] = expiration_display
+
+    return expiration_display_by_ingredient_id
+
+
+def build_ingredient_list_redirect_url(
+    ingredient_id: int,
+    keyword: str | None,
+    category_filters: list[str],
+    sort: str,
+    out_of_stock_first: bool,
+    expiration_message: str | None = None,
+    expiration_error: str | None = None,
+) -> str:
+    """一覧条件を維持したリダイレクトURLを作成する。"""
+    query_params: list[tuple[str, str]] = []
+
+    if keyword:
+        query_params.append(
+            ("keyword", keyword)
+        )
+
+    for category in category_filters:
+        query_params.append(
+            ("category_filters", category)
+        )
+
+    query_params.append(
+        ("sort", sort)
+    )
+
+    if out_of_stock_first:
+        query_params.append(
+            ("out_of_stock_first", "true")
+        )
+
+    if expiration_message:
+        query_params.append(
+            (
+                "expiration_message",
+                expiration_message,
+            )
+        )
+
+    if expiration_error:
+        query_params.append(
+            (
+                "expiration_error",
+                expiration_error,
+            )
+        )
+
+    query_string = urlencode(
+        query_params,
+        doseq=True,
+    )
+
+    if query_string:
+        return (
+            f"/?{query_string}"
+            f"#ingredient-{ingredient_id}"
+        )
+
+    return f"/#ingredient-{ingredient_id}"
 
 
 def render_new_ingredient_error(
@@ -63,6 +187,7 @@ def render_duplicate_confirmation(
     category: str,
     quantity: float,
     default_unit: str,
+    expiration_date: date | None,
     error_message: str | None = None,
     status_code: int = 409,
 ):
@@ -72,10 +197,16 @@ def render_duplicate_confirmation(
         existing_quantity=get_inventory_quantity(
             existing_ingredient
         ),
+        existing_expiration_date=(
+            get_inventory_expiration_date(
+                existing_ingredient
+            )
+        ),
         name=name,
         category=category,
         quantity=quantity,
         default_unit=default_unit,
+        expiration_date=expiration_date,
         error_message=error_message,
     )
 
@@ -94,6 +225,8 @@ def list_ingredients(
     category_filters: list[str] = Query(default=[]),
     sort: str = Query("category"),
     out_of_stock_first: bool = Query(False),
+    expiration_message: str | None = Query(None),
+    expiration_error: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """食材一覧画面を表示する。"""
@@ -110,6 +243,12 @@ def list_ingredients(
         out_of_stock_first=out_of_stock_first,
     )
 
+    expiration_display_by_ingredient_id = (
+        build_expiration_display_by_ingredient_id(
+            ingredients
+        )
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/list.html",
@@ -120,7 +259,89 @@ def list_ingredients(
             "categories": categories,
             "sort": sort,
             "out_of_stock_first": out_of_stock_first,
+            "expiration_display_by_ingredient_id": (
+                expiration_display_by_ingredient_id
+            ),
+            "expiration_message": expiration_message,
+            "expiration_error": expiration_error,
         },
+    )
+
+
+@router.post(
+    "/ingredients/{ingredient_id}/expiration-date"
+)
+def update_expiration_date_route(
+    ingredient_id: int,
+    expiration_date: str | None = Form(None),
+    keyword: str | None = Form(None),
+    category_filters: list[str] = Form(default=[]),
+    sort: str = Form("category"),
+    out_of_stock_first: bool = Form(False),
+    db: Session = Depends(get_db),
+):
+    """一覧画面から消費期限だけを更新する。"""
+    if sort not in ["id", "name", "category"]:
+        sort = "category"
+
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    parsed_expiration_date, expiration_date_error = (
+        parse_optional_date(expiration_date)
+    )
+
+    if expiration_date_error:
+        redirect_url = (
+            build_ingredient_list_redirect_url(
+                ingredient_id=ingredient_id,
+                keyword=keyword,
+                category_filters=category_filters,
+                sort=sort,
+                out_of_stock_first=(
+                    out_of_stock_first
+                ),
+                expiration_error=(
+                    expiration_date_error
+                ),
+            )
+        )
+
+        return RedirectResponse(
+            url=redirect_url,
+            status_code=303,
+        )
+
+    update_inventory_expiration_date(
+        db=db,
+        ingredient_id=ingredient_id,
+        expiration_date=parsed_expiration_date,
+    )
+
+    redirect_url = (
+        build_ingredient_list_redirect_url(
+            ingredient_id=ingredient_id,
+            keyword=keyword,
+            category_filters=category_filters,
+            sort=sort,
+            out_of_stock_first=out_of_stock_first,
+            expiration_message=(
+                "消費期限を更新しました。"
+            ),
+        )
+    )
+
+    return RedirectResponse(
+        url=redirect_url,
+        status_code=303,
     )
 
 
@@ -143,6 +364,7 @@ def new_ingredient(
                 "default_unit_select": "",
                 "default_unit_other": "",
                 "quantity": 0,
+                "expiration_date": "",
             },
         },
     )
@@ -157,6 +379,7 @@ def create_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     """食材を新規登録する。"""
@@ -169,6 +392,7 @@ def create_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        expiration_date=expiration_date,
     )
 
     if not normalized_name:
@@ -224,6 +448,17 @@ def create_ingredient_route(
             ),
         )
 
+    parsed_expiration_date, expiration_date_error = (
+        parse_optional_date(expiration_date)
+    )
+
+    if expiration_date_error:
+        return render_new_ingredient_error(
+            request=request,
+            form_data=form_data,
+            error_message=expiration_date_error,
+        )
+
     assert category is not None
     assert default_unit is not None
 
@@ -240,6 +475,7 @@ def create_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            expiration_date=parsed_expiration_date,
         )
 
     try:
@@ -249,6 +485,7 @@ def create_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            expiration_date=parsed_expiration_date,
         )
 
     except IntegrityError:
@@ -269,6 +506,7 @@ def create_ingredient_route(
                 category=category,
                 quantity=quantity,
                 default_unit=default_unit,
+                expiration_date=parsed_expiration_date,
             )
 
         return render_new_ingredient_error(
@@ -315,6 +553,10 @@ def edit_ingredient(
 
     quantity = get_inventory_quantity(ingredient)
 
+    expiration_date = get_inventory_expiration_date(
+        ingredient
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/edit.html",
@@ -330,6 +572,9 @@ def edit_ingredient(
                 "default_unit_select": unit_select,
                 "default_unit_other": unit_other,
                 "quantity": quantity,
+                "expiration_date": date_to_form_value(
+                    expiration_date
+                ),
             },
         },
     )
@@ -345,9 +590,10 @@ def update_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """食材情報と在庫数量を更新する。"""
+    """食材情報・在庫数量・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -368,6 +614,7 @@ def update_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        expiration_date=expiration_date,
     )
 
     def render_edit_error(
@@ -423,6 +670,15 @@ def update_ingredient_route(
             "在庫数量は0.5刻みで入力してください。"
         )
 
+    parsed_expiration_date, expiration_date_error = (
+        parse_optional_date(expiration_date)
+    )
+
+    if expiration_date_error:
+        return render_edit_error(
+            expiration_date_error
+        )
+
     assert category is not None
     assert default_unit is not None
 
@@ -449,6 +705,7 @@ def update_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            expiration_date=parsed_expiration_date,
         )
 
     except IntegrityError:
