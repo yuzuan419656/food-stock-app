@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, timedelta
 
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
@@ -40,6 +40,60 @@ from app.utils.quantity import is_valid_quantity_step
 router = APIRouter()
 
 templates = Jinja2Templates(directory="app/templates")
+
+
+EXPIRATION_WARNING_DAYS = 3
+
+
+def build_expiration_display_by_ingredient_id(
+    ingredients,
+) -> dict[int, dict[str, str]]:
+    """一覧画面用の消費期限表示情報を食材IDごとに作成する。"""
+    today = date.today()
+    warning_limit = today + timedelta(
+        days=EXPIRATION_WARNING_DAYS
+    )
+
+    expiration_display_by_ingredient_id = {}
+
+    for ingredient in ingredients:
+        expiration_date = get_inventory_expiration_date(
+            ingredient
+        )
+
+        if expiration_date is None:
+            expiration_display = {
+                "date": "未設定",
+                "status": "unset",
+                "label": "",
+            }
+
+        elif expiration_date < today:
+            expiration_display = {
+                "date": date_to_form_value(expiration_date),
+                "status": "expired",
+                "label": "期限切れ",
+            }
+
+        elif expiration_date <= warning_limit:
+            expiration_display = {
+                "date": date_to_form_value(expiration_date),
+                "status": "expiring-soon",
+                "label": "期限間近",
+            }
+
+        else:
+            expiration_display = {
+                "date": date_to_form_value(expiration_date),
+                "status": "normal",
+                "label": "",
+            }
+
+        expiration_display_by_ingredient_id[
+            ingredient.id
+        ] = expiration_display
+
+    return expiration_display_by_ingredient_id
 
 
 def render_new_ingredient_error(
@@ -124,6 +178,12 @@ def list_ingredients(
         out_of_stock_first=out_of_stock_first,
     )
 
+    expiration_display_by_ingredient_id = (
+        build_expiration_display_by_ingredient_id(
+            ingredients
+        )
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/list.html",
@@ -134,6 +194,9 @@ def list_ingredients(
             "categories": categories,
             "sort": sort,
             "out_of_stock_first": out_of_stock_first,
+            "expiration_display_by_ingredient_id": (
+                expiration_display_by_ingredient_id
+            ),
         },
     )
 

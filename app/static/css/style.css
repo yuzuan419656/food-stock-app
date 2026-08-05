@@ -289,3 +289,42 @@ button {
     gap: 16px;
     margin-top: 24px;
 }
+
+/* 消費期限 */
+
+.expiration-cell {
+    white-space: nowrap;
+}
+
+.expiration-date {
+    display: block;
+}
+
+.expiration-status-label {
+    display: block;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.expiration-expired {
+    background-color: #fdeaea;
+}
+
+.expiration-expired .expiration-date,
+.expiration-expired .expiration-status-label {
+    color: #b42318;
+}
+
+.expiration-expiring-soon {
+    background-color: #fff4d6;
+}
+
+.expiration-expiring-soon .expiration-date,
+.expiration-expiring-soon .expiration-status-label {
+    color: #8a5a00;
+}
+
+.expiration-unset {
+    color: #777;
+}

@@ -227,6 +227,7 @@
                     </th>
 
                     <th>在庫数量</th>
+                    <th>消費期限</th>
                     <th>単位</th>
                     <th>操作</th>
                 </tr>
@@ -239,6 +240,12 @@
                     {% else %}
                         {% set quantity = 0 %}
                     {% endif %}
+
+                    {% set expiration_info =
+                        expiration_display_by_ingredient_id[
+                            ingredient.id
+                        ]
+                    %}
 
                     <tr id="ingredient-{{ ingredient.id }}">
                         <td>
@@ -352,6 +359,20 @@
                                     </button>
                                 </form>
                             </div>
+                        </td>
+
+                        <td
+                            class="expiration-cell expiration-{{ expiration_info.status }}"
+                        >
+                            <span class="expiration-date">
+                                {{ expiration_info.date }}
+                            </span>
+
+                            {% if expiration_info.label %}
+                                <span class="expiration-status-label">
+                                    {{ expiration_info.label }}
+                                </span>
+                            {% endif %}
                         </td>
 
                         <td>
