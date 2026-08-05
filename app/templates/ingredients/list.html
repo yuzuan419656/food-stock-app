@@ -87,6 +87,20 @@
                     >
                         登録順
                     </option>
+
+                    <option
+                        value="expiration_asc"
+                        {% if sort == "expiration_asc" %}selected{% endif %}
+                    >
+                        消費期限が近い順
+                    </option>
+
+                    <option
+                        value="expiration_desc"
+                        {% if sort == "expiration_desc" %}selected{% endif %}
+                    >
+                        消費期限が遠い順
+                    </option>
                 </select>
             </div>
         </form>
@@ -153,6 +167,14 @@
                 {% elif sort == "id" %}
                     <li>
                         並び替え：登録順
+                    </li>
+                {% elif sort == "expiration_asc" %}
+                    <li>
+                        並び替え：消費期限が近い順
+                    </li>
+                {% elif sort == "expiration_desc" %}
+                    <li>
+                        並び替え：消費期限が遠い順
                     </li>
                 {% endif %}
             </ul>
@@ -375,83 +397,30 @@
 
                         <td
                             class="expiration-cell expiration-{{ expiration_info.status }}"
+                            data-ingredient-id="{{ ingredient.id }}"
                         >
-                            <div class="expiration-display">
-                                <span class="expiration-date">
-                                    {{ expiration_info.date }}
-                                </span>
-
-                                {% if expiration_info.label %}
-                                    <span class="expiration-status-label">
-                                        {{ expiration_info.label }}
-                                    </span>
-                                {% endif %}
-
-                                <button
-                                    type="button"
-                                    class="expiration-edit-button"
-                                >
-                                    変更
-                                </button>
-                            </div>
-
-                            <form
-                                action="/ingredients/{{ ingredient.id }}/expiration-date"
-                                method="post"
-                                class="expiration-edit-form"
-                                hidden
-                            >
+                            <div class="expiration-inline-editor">
                                 <input
                                     type="date"
-                                    name="expiration_date"
                                     value="{% if expiration_info.status != 'unset' %}{{ expiration_info.date }}{% endif %}"
                                     class="expiration-date-input"
+                                    aria-label="{{ ingredient.name }}の消費期限"
                                 >
 
-                                <input
-                                    type="hidden"
-                                    name="keyword"
-                                    value="{{ keyword }}"
+                                <span
+                                    class="expiration-status-label"
+                                    {% if not expiration_info.label %}
+                                        hidden
+                                    {% endif %}
                                 >
+                                    {{ expiration_info.label }}
+                                </span>
 
-                                {% for category in category_filters %}
-                                    <input
-                                        type="hidden"
-                                        name="category_filters"
-                                        value="{{ category }}"
-                                    >
-                                {% endfor %}
-
-                                <input
-                                    type="hidden"
-                                    name="sort"
-                                    value="{{ sort }}"
-                                >
-
-                                {% if out_of_stock_first %}
-                                    <input
-                                        type="hidden"
-                                        name="out_of_stock_first"
-                                        value="true"
-                                    >
-                                {% endif %}
-
-                                <div class="expiration-edit-actions">
-                                    <button
-                                        type="submit"
-                                        class="expiration-save-button"
-                                    >
-                                        保存
-                                    </button>
-
-                                    <button
-                                        type="button"
-                                        class="expiration-cancel-button"
-                                    >
-                                        取消
-                                    </button>
-                                </div>
-                            </form>
+                                <span
+                                    class="expiration-save-status"
+                                    aria-live="polite"
+                                ></span>
+                            </div>
                         </td>
 
                         <td>
@@ -522,68 +491,149 @@
             );
 
         expirationCells.forEach((cell) => {
-            const display =
-                cell.querySelector(
-                    ".expiration-display"
-                );
-
-            const editForm =
-                cell.querySelector(
-                    ".expiration-edit-form"
-                );
-
-            const editButton =
-                cell.querySelector(
-                    ".expiration-edit-button"
-                );
-
-            const cancelButton =
-                cell.querySelector(
-                    ".expiration-cancel-button"
-                );
+            const ingredientId =
+                cell.dataset.ingredientId;
 
             const dateInput =
                 cell.querySelector(
                     ".expiration-date-input"
                 );
 
+            const statusLabel =
+                cell.querySelector(
+                    ".expiration-status-label"
+                );
+
+            const saveStatus =
+                cell.querySelector(
+                    ".expiration-save-status"
+                );
+
             if (
-                !display
-                || !editForm
-                || !editButton
-                || !cancelButton
+                !ingredientId
                 || !dateInput
+                || !statusLabel
+                || !saveStatus
             ) {
                 return;
             }
 
-            const initialValue = dateInput.value;
+            let savedValue = dateInput.value;
+            let saveMessageTimer = null;
 
-            editButton.addEventListener(
-                "click",
-                () => {
-                    display.hidden = true;
-                    editForm.hidden = false;
-                    dateInput.focus();
-                }
-            );
+            const setExpirationStatusClass = (
+                status
+            ) => {
+                cell.classList.remove(
+                    "expiration-unset",
+                    "expiration-expired",
+                    "expiration-expiring-soon",
+                    "expiration-normal"
+                );
 
-            cancelButton.addEventListener(
-                "click",
-                () => {
-                    dateInput.value = initialValue;
-                    editForm.hidden = true;
-                    display.hidden = false;
-                }
-            );
+                cell.classList.add(
+                    `expiration-${status}`
+                );
+            };
 
-            editForm.addEventListener(
-                "submit",
-                () => {
-                    sessionStorage.setItem(
-                        scrollStorageKey,
-                        String(window.scrollY)
+            const showSaveMessage = (
+                message
+            ) => {
+                if (saveMessageTimer !== null) {
+                    window.clearTimeout(
+                        saveMessageTimer
                     );
+                }
+
+                saveStatus.textContent =
+                    message;
+
+                saveMessageTimer =
+                    window.setTimeout(() => {
+                        saveStatus.textContent =
+                            "";
+                    }, 1200);
+            };
+
+            dateInput.addEventListener(
+                "change",
+                async () => {
+                    const previousValue =
+                        savedValue;
+
+                    const selectedValue =
+                        dateInput.value;
+
+                    dateInput.disabled = true;
+                    saveStatus.textContent =
+                        "保存中…";
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "expiration_date",
+                        selectedValue
+                    );
+
+                    try {
+                        const response =
+                            await fetch(
+                                (
+                                    `/ingredients/${ingredientId}`
+                                    + "/expiration-date/auto"
+                                ),
+                                {
+                                    method: "POST",
+                                    body: formData,
+                                }
+                            );
+
+                        const result =
+                            await response.json();
+
+                        if (
+                            !response.ok
+                            || !result.success
+                        ) {
+                            throw new Error(
+                                result.message
+                                || "保存に失敗しました。"
+                            );
+                        }
+
+                        savedValue =
+                            selectedValue;
+
+                        statusLabel.textContent =
+                            result.label;
+
+                        statusLabel.hidden =
+                            !result.label;
+
+                        setExpirationStatusClass(
+                            result.status
+                        );
+
+                        showSaveMessage(
+                            "保存しました"
+                        );
+
+                    } catch (error) {
+                        dateInput.value =
+                            previousValue;
+
+                        showSaveMessage(
+                            (
+                                error.message
+                                || "保存に失敗しました。"
+                            )
+                        );
+
+                    } finally {
+                        dateInput.disabled =
+                            false;
+                    }
                 }
             );
         });

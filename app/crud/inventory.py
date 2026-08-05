@@ -1,6 +1,6 @@
 from datetime import date
 
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.crud.ingredient import get_ingredient_by_id
 from app.models.ingredient import Ingredient
@@ -178,4 +178,87 @@ def update_inventory_expiration_date(
     db.commit()
     db.refresh(ingredient)
 
-    return ingredient
+    return ingredient   
+
+
+def update_inventory_expiration_dates(
+    db: Session,
+    expiration_updates: list[
+        tuple[int, date | None]
+    ],
+) -> int:
+    """
+    複数の食材の消費期限を一括更新する。
+
+    すべての更新に成功した場合だけcommitする。
+    """
+    if not expiration_updates:
+        return 0
+
+    ingredient_ids = [
+        ingredient_id
+        for ingredient_id, _ in expiration_updates
+    ]
+
+    ingredients = (
+        db.query(Ingredient)
+        .options(
+            joinedload(Ingredient.inventories)
+        )
+        .filter(
+            Ingredient.id.in_(ingredient_ids)
+        )
+        .all()
+    )
+
+    ingredient_by_id = {
+        ingredient.id: ingredient
+        for ingredient in ingredients
+    }
+
+    missing_ingredient_ids = [
+        ingredient_id
+        for ingredient_id in ingredient_ids
+        if ingredient_id not in ingredient_by_id
+    ]
+
+    if missing_ingredient_ids:
+        raise ValueError(
+            "更新対象の食材が見つかりません。"
+        )
+
+    try:
+        for (
+            ingredient_id,
+            expiration_date,
+        ) in expiration_updates:
+            ingredient = ingredient_by_id[
+                ingredient_id
+            ]
+
+            if ingredient.inventories:
+                inventory = (
+                    ingredient.inventories[0]
+                )
+                inventory.expiration_date = (
+                    expiration_date
+                )
+
+            else:
+                inventory = Inventory(
+                    ingredient_id=ingredient.id,
+                    quantity=0,
+                    expiration_date=(
+                        expiration_date
+                    ),
+                )
+
+                db.add(inventory)
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return len(expiration_updates)

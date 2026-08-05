@@ -285,9 +285,18 @@ def get_filtered_ingredients(
 
     order_conditions = []
 
-    if out_of_stock_first:
+    needs_inventory_join = (
+        out_of_stock_first
+        or sort in [
+            "expiration_asc",
+            "expiration_desc",
+        ]
+    )
+
+    if needs_inventory_join:
         query = query.outerjoin(Inventory)
 
+    if out_of_stock_first:
         order_conditions.append(
             case(
                 (
@@ -312,6 +321,42 @@ def get_filtered_ingredients(
         order_conditions.extend(
             [
                 Ingredient.category,
+                Ingredient.name,
+            ]
+        )
+
+    elif sort == "expiration_asc":
+        # 消費期限未設定を最後にする。
+        order_conditions.extend(
+            [
+                case(
+                    (
+                        Inventory.expiration_date.is_(
+                            None
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                ),
+                Inventory.expiration_date.asc(),
+                Ingredient.name,
+            ]
+        )
+
+    elif sort == "expiration_desc":
+        # 消費期限未設定を最後にする。
+        order_conditions.extend(
+            [
+                case(
+                    (
+                        Inventory.expiration_date.is_(
+                            None
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                ),
+                Inventory.expiration_date.desc(),
                 Ingredient.name,
             ]
         )

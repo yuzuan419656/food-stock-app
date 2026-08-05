@@ -1,4 +1,5 @@
 from datetime import date
+from fastapi.testclient import TestClient
 
 from sqlalchemy.orm import Session
 
@@ -169,4 +170,86 @@ def test_update_expiration_date_for_missing_ingredient(
     )
 
     assert result is None
-    
+
+
+def test_list_accepts_expiration_ascending_sort(
+    client: TestClient,
+    db_session: Session,
+):
+    """一覧画面で消費期限が近い順を指定できる。"""
+    create_ingredient(
+        db=db_session,
+        name="牛乳",
+        category="乳製品",
+        default_unit="本",
+        quantity=1,
+        expiration_date=date(2026, 8, 10),
+    )
+
+    create_ingredient(
+        db=db_session,
+        name="卵",
+        category="食品",
+        default_unit="個",
+        quantity=1,
+        expiration_date=date(2026, 8, 8),
+    )
+
+    response = client.get(
+        "/?sort=expiration_asc"
+    )
+
+    assert response.status_code == 200
+
+    egg_position = response.text.find("卵")
+    milk_position = response.text.find("牛乳")
+
+    assert egg_position != -1
+    assert milk_position != -1
+    assert egg_position < milk_position
+
+    assert (
+        'value="expiration_asc"'
+        in response.text
+    )
+
+    assert "消費期限が近い順" in response.text
+
+
+def test_list_accepts_expiration_descending_sort(
+    client: TestClient,
+    db_session: Session,
+):
+    """一覧画面で消費期限が遠い順を指定できる。"""
+    create_ingredient(
+        db=db_session,
+        name="牛乳",
+        category="乳製品",
+        default_unit="本",
+        quantity=1,
+        expiration_date=date(2026, 8, 10),
+    )
+
+    create_ingredient(
+        db=db_session,
+        name="卵",
+        category="食品",
+        default_unit="個",
+        quantity=1,
+        expiration_date=date(2026, 8, 8),
+    )
+
+    response = client.get(
+        "/?sort=expiration_desc"
+    )
+
+    assert response.status_code == 200
+
+    milk_position = response.text.find("牛乳")
+    egg_position = response.text.find("卵")
+
+    assert milk_position != -1
+    assert egg_position != -1
+    assert milk_position < egg_position
+
+    assert "消費期限が遠い順" in response.text

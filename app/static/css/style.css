@@ -337,19 +337,6 @@ button {
     font-weight: bold;
 }
 
-.expiration-display {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 4px;
-}
-
-.expiration-edit-button {
-    margin-top: 4px;
-    padding: 3px 8px;
-    font-size: 12px;
-}
-
 .expiration-edit-form {
     margin: 0;
 }
@@ -372,4 +359,38 @@ button {
 .expiration-cancel-button {
     padding: 3px 8px;
     font-size: 12px;
+}
+
+
+.expiration-save-status {
+    min-width: 72px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.expiration-date-input:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.expiration-inline-editor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.expiration-date-input {
+    min-width: 145px;
+}
+
+.expiration-save-status {
+    min-width: 72px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.expiration-date-input:disabled {
+    opacity: 0.7;
+    cursor: wait;
 }
