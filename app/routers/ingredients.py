@@ -1,4 +1,5 @@
 from datetime import date, timedelta
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
@@ -23,6 +24,7 @@ from app.crud.ingredient import (
 from app.crud.inventory import (
     get_inventory_expiration_date,
     get_inventory_quantity,
+    update_inventory_expiration_date,
 )
 from app.database import get_db
 from app.services.ingredient_form import (
@@ -96,6 +98,67 @@ def build_expiration_display_by_ingredient_id(
     return expiration_display_by_ingredient_id
 
 
+def build_ingredient_list_redirect_url(
+    ingredient_id: int,
+    keyword: str | None,
+    category_filters: list[str],
+    sort: str,
+    out_of_stock_first: bool,
+    expiration_message: str | None = None,
+    expiration_error: str | None = None,
+) -> str:
+    """一覧条件を維持したリダイレクトURLを作成する。"""
+    query_params: list[tuple[str, str]] = []
+
+    if keyword:
+        query_params.append(
+            ("keyword", keyword)
+        )
+
+    for category in category_filters:
+        query_params.append(
+            ("category_filters", category)
+        )
+
+    query_params.append(
+        ("sort", sort)
+    )
+
+    if out_of_stock_first:
+        query_params.append(
+            ("out_of_stock_first", "true")
+        )
+
+    if expiration_message:
+        query_params.append(
+            (
+                "expiration_message",
+                expiration_message,
+            )
+        )
+
+    if expiration_error:
+        query_params.append(
+            (
+                "expiration_error",
+                expiration_error,
+            )
+        )
+
+    query_string = urlencode(
+        query_params,
+        doseq=True,
+    )
+
+    if query_string:
+        return (
+            f"/?{query_string}"
+            f"#ingredient-{ingredient_id}"
+        )
+
+    return f"/#ingredient-{ingredient_id}"
+
+
 def render_new_ingredient_error(
     request: Request,
     form_data: dict,
@@ -162,6 +225,8 @@ def list_ingredients(
     category_filters: list[str] = Query(default=[]),
     sort: str = Query("category"),
     out_of_stock_first: bool = Query(False),
+    expiration_message: str | None = Query(None),
+    expiration_error: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """食材一覧画面を表示する。"""
@@ -197,7 +262,86 @@ def list_ingredients(
             "expiration_display_by_ingredient_id": (
                 expiration_display_by_ingredient_id
             ),
+            "expiration_message": expiration_message,
+            "expiration_error": expiration_error,
         },
+    )
+
+
+@router.post(
+    "/ingredients/{ingredient_id}/expiration-date"
+)
+def update_expiration_date_route(
+    ingredient_id: int,
+    expiration_date: str | None = Form(None),
+    keyword: str | None = Form(None),
+    category_filters: list[str] = Form(default=[]),
+    sort: str = Form("category"),
+    out_of_stock_first: bool = Form(False),
+    db: Session = Depends(get_db),
+):
+    """一覧画面から消費期限だけを更新する。"""
+    if sort not in ["id", "name", "category"]:
+        sort = "category"
+
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    parsed_expiration_date, expiration_date_error = (
+        parse_optional_date(expiration_date)
+    )
+
+    if expiration_date_error:
+        redirect_url = (
+            build_ingredient_list_redirect_url(
+                ingredient_id=ingredient_id,
+                keyword=keyword,
+                category_filters=category_filters,
+                sort=sort,
+                out_of_stock_first=(
+                    out_of_stock_first
+                ),
+                expiration_error=(
+                    expiration_date_error
+                ),
+            )
+        )
+
+        return RedirectResponse(
+            url=redirect_url,
+            status_code=303,
+        )
+
+    update_inventory_expiration_date(
+        db=db,
+        ingredient_id=ingredient_id,
+        expiration_date=parsed_expiration_date,
+    )
+
+    redirect_url = (
+        build_ingredient_list_redirect_url(
+            ingredient_id=ingredient_id,
+            keyword=keyword,
+            category_filters=category_filters,
+            sort=sort,
+            out_of_stock_first=out_of_stock_first,
+            expiration_message=(
+                "消費期限を更新しました。"
+            ),
+        )
+    )
+
+    return RedirectResponse(
+        url=redirect_url,
+        status_code=303,
     )
 
 

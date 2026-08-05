@@ -146,3 +146,36 @@ def add_inventory_quantity(
     db.refresh(ingredient)
 
     return ingredient
+
+
+def update_inventory_expiration_date(
+    db: Session,
+    ingredient_id: int,
+    expiration_date: date | None,
+) -> Ingredient | None:
+    """指定した食材の消費期限だけを更新する。"""
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return None
+
+    if ingredient.inventories:
+        inventory = ingredient.inventories[0]
+        inventory.expiration_date = expiration_date
+
+    else:
+        inventory = Inventory(
+            ingredient_id=ingredient.id,
+            quantity=0,
+            expiration_date=expiration_date,
+        )
+
+        db.add(inventory)
+
+    db.commit()
+    db.refresh(ingredient)
+
+    return ingredient

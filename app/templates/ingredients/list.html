@@ -4,6 +4,18 @@
 <section>
     <h2>食材一覧</h2>
 
+    {% if expiration_message %}
+        <p class="success-message">
+            {{ expiration_message }}
+        </p>
+    {% endif %}
+
+    {% if expiration_error %}
+        <p class="error-message">
+            {{ expiration_error }}
+        </p>
+    {% endif %}
+
     <div class="list-controls">
         <form
             action="/"
@@ -364,15 +376,82 @@
                         <td
                             class="expiration-cell expiration-{{ expiration_info.status }}"
                         >
-                            <span class="expiration-date">
-                                {{ expiration_info.date }}
-                            </span>
-
-                            {% if expiration_info.label %}
-                                <span class="expiration-status-label">
-                                    {{ expiration_info.label }}
+                            <div class="expiration-display">
+                                <span class="expiration-date">
+                                    {{ expiration_info.date }}
                                 </span>
-                            {% endif %}
+
+                                {% if expiration_info.label %}
+                                    <span class="expiration-status-label">
+                                        {{ expiration_info.label }}
+                                    </span>
+                                {% endif %}
+
+                                <button
+                                    type="button"
+                                    class="expiration-edit-button"
+                                >
+                                    変更
+                                </button>
+                            </div>
+
+                            <form
+                                action="/ingredients/{{ ingredient.id }}/expiration-date"
+                                method="post"
+                                class="expiration-edit-form"
+                                hidden
+                            >
+                                <input
+                                    type="date"
+                                    name="expiration_date"
+                                    value="{% if expiration_info.status != 'unset' %}{{ expiration_info.date }}{% endif %}"
+                                    class="expiration-date-input"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="keyword"
+                                    value="{{ keyword }}"
+                                >
+
+                                {% for category in category_filters %}
+                                    <input
+                                        type="hidden"
+                                        name="category_filters"
+                                        value="{{ category }}"
+                                    >
+                                {% endfor %}
+
+                                <input
+                                    type="hidden"
+                                    name="sort"
+                                    value="{{ sort }}"
+                                >
+
+                                {% if out_of_stock_first %}
+                                    <input
+                                        type="hidden"
+                                        name="out_of_stock_first"
+                                        value="true"
+                                    >
+                                {% endif %}
+
+                                <div class="expiration-edit-actions">
+                                    <button
+                                        type="submit"
+                                        class="expiration-save-button"
+                                    >
+                                        保存
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="expiration-cancel-button"
+                                    >
+                                        取消
+                                    </button>
+                                </div>
+                            </form>
                         </td>
 
                         <td>
@@ -435,6 +514,78 @@
                     String(window.scrollY)
                 );
             });
+        });
+
+        const expirationCells =
+            document.querySelectorAll(
+                ".expiration-cell"
+            );
+
+        expirationCells.forEach((cell) => {
+            const display =
+                cell.querySelector(
+                    ".expiration-display"
+                );
+
+            const editForm =
+                cell.querySelector(
+                    ".expiration-edit-form"
+                );
+
+            const editButton =
+                cell.querySelector(
+                    ".expiration-edit-button"
+                );
+
+            const cancelButton =
+                cell.querySelector(
+                    ".expiration-cancel-button"
+                );
+
+            const dateInput =
+                cell.querySelector(
+                    ".expiration-date-input"
+                );
+
+            if (
+                !display
+                || !editForm
+                || !editButton
+                || !cancelButton
+                || !dateInput
+            ) {
+                return;
+            }
+
+            const initialValue = dateInput.value;
+
+            editButton.addEventListener(
+                "click",
+                () => {
+                    display.hidden = true;
+                    editForm.hidden = false;
+                    dateInput.focus();
+                }
+            );
+
+            cancelButton.addEventListener(
+                "click",
+                () => {
+                    dateInput.value = initialValue;
+                    editForm.hidden = true;
+                    display.hidden = false;
+                }
+            );
+
+            editForm.addEventListener(
+                "submit",
+                () => {
+                    sessionStorage.setItem(
+                        scrollStorageKey,
+                        String(window.scrollY)
+                    );
+                }
+            );
         });
     });
 </script>
