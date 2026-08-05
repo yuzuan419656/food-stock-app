@@ -4,6 +4,18 @@
 <section>
     <h2>食材一覧</h2>
 
+    {% if expiration_message %}
+        <p class="success-message">
+            {{ expiration_message }}
+        </p>
+    {% endif %}
+
+    {% if expiration_error %}
+        <p class="error-message">
+            {{ expiration_error }}
+        </p>
+    {% endif %}
+
     <div class="list-controls">
         <form
             action="/"
@@ -56,10 +68,10 @@
                     onchange="this.form.submit()"
                 >
                     <option
-                        value="id"
-                        {% if sort == "id" %}selected{% endif %}
+                        value="category"
+                        {% if sort == "category" %}selected{% endif %}
                     >
-                        登録順
+                        カテゴリ順
                     </option>
 
                     <option
@@ -70,10 +82,10 @@
                     </option>
 
                     <option
-                        value="category"
-                        {% if sort == "category" %}selected{% endif %}
+                        value="id"
+                        {% if sort == "id" %}selected{% endif %}
                     >
-                        カテゴリ順
+                        登録順
                     </option>
                 </select>
             </div>
@@ -104,6 +116,49 @@
         </div>
     </div>
 
+    {% if
+        keyword
+        or category_filters
+        or out_of_stock_first
+        or sort != "category"
+    %}
+        <div class="active-conditions">
+            <p class="active-conditions-title">
+                適用中の条件
+            </p>
+
+            <ul class="active-condition-list">
+                {% if keyword %}
+                    <li>
+                        食材名：{{ keyword }}
+                    </li>
+                {% endif %}
+
+                {% for category in category_filters %}
+                    <li>
+                        カテゴリ：{{ category }}
+                    </li>
+                {% endfor %}
+
+                {% if out_of_stock_first %}
+                    <li>
+                        在庫なし優先
+                    </li>
+                {% endif %}
+
+                {% if sort == "name" %}
+                    <li>
+                        並び替え：食材名順
+                    </li>
+                {% elif sort == "id" %}
+                    <li>
+                        並び替え：登録順
+                    </li>
+                {% endif %}
+            </ul>
+        </div>
+    {% endif %}
+
     <p>
         <a href="/ingredients/new">
             新しい食材を登録する
@@ -114,7 +169,6 @@
         <table>
             <thead>
                 <tr>
-                    <th>ID</th>
                     <th>食材名</th>
 
                     <th>
@@ -185,6 +239,7 @@
                     </th>
 
                     <th>在庫数量</th>
+                    <th>消費期限</th>
                     <th>単位</th>
                     <th>操作</th>
                 </tr>
@@ -198,9 +253,13 @@
                         {% set quantity = 0 %}
                     {% endif %}
 
-                    <tr id="ingredient-{{ ingredient.id }}">
-                        <td>{{ ingredient.id }}</td>
+                    {% set expiration_info =
+                        expiration_display_by_ingredient_id[
+                            ingredient.id
+                        ]
+                    %}
 
+                    <tr id="ingredient-{{ ingredient.id }}">
                         <td>
                             {{ ingredient.name }}
                         </td>
@@ -256,8 +315,8 @@
 
                                 <div class="quantity-display">
                                     <span>
-                                        {% if quantity == quantity|int %}
-                                            {{ quantity|int }}
+                                        {% if quantity == quantity | int %}
+                                            {{ quantity | int }}
                                         {% else %}
                                             {{ quantity }}
                                         {% endif %}
@@ -314,6 +373,87 @@
                             </div>
                         </td>
 
+                        <td
+                            class="expiration-cell expiration-{{ expiration_info.status }}"
+                        >
+                            <div class="expiration-display">
+                                <span class="expiration-date">
+                                    {{ expiration_info.date }}
+                                </span>
+
+                                {% if expiration_info.label %}
+                                    <span class="expiration-status-label">
+                                        {{ expiration_info.label }}
+                                    </span>
+                                {% endif %}
+
+                                <button
+                                    type="button"
+                                    class="expiration-edit-button"
+                                >
+                                    変更
+                                </button>
+                            </div>
+
+                            <form
+                                action="/ingredients/{{ ingredient.id }}/expiration-date"
+                                method="post"
+                                class="expiration-edit-form"
+                                hidden
+                            >
+                                <input
+                                    type="date"
+                                    name="expiration_date"
+                                    value="{% if expiration_info.status != 'unset' %}{{ expiration_info.date }}{% endif %}"
+                                    class="expiration-date-input"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="keyword"
+                                    value="{{ keyword }}"
+                                >
+
+                                {% for category in category_filters %}
+                                    <input
+                                        type="hidden"
+                                        name="category_filters"
+                                        value="{{ category }}"
+                                    >
+                                {% endfor %}
+
+                                <input
+                                    type="hidden"
+                                    name="sort"
+                                    value="{{ sort }}"
+                                >
+
+                                {% if out_of_stock_first %}
+                                    <input
+                                        type="hidden"
+                                        name="out_of_stock_first"
+                                        value="true"
+                                    >
+                                {% endif %}
+
+                                <div class="expiration-edit-actions">
+                                    <button
+                                        type="submit"
+                                        class="expiration-save-button"
+                                    >
+                                        保存
+                                    </button>
+
+                                    <button
+                                        type="button"
+                                        class="expiration-cancel-button"
+                                    >
+                                        取消
+                                    </button>
+                                </div>
+                            </form>
+                        </td>
+
                         <td>
                             {{ ingredient.default_unit or "-" }}
                         </td>
@@ -343,4 +483,110 @@
         {% endif %}
     {% endif %}
 </section>
+
+<script>
+    document.addEventListener("DOMContentLoaded", () => {
+        const scrollStorageKey =
+            "ingredientListScrollPosition";
+
+        const savedScrollPosition =
+            sessionStorage.getItem(scrollStorageKey);
+
+        if (savedScrollPosition !== null) {
+            window.scrollTo({
+                top: Number(savedScrollPosition),
+                left: 0,
+                behavior: "auto",
+            });
+
+            sessionStorage.removeItem(
+                scrollStorageKey
+            );
+        }
+
+        const quantityForms =
+            document.querySelectorAll(".quantity-form");
+
+        quantityForms.forEach((form) => {
+            form.addEventListener("submit", () => {
+                sessionStorage.setItem(
+                    scrollStorageKey,
+                    String(window.scrollY)
+                );
+            });
+        });
+
+        const expirationCells =
+            document.querySelectorAll(
+                ".expiration-cell"
+            );
+
+        expirationCells.forEach((cell) => {
+            const display =
+                cell.querySelector(
+                    ".expiration-display"
+                );
+
+            const editForm =
+                cell.querySelector(
+                    ".expiration-edit-form"
+                );
+
+            const editButton =
+                cell.querySelector(
+                    ".expiration-edit-button"
+                );
+
+            const cancelButton =
+                cell.querySelector(
+                    ".expiration-cancel-button"
+                );
+
+            const dateInput =
+                cell.querySelector(
+                    ".expiration-date-input"
+                );
+
+            if (
+                !display
+                || !editForm
+                || !editButton
+                || !cancelButton
+                || !dateInput
+            ) {
+                return;
+            }
+
+            const initialValue = dateInput.value;
+
+            editButton.addEventListener(
+                "click",
+                () => {
+                    display.hidden = true;
+                    editForm.hidden = false;
+                    dateInput.focus();
+                }
+            );
+
+            cancelButton.addEventListener(
+                "click",
+                () => {
+                    dateInput.value = initialValue;
+                    editForm.hidden = true;
+                    display.hidden = false;
+                }
+            );
+
+            editForm.addEventListener(
+                "submit",
+                () => {
+                    sessionStorage.setItem(
+                        scrollStorageKey,
+                        String(window.scrollY)
+                    );
+                }
+            );
+        });
+    });
+</script>
 {% endblock %}

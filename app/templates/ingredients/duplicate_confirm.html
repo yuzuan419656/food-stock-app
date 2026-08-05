@@ -1,0 +1,186 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+    <h2>重複する食材の確認</h2>
+
+    <p>
+        「{{ form_data.name }}」はすでに登録されています。
+        処理方法を選択してください。
+    </p>
+
+    {% if error_message %}
+        <p class="error-message">
+            {{ error_message }}
+        </p>
+    {% endif %}
+
+    <h3>現在の登録内容</h3>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>食材名</th>
+                <td>{{ existing_ingredient.name }}</td>
+            </tr>
+
+            <tr>
+                <th>カテゴリ</th>
+                <td>
+                    {{ existing_ingredient.category or "-" }}
+                </td>
+            </tr>
+
+            <tr>
+                <th>在庫数量</th>
+                <td>
+                    {% if existing_quantity == existing_quantity | int %}
+                        {{ existing_quantity | int }}
+                    {% else %}
+                        {{ existing_quantity }}
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>消費期限</th>
+                <td>
+                    {% if existing_expiration_date %}
+                        {{ existing_expiration_date }}
+                    {% else %}
+                        未設定
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>単位</th>
+                <td>
+                    {{ existing_ingredient.default_unit or "-" }}
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h3>今回の入力内容</h3>
+
+    <table>
+        <tbody>
+            <tr>
+                <th>食材名</th>
+                <td>{{ form_data.name }}</td>
+            </tr>
+
+            <tr>
+                <th>カテゴリ</th>
+                <td>{{ form_data.category }}</td>
+            </tr>
+
+            <tr>
+                <th>在庫数量</th>
+                <td>
+                    {% if form_data.quantity == form_data.quantity | int %}
+                        {{ form_data.quantity | int }}
+                    {% else %}
+                        {{ form_data.quantity }}
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>消費期限</th>
+                <td>
+                    {% if form_data.expiration_date %}
+                        {{ form_data.expiration_date }}
+                    {% else %}
+                        未設定
+                    {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>単位</th>
+                <td>{{ form_data.default_unit }}</td>
+            </tr>
+        </tbody>
+    </table>
+
+    {% if not can_add_quantity %}
+        <p class="error-message">
+            既存の単位と今回入力した単位が異なるため、
+            数量を加算できません。
+        </p>
+    {% endif %}
+
+    <form
+        action="/ingredients/resolve-duplicate"
+        method="post"
+        class="ingredient-form"
+    >
+        <input
+            type="hidden"
+            name="existing_ingredient_id"
+            value="{{ existing_ingredient.id }}"
+        >
+
+        <input
+            type="hidden"
+            name="name"
+            value="{{ form_data.name }}"
+        >
+
+        <input
+            type="hidden"
+            name="category"
+            value="{{ form_data.category }}"
+        >
+
+        <input
+            type="hidden"
+            name="quantity"
+            value="{{ form_data.quantity }}"
+        >
+
+        <input
+            type="hidden"
+            name="expiration_date"
+            value="{{ form_data.expiration_date }}"
+        >
+
+        <input
+            type="hidden"
+            name="default_unit"
+            value="{{ form_data.default_unit }}"
+        >
+
+        <div class="form-actions">
+            <button
+                type="submit"
+                name="action"
+                value="overwrite"
+            >
+                既存データを上書き
+            </button>
+
+            <button
+                type="submit"
+                name="action"
+                value="add"
+                {% if not can_add_quantity %}
+                    disabled
+                {% endif %}
+            >
+                数量を加算
+            </button>
+
+            <button
+                type="submit"
+                name="action"
+                value="cancel"
+            >
+                登録をキャンセル
+            </button>
+        </div>
+    </form>
+</section>
+{% endblock %}
