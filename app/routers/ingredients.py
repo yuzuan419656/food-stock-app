@@ -1,3 +1,5 @@
+from datetime import date
+
 from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
@@ -18,12 +20,17 @@ from app.crud.ingredient import (
     get_ingredient_by_name,
     update_ingredient,
 )
-from app.crud.inventory import get_inventory_quantity
+from app.crud.inventory import (
+    get_inventory_expiration_date,
+    get_inventory_quantity,
+)
 from app.database import get_db
 from app.services.ingredient_form import (
     build_duplicate_context,
     build_new_form_data,
+    date_to_form_value,
     get_option_form_values,
+    parse_optional_date,
     resolve_selected_option,
 )
 from app.utils.ingredient_name import normalize_ingredient_name
@@ -63,6 +70,7 @@ def render_duplicate_confirmation(
     category: str,
     quantity: float,
     default_unit: str,
+    expiration_date: date | None,
     error_message: str | None = None,
     status_code: int = 409,
 ):
@@ -72,10 +80,16 @@ def render_duplicate_confirmation(
         existing_quantity=get_inventory_quantity(
             existing_ingredient
         ),
+        existing_expiration_date=(
+            get_inventory_expiration_date(
+                existing_ingredient
+            )
+        ),
         name=name,
         category=category,
         quantity=quantity,
         default_unit=default_unit,
+        expiration_date=expiration_date,
         error_message=error_message,
     )
 
@@ -143,6 +157,7 @@ def new_ingredient(
                 "default_unit_select": "",
                 "default_unit_other": "",
                 "quantity": 0,
+                "expiration_date": "",
             },
         },
     )
@@ -157,6 +172,7 @@ def create_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
     """食材を新規登録する。"""
@@ -169,6 +185,7 @@ def create_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        expiration_date=expiration_date,
     )
 
     if not normalized_name:
@@ -224,6 +241,17 @@ def create_ingredient_route(
             ),
         )
 
+    parsed_expiration_date, expiration_date_error = (
+        parse_optional_date(expiration_date)
+    )
+
+    if expiration_date_error:
+        return render_new_ingredient_error(
+            request=request,
+            form_data=form_data,
+            error_message=expiration_date_error,
+        )
+
     assert category is not None
     assert default_unit is not None
 
@@ -240,6 +268,7 @@ def create_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            expiration_date=parsed_expiration_date,
         )
 
     try:
@@ -249,6 +278,7 @@ def create_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            expiration_date=parsed_expiration_date,
         )
 
     except IntegrityError:
@@ -269,6 +299,7 @@ def create_ingredient_route(
                 category=category,
                 quantity=quantity,
                 default_unit=default_unit,
+                expiration_date=parsed_expiration_date,
             )
 
         return render_new_ingredient_error(
@@ -315,6 +346,10 @@ def edit_ingredient(
 
     quantity = get_inventory_quantity(ingredient)
 
+    expiration_date = get_inventory_expiration_date(
+        ingredient
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/edit.html",
@@ -330,6 +365,9 @@ def edit_ingredient(
                 "default_unit_select": unit_select,
                 "default_unit_other": unit_other,
                 "quantity": quantity,
+                "expiration_date": date_to_form_value(
+                    expiration_date
+                ),
             },
         },
     )
@@ -345,9 +383,10 @@ def update_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """食材情報と在庫数量を更新する。"""
+    """食材情報・在庫数量・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -368,6 +407,7 @@ def update_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        expiration_date=expiration_date,
     )
 
     def render_edit_error(
@@ -423,6 +463,15 @@ def update_ingredient_route(
             "在庫数量は0.5刻みで入力してください。"
         )
 
+    parsed_expiration_date, expiration_date_error = (
+        parse_optional_date(expiration_date)
+    )
+
+    if expiration_date_error:
+        return render_edit_error(
+            expiration_date_error
+        )
+
     assert category is not None
     assert default_unit is not None
 
@@ -449,6 +498,7 @@ def update_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            expiration_date=parsed_expiration_date,
         )
 
     except IntegrityError:

@@ -106,6 +106,7 @@ def test_build_new_form_data():
         default_unit_select="個",
         default_unit_other=None,
         quantity=3,
+        expiration_date=None,
     )
 
     assert result == {

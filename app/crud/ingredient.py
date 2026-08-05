@@ -1,5 +1,6 @@
 from sqlalchemy import case, func
 from sqlalchemy.orm import Session, joinedload
+from datetime import date
 
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
@@ -120,6 +121,7 @@ def create_ingredient(
     category: str | None = None,
     default_unit: str | None = None,
     quantity: float = 0,
+    expiration_date: date | None = None,
 ) -> Ingredient:
     """食材と在庫情報を登録する。"""
     ingredient = Ingredient(
@@ -137,6 +139,7 @@ def create_ingredient(
     inventory = Inventory(
         ingredient_id=ingredient.id,
         quantity=quantity,
+        expiration_date=expiration_date,
     )
 
     db.add(inventory)
@@ -153,8 +156,9 @@ def update_ingredient(
     category: str | None = None,
     default_unit: str | None = None,
     quantity: float | None = None,
+    expiration_date: date | None = None,
 ) -> Ingredient | None:
-    """食材情報と在庫数量を更新する。"""
+    """食材情報・在庫数量・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -168,12 +172,15 @@ def update_ingredient(
     ingredient.default_unit = default_unit
 
     if ingredient.inventories:
-        ingredient.inventories[0].quantity = quantity
+        inventory = ingredient.inventories[0]
+        inventory.quantity = quantity
+        inventory.expiration_date = expiration_date
 
     else:
         inventory = Inventory(
             ingredient_id=ingredient.id,
             quantity=quantity,
+            expiration_date=expiration_date,
         )
 
         db.add(inventory)
