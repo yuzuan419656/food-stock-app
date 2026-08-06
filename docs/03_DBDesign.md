@@ -2,7 +2,7 @@
 
 ## 1. 目的
 
-本書では、現在の在庫管理機能とStep10で追加予定の買うものリストに関するデータベース詳細設計を定義する。
+本書では、Phase1で実装した食材管理、在庫管理、購入日・消費期限管理、買うものリストに関するデータベース詳細設計を定義する。
 
 ---
 
@@ -22,8 +22,8 @@
 | テーブル | 状態 | 説明 |
 |---|---|---|
 | ingredients | 実装済み | 食材マスタ |
-| inventories | 実装済み | 在庫数量・消費期限 |
-| shopping_items | Step10で追加 | 買うものリスト |
+| inventories | 実装済み | 在庫数量・購入日・消費期限 |
+| shopping_items | 実装済み | 買うものリスト |
 
 ---
 
@@ -47,15 +47,18 @@
 | id | INTEGER | ○ | ○ | - | - | 在庫ID |
 | ingredient_id | INTEGER | - | ○ | ingredients.id | - | 食材ID |
 | quantity | REAL | - | ○ | - | 0 | 0以上 |
+| purchase_date | DATE | - | ○ | - | 登録日 | 購入日 |
 | expiration_date | DATE | - | - | - | NULL | 消費期限 |
 | created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 登録日時 |
 | updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 更新日時 |
 
 現在は1食材につき在庫レコード1件として利用する。モデル上は将来のロット管理を考慮して1:Nを維持する。
 
+既存データへ購入日を追加した際は、在庫レコードの`created_at`の日付を初期値として補完する。
+
 ---
 
-## 6. shopping_items（Step10）
+## 6. shopping_items
 
 | カラム | 型 | PK | NOT NULL | FK | UNIQUE | 初期値 | 説明 |
 |---|---|:---:|:---:|---|:---:|---|---|
@@ -70,11 +73,25 @@
 - `ingredient_id`はUNIQUEとする
 - 同じ食材を複数回追加しない
 - 食材削除時は関連項目を削除する
-- 購入済みに変更してもInventory.quantityは変更しない
+- 購入済みに変更しても`inventories.quantity`は変更しない
 
 ---
 
-## 7. インデックス
+## 7. リレーション
+
+```text
+ingredients
+    1 ─── N inventories
+    1 ─── 0..1 shopping_items
+```
+
+現在の運用では、`inventories`は1食材につき1件として利用する。
+
+`shopping_items`は`ingredient_id`にUNIQUE制約を設定するため、1食材につき最大1件とする。
+
+---
+
+## 8. インデックス
 
 | テーブル | カラム | 目的 |
 |---|---|---|
@@ -86,7 +103,7 @@
 
 ---
 
-## 8. 設計方針
+## 9. 設計方針
 
 - テーブル名は複数形・スネークケース
 - 主キーは`id`
@@ -95,14 +112,27 @@
 - DB変更はAlembicで管理する
 - SQLite固有機能へ過度に依存しない
 - 未使用の将来カラムは先に追加しない
+- 購入単位の在庫明細管理はPhase1では行わない
 
 ---
 
-## 9. Step10マイグレーション予定
+## 10. 適用済みマイグレーション
+
+Phase1では、主に次の変更をAlembicで管理する。
+
+- 消費期限カラムの追加
+- 買うものリストテーブルの追加
+- 購入日カラムの追加
+- 既存在庫データへの購入日の補完
+
+マイグレーション適用：
 
 ```bash
-alembic revision --autogenerate -m "create shopping items table"
 alembic upgrade head
 ```
 
-自動生成後は、UNIQUE制約、外部キー、削除時動作を必ず確認する。
+現在の適用状況確認：
+
+```bash
+alembic current
+```

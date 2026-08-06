@@ -2,7 +2,7 @@
 
 ## 1. 目的
 
-本書では、現在の実装とStep10で追加予定の買うものリストを含むディレクトリ構成を定義する。
+本書では、Phase1完成時点の実装を含むディレクトリ構成を定義する。
 
 ---
 
@@ -11,6 +11,8 @@
 ```text
 food-stock-app/
 ├── alembic/
+│   ├── versions/
+│   └── env.py
 ├── app/
 │   ├── main.py
 │   ├── database.py
@@ -19,17 +21,18 @@ food-stock-app/
 │   ├── models/
 │   │   ├── ingredient.py
 │   │   ├── inventory.py
-│   │   └── shopping_item.py          # Step10
+│   │   └── shopping_item.py
 │   ├── routers/
 │   │   ├── ingredients.py
-│   │   └── shopping_list.py          # Step10
+│   │   ├── ingredient_duplicates.py
+│   │   ├── inventory.py
+│   │   └── shopping_list.py
 │   ├── schemas/
-│   │   ├── ingredient.py
-│   │   └── shopping_item.py          # 必要に応じてStep10
+│   │   └── ingredient.py
 │   ├── crud/
 │   │   ├── ingredient.py
 │   │   ├── inventory.py
-│   │   └── shopping_item.py          # Step10
+│   │   └── shopping_item.py
 │   ├── services/
 │   │   └── ingredient_form.py
 │   ├── utils/
@@ -44,7 +47,7 @@ food-stock-app/
 │   │   │   ├── delete.html
 │   │   │   └── duplicate_confirm.html
 │   │   └── shopping_list/
-│   │       └── list.html              # Step10
+│   │       └── list.html
 │   └── static/
 │       └── css/
 │           └── style.css
@@ -60,9 +63,11 @@ food-stock-app/
 ├── tests/
 │   ├── conftest.py
 │   ├── crud/
-│   ├── routers/
-│   ├── services/
-│   └── utils/
+│   │   ├── test_ingredient_expiration_sort.py
+│   │   └── test_shopping_item.py
+│   └── routers/
+│       ├── test_ingredient_expiration.py
+│       └── test_ingredient_purchase_date.py
 ├── alembic.ini
 ├── pytest.ini
 ├── requirements.txt
@@ -78,7 +83,7 @@ food-stock-app/
 |---|---|
 | `app/models` | SQLAlchemyモデル |
 | `app/routers` | FastAPIルーティング |
-| `app/crud` | DB操作 |
+| `app/crud` | データベース操作 |
 | `app/schemas` | 入出力スキーマ |
 | `app/services` | 複数処理を組み合わせるサービス |
 | `app/utils` | 小さな共通処理 |
@@ -90,34 +95,78 @@ food-stock-app/
 
 ---
 
-## 4. Step10で追加するファイル
+## 4. 主要ファイル
+
+### モデル
 
 | ファイル | 役割 |
 |---|---|
-| `app/models/shopping_item.py` | 買うものリストモデル |
-| `app/crud/shopping_item.py` | 追加・取得・状態変更・削除 |
-| `app/routers/shopping_list.py` | 買うものリストのルーティング |
-| `app/templates/shopping_list/list.html` | 買うものリスト画面 |
-| `tests/crud/test_shopping_item.py` | CRUDの主要テスト |
-| `tests/routers/test_shopping_list.py` | 画面・ルートの主要テスト |
+| `app/models/ingredient.py` | 食材マスタ |
+| `app/models/inventory.py` | 在庫数量・購入日・消費期限 |
+| `app/models/shopping_item.py` | 買うものリスト |
 
-Pydanticスキーマが不要な単純フォーム処理の場合、`shopping_item.py`スキーマは無理に作成しない。
+### CRUD
+
+| ファイル | 役割 |
+|---|---|
+| `app/crud/ingredient.py` | 食材の登録・取得・更新・削除・検索・並び替え |
+| `app/crud/inventory.py` | 在庫数量・購入日・消費期限の操作 |
+| `app/crud/shopping_item.py` | 買うものリストの追加・取得・状態変更・削除 |
+
+### ルーター
+
+| ファイル | 役割 |
+|---|---|
+| `app/routers/ingredients.py` | 食材一覧・登録・編集・削除・日付自動保存 |
+| `app/routers/ingredient_duplicates.py` | 重複食材の上書き・数量追加・キャンセル |
+| `app/routers/inventory.py` | 一覧画面からの在庫数量増減 |
+| `app/routers/shopping_list.py` | 買うものリストの表示・追加・状態変更・削除 |
+
+### テンプレート
+
+| ファイル | 役割 |
+|---|---|
+| `app/templates/ingredients/list.html` | 在庫一覧 |
+| `app/templates/ingredients/new.html` | 食材登録 |
+| `app/templates/ingredients/edit.html` | 食材編集 |
+| `app/templates/ingredients/delete.html` | 食材削除確認 |
+| `app/templates/ingredients/duplicate_confirm.html` | 重複食材確認 |
+| `app/templates/shopping_list/list.html` | 買うものリスト |
+
+### テスト
+
+| ファイル | 役割 |
+|---|---|
+| `tests/crud/test_ingredient_expiration_sort.py` | 消費期限順ソート |
+| `tests/crud/test_shopping_item.py` | 買うものリストCRUD |
+| `tests/routers/test_ingredient_expiration.py` | 消費期限表示・自動保存 |
+| `tests/routers/test_ingredient_purchase_date.py` | 購入日保存・自動保存 |
 
 ---
 
 ## 5. ルーティングの分割方針
 
-- 食材・在庫一覧・消費期限：`app/routers/ingredients.py`
+- 食材一覧・登録・編集・削除・日付自動保存：`app/routers/ingredients.py`
+- 重複食材処理：`app/routers/ingredient_duplicates.py`
+- 在庫数量の増減：`app/routers/inventory.py`
 - 買うものリスト：`app/routers/shopping_list.py`
 - 今後のレシピ：`app/routers/recipes.py`
 
-機能が増えたため、すべてを`ingredients.py`へ詰め込まない。
+機能ごとにルーターを分割し、`ingredients.py`へすべての処理を集中させない。
 
 ---
 
-## 6. テスト方針
+## 6. スキーマ方針
+
+現在はHTMLフォームとJinja2テンプレートを中心に利用している。
+
+単純なフォーム処理については、Pydanticスキーマを無理に作成せず、必要性が生じた時点で追加する。
+
+---
+
+## 7. テスト方針
 
 - 既存機能をすべて細かく網羅することは目的としない
 - 壊れると困る主要処理をテストする
 - 画面レイアウトは手動確認する
-- Step10では重複防止、状態変更、削除を優先する
+- 消費期限、購入日、買うものリストの主要処理を優先する
