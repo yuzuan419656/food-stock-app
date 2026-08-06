@@ -2,7 +2,7 @@ from datetime import date, timedelta
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, Form, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
@@ -23,8 +23,10 @@ from app.crud.ingredient import (
 )
 from app.crud.inventory import (
     get_inventory_expiration_date,
+    get_inventory_purchase_date,
     get_inventory_quantity,
     update_inventory_expiration_date,
+    update_inventory_purchase_date,
 )
 from app.database import get_db
 from app.services.ingredient_form import (
@@ -33,6 +35,7 @@ from app.services.ingredient_form import (
     date_to_form_value,
     get_option_form_values,
     parse_optional_date,
+    parse_required_date,
     resolve_selected_option,
 )
 from app.utils.ingredient_name import normalize_ingredient_name
@@ -99,11 +102,11 @@ def build_expiration_display_by_ingredient_id(
 
 
 def build_ingredient_list_redirect_url(
-    ingredient_id: int,
-    keyword: str | None,
-    category_filters: list[str],
-    sort: str,
-    out_of_stock_first: bool,
+    ingredient_id: int | None = None,
+    keyword: str | None = None,
+    category_filters: list[str] | None = None,
+    sort: str = "category",
+    out_of_stock_first: bool = False,
     expiration_message: str | None = None,
     expiration_error: str | None = None,
 ) -> str:
@@ -150,13 +153,15 @@ def build_ingredient_list_redirect_url(
         doseq=True,
     )
 
-    if query_string:
-        return (
-            f"/?{query_string}"
-            f"#ingredient-{ingredient_id}"
-        )
+    url = "/"
 
-    return f"/#ingredient-{ingredient_id}"
+    if query_string:
+        url = f"/?{query_string}"
+
+    if ingredient_id is not None:
+        url += f"#ingredient-{ingredient_id}"
+
+    return url
 
 
 def render_new_ingredient_error(
@@ -187,6 +192,7 @@ def render_duplicate_confirmation(
     category: str,
     quantity: float,
     default_unit: str,
+    purchase_date: date,
     expiration_date: date | None,
     error_message: str | None = None,
     status_code: int = 409,
@@ -197,6 +203,11 @@ def render_duplicate_confirmation(
         existing_quantity=get_inventory_quantity(
             existing_ingredient
         ),
+        existing_purchase_date=(
+            get_inventory_purchase_date(
+                existing_ingredient
+            )
+        ),
         existing_expiration_date=(
             get_inventory_expiration_date(
                 existing_ingredient
@@ -206,6 +217,7 @@ def render_duplicate_confirmation(
         category=category,
         quantity=quantity,
         default_unit=default_unit,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
         error_message=error_message,
     )
@@ -230,7 +242,16 @@ def list_ingredients(
     db: Session = Depends(get_db),
 ):
     """食材一覧画面を表示する。"""
-    if sort not in ["id", "name", "category"]:
+
+    allowed_sorts = [
+        "id",
+        "name",
+        "category",
+        "expiration_asc",
+        "expiration_desc",
+    ]
+
+    if sort not in allowed_sorts:
         sort = "category"
 
     categories = get_categories(db)
@@ -242,6 +263,13 @@ def list_ingredients(
         sort=sort,
         out_of_stock_first=out_of_stock_first,
     )
+
+    purchase_date_by_ingredient_id = {
+        ingredient.id: date_to_form_value(
+            get_inventory_purchase_date(ingredient)
+        )
+        for ingredient in ingredients
+    }
 
     expiration_display_by_ingredient_id = (
         build_expiration_display_by_ingredient_id(
@@ -259,89 +287,15 @@ def list_ingredients(
             "categories": categories,
             "sort": sort,
             "out_of_stock_first": out_of_stock_first,
+            "purchase_date_by_ingredient_id": (
+                purchase_date_by_ingredient_id
+            ),
             "expiration_display_by_ingredient_id": (
                 expiration_display_by_ingredient_id
             ),
             "expiration_message": expiration_message,
             "expiration_error": expiration_error,
         },
-    )
-
-
-@router.post(
-    "/ingredients/{ingredient_id}/expiration-date"
-)
-def update_expiration_date_route(
-    ingredient_id: int,
-    expiration_date: str | None = Form(None),
-    keyword: str | None = Form(None),
-    category_filters: list[str] = Form(default=[]),
-    sort: str = Form("category"),
-    out_of_stock_first: bool = Form(False),
-    db: Session = Depends(get_db),
-):
-    """一覧画面から消費期限だけを更新する。"""
-    if sort not in ["id", "name", "category"]:
-        sort = "category"
-
-    ingredient = get_ingredient_by_id(
-        db=db,
-        ingredient_id=ingredient_id,
-    )
-
-    if ingredient is None:
-        return RedirectResponse(
-            url="/",
-            status_code=303,
-        )
-
-    parsed_expiration_date, expiration_date_error = (
-        parse_optional_date(expiration_date)
-    )
-
-    if expiration_date_error:
-        redirect_url = (
-            build_ingredient_list_redirect_url(
-                ingredient_id=ingredient_id,
-                keyword=keyword,
-                category_filters=category_filters,
-                sort=sort,
-                out_of_stock_first=(
-                    out_of_stock_first
-                ),
-                expiration_error=(
-                    expiration_date_error
-                ),
-            )
-        )
-
-        return RedirectResponse(
-            url=redirect_url,
-            status_code=303,
-        )
-
-    update_inventory_expiration_date(
-        db=db,
-        ingredient_id=ingredient_id,
-        expiration_date=parsed_expiration_date,
-    )
-
-    redirect_url = (
-        build_ingredient_list_redirect_url(
-            ingredient_id=ingredient_id,
-            keyword=keyword,
-            category_filters=category_filters,
-            sort=sort,
-            out_of_stock_first=out_of_stock_first,
-            expiration_message=(
-                "消費期限を更新しました。"
-            ),
-        )
-    )
-
-    return RedirectResponse(
-        url=redirect_url,
-        status_code=303,
     )
 
 
@@ -364,6 +318,7 @@ def new_ingredient(
                 "default_unit_select": "",
                 "default_unit_other": "",
                 "quantity": 0,
+                "purchase_date": date.today().isoformat(),
                 "expiration_date": "",
             },
         },
@@ -379,6 +334,7 @@ def create_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    purchase_date: str = Form(...),
     expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -392,6 +348,7 @@ def create_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
     )
 
@@ -448,6 +405,22 @@ def create_ingredient_route(
             ),
         )
 
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return render_new_ingredient_error(
+            request=request,
+            form_data=form_data,
+            error_message=purchase_date_error,
+        )
+
+    assert parsed_purchase_date is not None
+
     parsed_expiration_date, expiration_date_error = (
         parse_optional_date(expiration_date)
     )
@@ -475,6 +448,7 @@ def create_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 
@@ -485,6 +459,7 @@ def create_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 
@@ -553,6 +528,10 @@ def edit_ingredient(
 
     quantity = get_inventory_quantity(ingredient)
 
+    purchase_date = get_inventory_purchase_date(
+        ingredient
+    )
+
     expiration_date = get_inventory_expiration_date(
         ingredient
     )
@@ -572,6 +551,9 @@ def edit_ingredient(
                 "default_unit_select": unit_select,
                 "default_unit_other": unit_other,
                 "quantity": quantity,
+                "purchase_date": date_to_form_value(
+                    purchase_date
+                ),
                 "expiration_date": date_to_form_value(
                     expiration_date
                 ),
@@ -590,10 +572,11 @@ def update_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    purchase_date: str = Form(...),
     expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """食材情報・在庫数量・消費期限を更新する。"""
+    """食材情報・在庫数量・購入日・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -614,6 +597,7 @@ def update_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
     )
 
@@ -670,6 +654,20 @@ def update_ingredient_route(
             "在庫数量は0.5刻みで入力してください。"
         )
 
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return render_edit_error(
+            purchase_date_error
+        )
+
+    assert parsed_purchase_date is not None
+
     parsed_expiration_date, expiration_date_error = (
         parse_optional_date(expiration_date)
     )
@@ -705,6 +703,7 @@ def update_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 
@@ -763,3 +762,172 @@ def delete_ingredient_route(
         url="/",
         status_code=303,
     )
+
+
+@router.post(
+    "/ingredients/{ingredient_id}/purchase-date/auto"
+)
+def auto_update_purchase_date_route(
+    ingredient_id: int,
+    purchase_date: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """
+    一覧画面から購入日を自動保存する。
+
+    ページ遷移は行わず、JSONを返す。
+    """
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "success": False,
+                "message": (
+                    "更新対象の食材が"
+                    "見つかりません。"
+                ),
+            },
+        )
+
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": purchase_date_error,
+            },
+        )
+
+    assert parsed_purchase_date is not None
+
+    try:
+        update_inventory_purchase_date(
+            db=db,
+            ingredient_id=ingredient_id,
+            purchase_date=parsed_purchase_date,
+        )
+
+    except Exception:
+        db.rollback()
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": (
+                    "購入日の保存に"
+                    "失敗しました。"
+                ),
+            },
+        )
+
+    return {
+        "success": True,
+        "message": "保存しました。",
+        "purchase_date": date_to_form_value(
+            parsed_purchase_date
+        ),
+    }
+
+
+@router.post(
+    "/ingredients/{ingredient_id}/expiration-date/auto"
+)
+def auto_update_expiration_date_route(
+    ingredient_id: int,
+    expiration_date: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """
+    一覧画面から消費期限を自動保存する。
+
+    ページ遷移は行わず、JSONを返す。
+    """
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "success": False,
+                "message": (
+                    "更新対象の食材が"
+                    "見つかりません。"
+                ),
+            },
+        )
+
+    (
+        parsed_expiration_date,
+        expiration_date_error,
+    ) = parse_optional_date(
+        expiration_date
+    )
+
+    if expiration_date_error:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": expiration_date_error,
+            },
+        )
+
+    try:
+        update_inventory_expiration_date(
+            db=db,
+            ingredient_id=ingredient_id,
+            expiration_date=(
+                parsed_expiration_date
+            ),
+        )
+
+    except Exception:
+        db.rollback()
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": (
+                    "消費期限の保存に"
+                    "失敗しました。"
+                ),
+            },
+        )
+
+    updated_ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    expiration_display = (
+        build_expiration_display_by_ingredient_id(
+            [updated_ingredient]
+        )[ingredient_id]
+    )
+
+    return {
+        "success": True,
+        "message": "保存しました。",
+        "expiration_date": (
+            expiration_display["date"]
+        ),
+        "status": expiration_display["status"],
+        "label": expiration_display["label"],
+    }

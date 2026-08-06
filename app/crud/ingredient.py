@@ -121,6 +121,7 @@ def create_ingredient(
     category: str | None = None,
     default_unit: str | None = None,
     quantity: float = 0,
+    purchase_date: date | None = None,
     expiration_date: date | None = None,
 ) -> Ingredient:
     """食材と在庫情報を登録する。"""
@@ -139,6 +140,10 @@ def create_ingredient(
     inventory = Inventory(
         ingredient_id=ingredient.id,
         quantity=quantity,
+        purchase_date=(
+            purchase_date
+            or date.today()
+        ),
         expiration_date=expiration_date,
     )
 
@@ -156,9 +161,10 @@ def update_ingredient(
     category: str | None = None,
     default_unit: str | None = None,
     quantity: float | None = None,
+    purchase_date: date | None = None,
     expiration_date: date | None = None,
 ) -> Ingredient | None:
-    """食材情報・在庫数量・消費期限を更新する。"""
+    """食材情報・在庫数量・購入日・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -174,12 +180,20 @@ def update_ingredient(
     if ingredient.inventories:
         inventory = ingredient.inventories[0]
         inventory.quantity = quantity
+        inventory.purchase_date = (
+            purchase_date
+            or date.today()
+        )
         inventory.expiration_date = expiration_date
 
     else:
         inventory = Inventory(
             ingredient_id=ingredient.id,
             quantity=quantity,
+            purchase_date=(
+                purchase_date
+                or date.today()
+            ),
             expiration_date=expiration_date,
         )
 
@@ -285,9 +299,18 @@ def get_filtered_ingredients(
 
     order_conditions = []
 
-    if out_of_stock_first:
+    needs_inventory_join = (
+        out_of_stock_first
+        or sort in [
+            "expiration_asc",
+            "expiration_desc",
+        ]
+    )
+
+    if needs_inventory_join:
         query = query.outerjoin(Inventory)
 
+    if out_of_stock_first:
         order_conditions.append(
             case(
                 (
@@ -312,6 +335,42 @@ def get_filtered_ingredients(
         order_conditions.extend(
             [
                 Ingredient.category,
+                Ingredient.name,
+            ]
+        )
+
+    elif sort == "expiration_asc":
+        # 消費期限未設定を最後にする。
+        order_conditions.extend(
+            [
+                case(
+                    (
+                        Inventory.expiration_date.is_(
+                            None
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                ),
+                Inventory.expiration_date.asc(),
+                Ingredient.name,
+            ]
+        )
+
+    elif sort == "expiration_desc":
+        # 消費期限未設定を最後にする。
+        order_conditions.extend(
+            [
+                case(
+                    (
+                        Inventory.expiration_date.is_(
+                            None
+                        ),
+                        1,
+                    ),
+                    else_=0,
+                ),
+                Inventory.expiration_date.desc(),
                 Ingredient.name,
             ]
         )

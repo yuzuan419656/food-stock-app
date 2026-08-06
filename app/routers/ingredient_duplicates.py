@@ -19,6 +19,7 @@ from app.crud.ingredient import (
 from app.crud.inventory import (
     add_inventory_quantity,
     get_inventory_expiration_date,
+    get_inventory_purchase_date,
     get_inventory_quantity,
 )
 from app.database import get_db
@@ -27,6 +28,7 @@ from app.services.ingredient_form import (
     build_new_form_data,
     get_option_form_values,
     parse_optional_date,
+    parse_required_date,
 )
 from app.utils.ingredient_name import normalize_ingredient_name
 from app.utils.quantity import is_valid_quantity_step
@@ -65,6 +67,7 @@ def render_duplicate_confirmation(
     category: str,
     quantity: float,
     default_unit: str,
+    purchase_date: date,
     expiration_date: date | None,
     error_message: str | None = None,
     status_code: int = 409,
@@ -75,6 +78,11 @@ def render_duplicate_confirmation(
         existing_quantity=get_inventory_quantity(
             existing_ingredient
         ),
+        existing_purchase_date=(
+            get_inventory_purchase_date(
+                existing_ingredient
+            )
+        ),
         existing_expiration_date=(
             get_inventory_expiration_date(
                 existing_ingredient
@@ -84,6 +92,7 @@ def render_duplicate_confirmation(
         category=category,
         quantity=quantity,
         default_unit=default_unit,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
         error_message=error_message,
     )
@@ -105,6 +114,7 @@ def resolve_duplicate_ingredient_route(
     category: str = Form(...),
     quantity: float = Form(...),
     default_unit: str = Form(...),
+    purchase_date: str = Form(...),
     expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -135,6 +145,7 @@ def resolve_duplicate_ingredient_route(
         default_unit_select=unit_select,
         default_unit_other=unit_other,
         quantity=quantity,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
     )
 
@@ -154,6 +165,29 @@ def resolve_duplicate_ingredient_route(
             status_code=404,
         )
 
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=existing_ingredient,
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            purchase_date=date.today(),
+            expiration_date=None,
+            error_message=purchase_date_error,
+            status_code=400,
+        )
+
+    assert parsed_purchase_date is not None
+
     parsed_expiration_date, expiration_date_error = (
         parse_optional_date(expiration_date)
     )
@@ -166,6 +200,7 @@ def resolve_duplicate_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=None,
             error_message=expiration_date_error,
             status_code=400,
@@ -179,6 +214,7 @@ def resolve_duplicate_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
             error_message="食材名を入力してください。",
             status_code=400,
@@ -192,6 +228,7 @@ def resolve_duplicate_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
             error_message="カテゴリを入力してください。",
             status_code=400,
@@ -205,6 +242,7 @@ def resolve_duplicate_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
             error_message="単位を入力してください。",
             status_code=400,
@@ -218,6 +256,7 @@ def resolve_duplicate_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
             error_message=(
                 "在庫数量は0以上で入力してください。"
@@ -233,6 +272,7 @@ def resolve_duplicate_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
             error_message=(
                 "在庫数量は0.5刻みで入力してください。"
@@ -284,6 +324,7 @@ def resolve_duplicate_ingredient_route(
                 category=category,
                 default_unit=default_unit,
                 quantity=quantity,
+                purchase_date=parsed_purchase_date,
                 expiration_date=parsed_expiration_date,
             )
 
@@ -336,6 +377,7 @@ def resolve_duplicate_ingredient_route(
             db=db,
             ingredient_id=existing_ingredient_id,
             amount=quantity,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 

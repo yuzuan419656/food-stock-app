@@ -43,6 +43,13 @@
             </tr>
 
             <tr>
+                <th>購入日</th>
+                <td>
+                    {{ existing_purchase_date }}
+                </td>
+            </tr>
+
+            <tr>
                 <th>消費期限</th>
                 <td>
                     {% if existing_expiration_date %}
@@ -84,6 +91,13 @@
                     {% else %}
                         {{ form_data.quantity }}
                     {% endif %}
+                </td>
+            </tr>
+
+            <tr>
+                <th>購入日</th>
+                <td>
+                    {{ form_data.purchase_date }}
                 </td>
             </tr>
 
@@ -139,6 +153,12 @@
             type="hidden"
             name="quantity"
             value="{{ form_data.quantity }}"
+        >
+
+        <input
+            type="hidden"
+            name="purchase_date"
+            value="{{ form_data.purchase_date }}"
         >
 
         <input

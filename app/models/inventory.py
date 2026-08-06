@@ -7,7 +7,11 @@ from sqlalchemy import (
     Float,
     ForeignKey,
 )
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    mapped_column,
+    relationship,
+)
 
 from app.database import Base
 
@@ -33,6 +37,12 @@ class Inventory(Base):
         Float,
         nullable=False,
         default=0,
+    )
+
+    purchase_date: Mapped[date] = mapped_column(
+        Date,
+        nullable=False,
+        default=date.today,
     )
 
     expiration_date: Mapped[date | None] = mapped_column(
