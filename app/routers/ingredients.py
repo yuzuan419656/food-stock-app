@@ -769,7 +769,7 @@ def delete_ingredient_route(
 )
 def auto_update_purchase_date_route(
     ingredient_id: int,
-    purchase_date: str = Form(...),
+    purchase_date: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """
