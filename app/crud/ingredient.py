@@ -121,6 +121,7 @@ def create_ingredient(
     category: str | None = None,
     default_unit: str | None = None,
     quantity: float = 0,
+    purchase_date: date | None = None,
     expiration_date: date | None = None,
 ) -> Ingredient:
     """食材と在庫情報を登録する。"""
@@ -139,6 +140,10 @@ def create_ingredient(
     inventory = Inventory(
         ingredient_id=ingredient.id,
         quantity=quantity,
+        purchase_date=(
+            purchase_date
+            or date.today()
+        ),
         expiration_date=expiration_date,
     )
 
@@ -156,9 +161,10 @@ def update_ingredient(
     category: str | None = None,
     default_unit: str | None = None,
     quantity: float | None = None,
+    purchase_date: date | None = None,
     expiration_date: date | None = None,
 ) -> Ingredient | None:
-    """食材情報・在庫数量・消費期限を更新する。"""
+    """食材情報・在庫数量・購入日・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -174,12 +180,20 @@ def update_ingredient(
     if ingredient.inventories:
         inventory = ingredient.inventories[0]
         inventory.quantity = quantity
+        inventory.purchase_date = (
+            purchase_date
+            or date.today()
+        )
         inventory.expiration_date = expiration_date
 
     else:
         inventory = Inventory(
             ingredient_id=ingredient.id,
             quantity=quantity,
+            purchase_date=(
+                purchase_date
+                or date.today()
+            ),
             expiration_date=expiration_date,
         )
 

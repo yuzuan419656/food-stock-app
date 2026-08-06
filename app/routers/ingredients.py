@@ -23,8 +23,10 @@ from app.crud.ingredient import (
 )
 from app.crud.inventory import (
     get_inventory_expiration_date,
+    get_inventory_purchase_date,
     get_inventory_quantity,
     update_inventory_expiration_date,
+    update_inventory_purchase_date,
 )
 from app.database import get_db
 from app.services.ingredient_form import (
@@ -33,6 +35,7 @@ from app.services.ingredient_form import (
     date_to_form_value,
     get_option_form_values,
     parse_optional_date,
+    parse_required_date,
     resolve_selected_option,
 )
 from app.utils.ingredient_name import normalize_ingredient_name
@@ -189,6 +192,7 @@ def render_duplicate_confirmation(
     category: str,
     quantity: float,
     default_unit: str,
+    purchase_date: date,
     expiration_date: date | None,
     error_message: str | None = None,
     status_code: int = 409,
@@ -199,6 +203,11 @@ def render_duplicate_confirmation(
         existing_quantity=get_inventory_quantity(
             existing_ingredient
         ),
+        existing_purchase_date=(
+            get_inventory_purchase_date(
+                existing_ingredient
+            )
+        ),
         existing_expiration_date=(
             get_inventory_expiration_date(
                 existing_ingredient
@@ -208,6 +217,7 @@ def render_duplicate_confirmation(
         category=category,
         quantity=quantity,
         default_unit=default_unit,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
         error_message=error_message,
     )
@@ -254,6 +264,13 @@ def list_ingredients(
         out_of_stock_first=out_of_stock_first,
     )
 
+    purchase_date_by_ingredient_id = {
+        ingredient.id: date_to_form_value(
+            get_inventory_purchase_date(ingredient)
+        )
+        for ingredient in ingredients
+    }
+
     expiration_display_by_ingredient_id = (
         build_expiration_display_by_ingredient_id(
             ingredients
@@ -270,6 +287,9 @@ def list_ingredients(
             "categories": categories,
             "sort": sort,
             "out_of_stock_first": out_of_stock_first,
+            "purchase_date_by_ingredient_id": (
+                purchase_date_by_ingredient_id
+            ),
             "expiration_display_by_ingredient_id": (
                 expiration_display_by_ingredient_id
             ),
@@ -298,6 +318,7 @@ def new_ingredient(
                 "default_unit_select": "",
                 "default_unit_other": "",
                 "quantity": 0,
+                "purchase_date": date.today().isoformat(),
                 "expiration_date": "",
             },
         },
@@ -313,6 +334,7 @@ def create_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    purchase_date: str = Form(...),
     expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
@@ -326,6 +348,7 @@ def create_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
     )
 
@@ -382,6 +405,22 @@ def create_ingredient_route(
             ),
         )
 
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return render_new_ingredient_error(
+            request=request,
+            form_data=form_data,
+            error_message=purchase_date_error,
+        )
+
+    assert parsed_purchase_date is not None
+
     parsed_expiration_date, expiration_date_error = (
         parse_optional_date(expiration_date)
     )
@@ -409,6 +448,7 @@ def create_ingredient_route(
             category=category,
             quantity=quantity,
             default_unit=default_unit,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 
@@ -419,6 +459,7 @@ def create_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 
@@ -487,6 +528,10 @@ def edit_ingredient(
 
     quantity = get_inventory_quantity(ingredient)
 
+    purchase_date = get_inventory_purchase_date(
+        ingredient
+    )
+
     expiration_date = get_inventory_expiration_date(
         ingredient
     )
@@ -506,6 +551,9 @@ def edit_ingredient(
                 "default_unit_select": unit_select,
                 "default_unit_other": unit_other,
                 "quantity": quantity,
+                "purchase_date": date_to_form_value(
+                    purchase_date
+                ),
                 "expiration_date": date_to_form_value(
                     expiration_date
                 ),
@@ -524,10 +572,11 @@ def update_ingredient_route(
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
     quantity: float = Form(...),
+    purchase_date: str = Form(...),
     expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """食材情報・在庫数量・消費期限を更新する。"""
+    """食材情報・在庫数量・購入日・消費期限を更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -548,6 +597,7 @@ def update_ingredient_route(
         default_unit_select=default_unit_select,
         default_unit_other=default_unit_other,
         quantity=quantity,
+        purchase_date=purchase_date,
         expiration_date=expiration_date,
     )
 
@@ -604,6 +654,20 @@ def update_ingredient_route(
             "在庫数量は0.5刻みで入力してください。"
         )
 
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return render_edit_error(
+            purchase_date_error
+        )
+
+    assert parsed_purchase_date is not None
+
     parsed_expiration_date, expiration_date_error = (
         parse_optional_date(expiration_date)
     )
@@ -639,6 +703,7 @@ def update_ingredient_route(
             category=category,
             default_unit=default_unit,
             quantity=quantity,
+            purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
 
@@ -697,6 +762,84 @@ def delete_ingredient_route(
         url="/",
         status_code=303,
     )
+
+
+@router.post(
+    "/ingredients/{ingredient_id}/purchase-date/auto"
+)
+def auto_update_purchase_date_route(
+    ingredient_id: int,
+    purchase_date: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    """
+    一覧画面から購入日を自動保存する。
+
+    ページ遷移は行わず、JSONを返す。
+    """
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return JSONResponse(
+            status_code=404,
+            content={
+                "success": False,
+                "message": (
+                    "更新対象の食材が"
+                    "見つかりません。"
+                ),
+            },
+        )
+
+    parsed_purchase_date, purchase_date_error = (
+        parse_required_date(
+            purchase_date,
+            field_label="購入日",
+        )
+    )
+
+    if purchase_date_error:
+        return JSONResponse(
+            status_code=400,
+            content={
+                "success": False,
+                "message": purchase_date_error,
+            },
+        )
+
+    assert parsed_purchase_date is not None
+
+    try:
+        update_inventory_purchase_date(
+            db=db,
+            ingredient_id=ingredient_id,
+            purchase_date=parsed_purchase_date,
+        )
+
+    except Exception:
+        db.rollback()
+
+        return JSONResponse(
+            status_code=500,
+            content={
+                "success": False,
+                "message": (
+                    "購入日の保存に"
+                    "失敗しました。"
+                ),
+            },
+        )
+
+    return {
+        "success": True,
+        "message": "保存しました。",
+        "purchase_date": date_to_form_value(
+            parsed_purchase_date
+        ),
+    }
 
 
 @router.post(

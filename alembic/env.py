@@ -8,9 +8,7 @@ from app.database import Base, DATABASE_URL
 
 # モデルをimportすることで、
 # IngredientとInventoryをBase.metadataへ登録する。
-from app.models.ingredient import Ingredient  # noqa: F401
-from app.models.inventory import Inventory  # noqa: F401
-
+import app.models
 
 config = context.config
 
