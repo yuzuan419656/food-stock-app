@@ -2,46 +2,53 @@
 
 ## 1. 目的
 
-本ドキュメントでは、Phase1で実装する食材在庫管理システムのデータ構造を定義する。
-
-ER図を作成することで、テーブル間の関係を整理し、今後のDB設計・API設計・実装の土台とする。
+本ドキュメントでは、現在の在庫管理機能とStep10で追加予定の買うものリストを含むデータ構造を定義する。
 
 ---
 
-# 2. テーブル一覧
+## 2. テーブル一覧
 
-## Ingredient（食材マスタ）
+### Ingredient（食材マスタ）
 
-| カラム名 | 型（仮） | 説明 | Phase1 |
-|----------|----------|------|:------:|
-| id | INTEGER | 食材ID（PK） | ○ |
-| name | TEXT | 食材名 | ○ |
-| category | TEXT | 食材カテゴリ（野菜・肉・魚など） | ○ |
-| default_unit | TEXT | 基本単位（個・g・本など） | ○ |
-| created_at | DATETIME | 作成日時 | ○ |
-| updated_at | DATETIME | 更新日時 | ○ |
+| カラム | 型 | 説明 |
+|---|---|---|
+| id | INTEGER | 食材ID（PK） |
+| name | TEXT | 食材名 |
+| category | TEXT | カテゴリ |
+| default_unit | TEXT | 基本単位 |
+| created_at | DATETIME | 登録日時 |
+| updated_at | DATETIME | 更新日時 |
+
+### Inventory（在庫）
+
+| カラム | 型 | 説明 |
+|---|---|---|
+| id | INTEGER | 在庫ID（PK） |
+| ingredient_id | INTEGER | 食材ID（FK） |
+| quantity | REAL | 現在の在庫数量 |
+| expiration_date | DATE | 消費期限。未設定可 |
+| created_at | DATETIME | 登録日時 |
+| updated_at | DATETIME | 更新日時 |
+
+### ShoppingItem（買うものリスト・Step10）
+
+| カラム | 型 | 説明 |
+|---|---|---|
+| id | INTEGER | 買うものリストID（PK） |
+| ingredient_id | INTEGER | 食材ID（FK、UNIQUE） |
+| is_purchased | BOOLEAN | 購入済みか |
+| created_at | DATETIME | 追加日時 |
+| updated_at | DATETIME | 更新日時 |
 
 ---
 
-## Inventory（在庫）
-
-| カラム名 | 型（仮） | 説明 | Phase1 |
-|----------|----------|------|:------:|
-| id | INTEGER | 在庫ID（PK） | ○ |
-| ingredient_id | INTEGER | 食材ID（FK） | ○ |
-| quantity | REAL | 現在の在庫数量 | ○ |
-| created_at | DATETIME | 作成日時 | ○ |
-| updated_at | DATETIME | 更新日時 | ○ |
-
----
-
-# 3. ER図
+## 3. ER図
 
 ```text
 Ingredient
 -------------------------
 id (PK)
-name
+name (UNIQUE)
 category
 default_unit
 created_at
@@ -49,73 +56,62 @@ updated_at
 
         1
         │
-        │
-        │
-        N
+        ├─────────────── N
 
 Inventory
 -------------------------
 id (PK)
 ingredient_id (FK)
 quantity
+expiration_date
+created_at
+updated_at
+
+
+Ingredient
+        1
+        │
+        └────────────── 0..1
+
+ShoppingItem
+-------------------------
+id (PK)
+ingredient_id (FK, UNIQUE)
+is_purchased
 created_at
 updated_at
 ```
 
 ---
 
-# 4. テーブル概要
+## 4. リレーション
 
-## Ingredient（食材マスタ）
+### IngredientとInventory
 
-食材の基本情報を管理するテーブル。
+- `Inventory.ingredient_id` は `Ingredient.id` を参照する
+- モデル上は1:Nを維持する
+- 現在のPhase1では、1食材につき在庫レコード1件として扱う
+- 購入日・期限別のロット管理は将来拡張とする
 
-食材名・カテゴリ・基本単位など、頻繁には変更されない情報を保持する。
+### IngredientとShoppingItem
 
----
-
-## Inventory（在庫）
-
-現在保有している食材の在庫数量を管理するテーブル。
-
-Ingredientテーブルと関連付けることで、各食材の現在の在庫数を管理する。
-
----
-
-# 5. リレーション
-
-- Ingredient.id を主キー（PK）とする
-- Inventory.ingredient_id を外部キー（FK）として Ingredient.id を参照する
-- Ingredient：Inventory = 1：N のリレーションとする
-
-Phase1では同一食材の在庫を1件として扱う。
-将来的に購入日・消費期限単位で在庫を分ける可能性を考慮し、Ingredient と Inventory は 1:N とする。
+- `ShoppingItem.ingredient_id` は `Ingredient.id` を参照する
+- 1食材につき買うものリスト項目は最大1件とする
+- `ingredient_id` にUNIQUE制約を付けて重複追加を防ぐ
+- 食材削除時は関連する買うものリスト項目も削除する
 
 ---
 
-# 6. 設計方針
+## 5. 将来拡張
 
-Phase1では、食材在庫管理システムとして必要最低限のテーブル構成とする。
+Phase2以降で次のテーブル追加を検討する。
 
-将来的なOCR・レシピ提案・家計簿機能などの追加を考慮しつつ、まずはシンプルで保守しやすいデータベース設計を採用する。
+- recipes
+- recipe_ingredients
+- cooking_histories
+- receipts
+- receipt_items
+- users
+- categories
 
-また、変更されにくい情報（食材情報）と変更されやすい情報（在庫数量）を分離することで、拡張性と保守性を高める。
-
----
-
-# 7. 将来拡張
-
-Phase2以降では、以下のテーブルを追加予定である。
-
-- Receipt（レシート）
-- Recipe（レシピ）
-- RecipeIngredient（レシピ食材）
-- CookingHistory（調理履歴）
-- HouseholdAccount（家計簿）
-- User（ユーザー）
-- Category（カテゴリマスタ）
-
-また、Inventoryには将来的に以下の項目を追加する予定である。
-
-- expiration_date（消費期限）
-- purchase_date（購入日）
+購入日・期限単位の在庫管理を実装する場合は、Inventoryを在庫ロットとして再設計する。

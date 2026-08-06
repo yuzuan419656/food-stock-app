@@ -2,136 +2,107 @@
 
 ## 1. 目的
 
-本書では、本システムで使用するデータベースの詳細設計を定義する。
-
-ER図で定義したテーブルについて、各カラムのデータ型・制約・初期値などを定義する。
+本書では、現在の在庫管理機能とStep10で追加予定の買うものリストに関するデータベース詳細設計を定義する。
 
 ---
 
-# 2. DBMS
+## 2. DBMS
 
 | 項目 | 内容 |
-|------|------|
+|---|---|
 | DBMS | SQLite 3 |
 | ORM | SQLAlchemy 2.x |
+| マイグレーション | Alembic |
 | 将来 | PostgreSQLへ移行可能な設計とする |
 
 ---
 
-# 3. テーブル一覧
+## 3. テーブル一覧
 
-| テーブル名 | 説明 |
-|------------|------|
-| ingredients | 食材マスタ |
-| inventories | 在庫 |
-
----
-
-# 4. ingredients
-
-## テーブル概要
-
-食材の基本情報を管理する。
-
-### カラム定義
-
-| カラム | 型 | PK | NOT NULL | UNIQUE | 初期値 | 制約 | 説明 |
-|--------|----|----|----------|--------|--------|------|------|
-| id | INTEGER | ○ | - | - | - | PRIMARY KEY AUTOINCREMENT | 食材ID |
-| name | TEXT | - | ○ | ○ | - | - | 食材名 |
-| category | TEXT | - | - | - | - | - | カテゴリ |
-| default_unit | TEXT | - | - | - | - | - | 基本単位 |
-| created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | - | 登録日時 |
-| updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | - | 更新日時 |
+| テーブル | 状態 | 説明 |
+|---|---|---|
+| ingredients | 実装済み | 食材マスタ |
+| inventories | 実装済み | 在庫数量・消費期限 |
+| shopping_items | Step10で追加 | 買うものリスト |
 
 ---
 
-# 5. inventories
+## 4. ingredients
 
-## テーブル概要
-
-現在保有している食材の在庫を管理する。
-
-### カラム定義
-
-| カラム | 型 | PK | NOT NULL | FK | 初期値 | 制約 | 説明 |
-|--------|----|----|----------|----|--------|------|------|
-| id | INTEGER | ○ | - | - | - | PRIMARY KEY AUTOINCREMENT | 在庫ID |
-| ingredient_id | INTEGER | - | ○ | ingredients.id | - | - | 食材ID |
-| quantity | REAL | - | ○ | - | 0 | CHECK(quantity >= 0) | 現在の数量 |
-| created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | - | 登録日時 |
-| updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | - | 更新日時 |
+| カラム | 型 | PK | NOT NULL | UNIQUE | 初期値 | 説明 |
+|---|---|:---:|:---:|:---:|---|---|
+| id | INTEGER | ○ | ○ | - | - | 食材ID |
+| name | TEXT | - | ○ | ○ | - | 食材名 |
+| category | TEXT | - | - | - | NULL | カテゴリ |
+| default_unit | TEXT | - | - | - | NULL | 基本単位 |
+| created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 登録日時 |
+| updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 更新日時 |
 
 ---
 
-# 6. インデックス
+## 5. inventories
 
-| テーブル | 対象カラム | 目的 |
-|----------|------------|------|
-| ingredients | name | 食材検索の高速化 |
-| inventories | ingredient_id | テーブル結合（JOIN）の高速化 |
+| カラム | 型 | PK | NOT NULL | FK | 初期値 | 制約・説明 |
+|---|---|:---:|:---:|---|---|---|
+| id | INTEGER | ○ | ○ | - | - | 在庫ID |
+| ingredient_id | INTEGER | - | ○ | ingredients.id | - | 食材ID |
+| quantity | REAL | - | ○ | - | 0 | 0以上 |
+| expiration_date | DATE | - | - | - | NULL | 消費期限 |
+| created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 登録日時 |
+| updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 更新日時 |
 
----
-
-# 7. 制約
-
-## ingredients
-
-- `name` は一意とする（UNIQUE）
-- 食材名は必須項目とする
-
-## inventories
-
-- `ingredient_id` は `ingredients.id` を参照する外部キーとする
-- 親データ削除時は **RESTRICT** とする
-- `quantity` は **0以上** とする（CHECK制約）
-- `quantity` の初期値は **0** とする
+現在は1食材につき在庫レコード1件として利用する。モデル上は将来のロット管理を考慮して1:Nを維持する。
 
 ---
 
-# 8. 設計方針
+## 6. shopping_items（Step10）
 
-- SQLiteを利用する
-- SQLAlchemyでORM管理する
-- 将来的なPostgreSQL移行を考慮する
-- テーブル名は複数形・スネークケースを採用する
-- 拡張性を考慮し、監査カラム（created_at・updated_at）を各テーブルへ追加する
-- updated_at はSQLAlchemy側で更新時に自動更新する。
+| カラム | 型 | PK | NOT NULL | FK | UNIQUE | 初期値 | 説明 |
+|---|---|:---:|:---:|---|:---:|---|---|
+| id | INTEGER | ○ | ○ | - | - | - | リスト項目ID |
+| ingredient_id | INTEGER | - | ○ | ingredients.id | ○ | - | 対象食材 |
+| is_purchased | BOOLEAN | - | ○ | - | - | false | 購入済み状態 |
+| created_at | DATETIME | - | ○ | - | - | CURRENT_TIMESTAMP | 追加日時 |
+| updated_at | DATETIME | - | ○ | - | - | CURRENT_TIMESTAMP | 更新日時 |
 
----
+### 制約
 
-# 9. 将来拡張
-
-Phase2以降では以下のテーブルを追加予定。
-
-- categories
-- recipes
-- recipe_ingredients
-- cooking_history
-- receipts
-- receipt_items
+- `ingredient_id`はUNIQUEとする
+- 同じ食材を複数回追加しない
+- 食材削除時は関連項目を削除する
+- 購入済みに変更してもInventory.quantityは変更しない
 
 ---
 
-# 10. 命名規則
+## 7. インデックス
 
-| 項目 | ルール |
-|------|--------|
-| テーブル名 | 複数形・スネークケース（例：`ingredients`） |
-| カラム名 | スネークケース（例：`created_at`） |
-| 主キー | `id` |
-| 外部キー | `<テーブル名の単数形>_id`（例：`ingredient_id`） |
+| テーブル | カラム | 目的 |
+|---|---|---|
+| ingredients | name | 食材検索 |
+| inventories | ingredient_id | JOIN |
+| inventories | expiration_date | 期限順ソート |
+| shopping_items | ingredient_id | JOIN・重複判定 |
+| shopping_items | is_purchased | 購入状態による表示 |
 
 ---
 
-# 11. Definition of Done
+## 8. 設計方針
 
-本設計書は以下を満たした時点で完成とする。
+- テーブル名は複数形・スネークケース
+- 主キーは`id`
+- 外部キーは`<単数形>_id`
+- 日時カラムは`created_at`と`updated_at`
+- DB変更はAlembicで管理する
+- SQLite固有機能へ過度に依存しない
+- 未使用の将来カラムは先に追加しない
 
-- テーブル一覧が定義されている
-- 各テーブルのカラム定義が整理されている
-- データ型・制約・初期値が定義されている
-- インデックスが整理されている
-- 将来拡張を考慮した設計となっている
-- ER Diagramとの整合性が取れている
-- SQLAlchemyのモデルクラスを実装できるレベルまで設計されている
+---
+
+## 9. Step10マイグレーション予定
+
+```bash
+alembic revision --autogenerate -m "create shopping items table"
+alembic upgrade head
+```
+
+自動生成後は、UNIQUE制約、外部キー、削除時動作を必ず確認する。
