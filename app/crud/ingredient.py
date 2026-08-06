@@ -1,10 +1,10 @@
-from sqlalchemy import case, func
+from sqlalchemy import case, func, or_
 from sqlalchemy.orm import Session, joinedload
 from datetime import date
 
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
-from app.utils.ingredient_name import normalize_ingredient_name
+from app.utils.ingredient_name import normalize_ingredient_name, create_search_keywords
 
 
 def get_ingredients(
@@ -36,26 +36,30 @@ def search_ingredients(
     keyword: str,
     sort: str = "id",
 ) -> list[Ingredient]:
-    """食材名で部分一致検索する。"""
-    query = (
-        db.query(Ingredient)
-        .options(
-            joinedload(Ingredient.inventories)
-        )
-        .filter(
-            Ingredient.name.contains(keyword)
-        )
+    """食材名をひらがな・カタカナを区別せず検索する。"""
+    query = db.query(Ingredient).options(
+        joinedload(Ingredient.inventories)
     )
+
+    search_keywords = create_search_keywords(keyword)
+
+    if search_keywords:
+        query = query.filter(
+            or_(
+                *[
+                    Ingredient.name.contains(search_keyword)
+                    for search_keyword in search_keywords
+                ]
+            )
+        )
 
     if sort == "name":
         query = query.order_by(Ingredient.name)
-
     elif sort == "category":
         query = query.order_by(
             Ingredient.category,
             Ingredient.name,
         )
-
     else:
         query = query.order_by(Ingredient.id)
 
@@ -285,10 +289,19 @@ def get_filtered_ingredients(
         joinedload(Ingredient.inventories)
     )
 
+    # ひらがな・カタカナを区別せず検索する
     if keyword:
-        query = query.filter(
-            Ingredient.name.contains(keyword)
-        )
+        search_keywords = create_search_keywords(keyword)
+
+        if search_keywords:
+            query = query.filter(
+                or_(
+                    *[
+                        Ingredient.name.contains(search_keyword)
+                        for search_keyword in search_keywords
+                    ]
+                )
+            )
 
     if category_filters:
         query = query.filter(
@@ -340,14 +353,11 @@ def get_filtered_ingredients(
         )
 
     elif sort == "expiration_asc":
-        # 消費期限未設定を最後にする。
         order_conditions.extend(
             [
                 case(
                     (
-                        Inventory.expiration_date.is_(
-                            None
-                        ),
+                        Inventory.expiration_date.is_(None),
                         1,
                     ),
                     else_=0,
@@ -358,14 +368,11 @@ def get_filtered_ingredients(
         )
 
     elif sort == "expiration_desc":
-        # 消費期限未設定を最後にする。
         order_conditions.extend(
             [
                 case(
                     (
-                        Inventory.expiration_date.is_(
-                            None
-                        ),
+                        Inventory.expiration_date.is_(None),
                         1,
                     ),
                     else_=0,
