@@ -2,9 +2,10 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
 from app.routers import (
-    ingredient_duplicates,
     ingredients,
+    ingredient_duplicates,
     inventory,
+    shopping_list,
 )
 
 
@@ -19,3 +20,4 @@ app.mount(
 app.include_router(ingredients.router)
 app.include_router(ingredient_duplicates.router)
 app.include_router(inventory.router)
+app.include_router(shopping_list.router)

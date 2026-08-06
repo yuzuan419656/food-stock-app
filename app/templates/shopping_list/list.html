@@ -1,0 +1,167 @@
+{% extends "base.html" %}
+
+{% block title %}
+買うものリスト
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="shopping-list-header">
+        <div>
+            <h1>買うものリスト</h1>
+
+            <p>
+                購入する食材を確認し、
+                購入状況を管理できます。
+            </p>
+        </div>
+
+        <a
+            href="/"
+            class="secondary-button"
+        >
+            在庫一覧へ戻る
+        </a>
+    </div>
+
+    {% if message %}
+        <div class="message">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    {% if shopping_items %}
+        {% if has_purchased_items %}
+            <div class="shopping-list-toolbar">
+                <form
+                    action="/shopping-list/delete-purchased"
+                    method="post"
+                    onsubmit="
+                        return confirm(
+                            '購入済みの食材をすべて削除しますか？'
+                        );
+                    "
+                >
+                    <button
+                        type="submit"
+                        class="delete-button"
+                    >
+                        購入済みをまとめて削除
+                    </button>
+                </form>
+            </div>
+        {% endif %}
+
+        <table class="shopping-list-table">
+            <thead>
+                <tr>
+                    <th>食材名</th>
+                    <th>カテゴリ</th>
+                    <th>単位</th>
+                    <th>状態</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in shopping_items %}
+                    <tr
+                        class="
+                            {% if item.is_purchased %}
+                                shopping-item-purchased
+                            {% endif %}
+                        "
+                    >
+                        <td class="shopping-item-name">
+                            {{ item.ingredient.name }}
+                        </td>
+
+                        <td>
+                            {% if item.ingredient.category %}
+                                {{ item.ingredient.category }}
+                            {% else %}
+                                未設定
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.ingredient.default_unit %}
+                                {{ item.ingredient.default_unit }}
+                            {% else %}
+                                未設定
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.is_purchased %}
+                                <span class="shopping-status purchased">
+                                    購入済み
+                                </span>
+                            {% else %}
+                                <span class="shopping-status unpurchased">
+                                    未購入
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            <div class="shopping-list-actions">
+                                <form
+                                    action="/shopping-list/{{ item.id }}/toggle"
+                                    method="post"
+                                >
+                                    <button
+                                        type="submit"
+                                        class="secondary-button"
+                                    >
+                                        {% if item.is_purchased %}
+                                            未購入に戻す
+                                        {% else %}
+                                            購入済みにする
+                                        {% endif %}
+                                    </button>
+                                </form>
+
+                                <form
+                                    action="/shopping-list/{{ item.id }}/delete"
+                                    method="post"
+                                    onsubmit="
+                                        return confirm(
+                                            '{{ item.ingredient.name }}を買うものリストから削除しますか？'
+                                        );
+                                    "
+                                >
+                                    <button
+                                        type="submit"
+                                        class="delete-button"
+                                    >
+                                        削除
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>
+                買うものリストは空です。
+            </p>
+
+            <p>
+                在庫一覧から食材を選択して
+                追加してください。
+            </p>
+
+            <a
+                href="/"
+                class="primary-button"
+            >
+                在庫一覧へ戻る
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

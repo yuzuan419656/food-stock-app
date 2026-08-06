@@ -181,16 +181,56 @@
         </div>
     {% endif %}
 
-    <p>
+    <div class="ingredient-list-navigation">
         <a href="/ingredients/new">
             新しい食材を登録する
         </a>
-    </p>
+    </div>
 
     {% if ingredients %}
+        <div class="shopping-list-controls">
+            <form
+                id="shopping-list-add-form"
+                action="/shopping-list"
+                method="post"
+                class="shopping-list-add-form"
+            >
+                <button
+                    type="submit"
+                    class="shopping-list-add-button"
+                >
+                    選択した食材を買うものリストに追加
+                </button>
+            </form>
+
+            <a
+                href="/shopping-list"
+                class="shopping-list-view-button"
+            >
+                買うものリストを確認する
+            </a>
+
+            <span
+                id="shopping-list-selection-message"
+                class="shopping-list-selection-message"
+                aria-live="polite"
+            ></span>
+        </div>
+
         <table>
             <thead>
                 <tr>
+                    <th class="shopping-list-select-column">
+                        <label class="shopping-list-select-all-label">
+                            <input
+                                type="checkbox"
+                                id="shopping-list-select-all"
+                                aria-label="表示中の食材をすべて選択"
+                            >
+                            選択
+                        </label>
+                    </th>
+
                     <th>食材名</th>
 
                     <th>
@@ -261,6 +301,7 @@
                     </th>
 
                     <th>在庫数量</th>
+                    <th>購入日</th>
                     <th>消費期限</th>
                     <th>単位</th>
                     <th>操作</th>
@@ -281,7 +322,24 @@
                         ]
                     %}
 
+                    {% set purchase_date =
+                        purchase_date_by_ingredient_id[
+                            ingredient.id
+                        ]
+                    %}
+
                     <tr id="ingredient-{{ ingredient.id }}">
+                        <td class="shopping-list-select-cell">
+                            <input
+                                type="checkbox"
+                                name="ingredient_ids"
+                                value="{{ ingredient.id }}"
+                                form="shopping-list-add-form"
+                                class="shopping-list-item-checkbox"
+                                aria-label="{{ ingredient.name }}を買うものリストへ追加する"
+                            >
+                        </td>
+
                         <td>
                             {{ ingredient.name }}
                         </td>
@@ -396,6 +454,26 @@
                         </td>
 
                         <td
+                            class="purchase-date-cell"
+                            data-ingredient-id="{{ ingredient.id }}"
+                        >
+                            <div class="purchase-date-inline-editor">
+                                <input
+                                    type="date"
+                                    value="{{ purchase_date }}"
+                                    class="purchase-date-input"
+                                    aria-label="{{ ingredient.name }}の購入日"
+                                    required
+                                >
+
+                                <span
+                                    class="purchase-date-save-status"
+                                    aria-live="polite"
+                                ></span>
+                            </div>
+                        </td>
+
+                        <td
                             class="expiration-cell expiration-{{ expiration_info.status }}"
                             data-ingredient-id="{{ ingredient.id }}"
                         >
@@ -483,6 +561,266 @@
                     String(window.scrollY)
                 );
             });
+        });
+
+        const shoppingListAddForm =
+            document.getElementById(
+                "shopping-list-add-form"
+            );
+
+        const shoppingListCheckboxes =
+            document.querySelectorAll(
+                ".shopping-list-item-checkbox"
+            );
+
+        const shoppingListSelectAll =
+            document.getElementById(
+                "shopping-list-select-all"
+            );
+
+        const shoppingListSelectionMessage =
+            document.getElementById(
+                "shopping-list-selection-message"
+            );
+
+        const updateShoppingListSelectAllState =
+            () => {
+                if (!shoppingListSelectAll) {
+                    return;
+                }
+
+                const checkboxList =
+                    Array.from(
+                        shoppingListCheckboxes
+                    );
+
+                const selectedCount =
+                    checkboxList.filter(
+                        (checkbox) =>
+                            checkbox.checked
+                    ).length;
+
+                shoppingListSelectAll.checked =
+                    (
+                        checkboxList.length > 0
+                        && selectedCount
+                        === checkboxList.length
+                    );
+
+                shoppingListSelectAll.indeterminate =
+                    (
+                        selectedCount > 0
+                        && selectedCount
+                        < checkboxList.length
+                    );
+            };
+
+        if (shoppingListSelectAll) {
+            shoppingListSelectAll.addEventListener(
+                "change",
+                () => {
+                    shoppingListCheckboxes.forEach(
+                        (checkbox) => {
+                            checkbox.checked =
+                                shoppingListSelectAll.checked;
+                        }
+                    );
+
+                    if (
+                        shoppingListSelectionMessage
+                    ) {
+                        shoppingListSelectionMessage
+                            .textContent = "";
+                    }
+
+                    updateShoppingListSelectAllState();
+                }
+            );
+        }
+
+        shoppingListCheckboxes.forEach(
+            (checkbox) => {
+                checkbox.addEventListener(
+                    "change",
+                    () => {
+                        if (
+                            shoppingListSelectionMessage
+                        ) {
+                            shoppingListSelectionMessage
+                                .textContent = "";
+                        }
+
+                        updateShoppingListSelectAllState();
+                    }
+                );
+            }
+        );
+
+        if (shoppingListAddForm) {
+            shoppingListAddForm.addEventListener(
+                "submit",
+                (event) => {
+                    const hasSelectedIngredient =
+                        Array.from(
+                            shoppingListCheckboxes
+                        ).some(
+                            (checkbox) =>
+                                checkbox.checked
+                        );
+
+                    if (
+                        hasSelectedIngredient
+                    ) {
+                        return;
+                    }
+
+                    event.preventDefault();
+
+                    if (
+                        shoppingListSelectionMessage
+                    ) {
+                        shoppingListSelectionMessage
+                            .textContent =
+                            "食材を1件以上選択してください。";
+                    }
+                }
+            );
+        }
+
+        const purchaseDateCells =
+            document.querySelectorAll(
+                ".purchase-date-cell"
+            );
+
+        purchaseDateCells.forEach((cell) => {
+            const ingredientId =
+                cell.dataset.ingredientId;
+
+            const dateInput =
+                cell.querySelector(
+                    ".purchase-date-input"
+                );
+
+            const saveStatus =
+                cell.querySelector(
+                    ".purchase-date-save-status"
+                );
+
+            if (
+                !ingredientId
+                || !dateInput
+                || !saveStatus
+            ) {
+                return;
+            }
+
+            let savedValue = dateInput.value;
+            let saveMessageTimer = null;
+
+            const showPurchaseDateSaveMessage = (
+                message
+            ) => {
+                if (saveMessageTimer !== null) {
+                    window.clearTimeout(
+                        saveMessageTimer
+                    );
+                }
+
+                saveStatus.textContent =
+                    message;
+
+                saveMessageTimer =
+                    window.setTimeout(() => {
+                        saveStatus.textContent =
+                            "";
+                    }, 1200);
+            };
+
+            dateInput.addEventListener(
+                "change",
+                async () => {
+                    const previousValue =
+                        savedValue;
+
+                    const selectedValue =
+                        dateInput.value;
+
+                    if (!selectedValue) {
+                        dateInput.value =
+                            previousValue;
+
+                        showPurchaseDateSaveMessage(
+                            "購入日は必須です"
+                        );
+
+                        return;
+                    }
+
+                    dateInput.disabled = true;
+                    saveStatus.textContent =
+                        "保存中…";
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "purchase_date",
+                        selectedValue
+                    );
+
+                    try {
+                        const response =
+                            await fetch(
+                                (
+                                    `/ingredients/${ingredientId}`
+                                    + "/purchase-date/auto"
+                                ),
+                                {
+                                    method: "POST",
+                                    body: formData,
+                                }
+                            );
+
+                        const result =
+                            await response.json();
+
+                        if (
+                            !response.ok
+                            || !result.success
+                        ) {
+                            throw new Error(
+                                result.message
+                                || "保存に失敗しました。"
+                            );
+                        }
+
+                        savedValue =
+                            result.purchase_date;
+
+                        dateInput.value =
+                            result.purchase_date;
+
+                        showPurchaseDateSaveMessage(
+                            "保存しました"
+                        );
+
+                    } catch (error) {
+                        dateInput.value =
+                            previousValue;
+
+                        showPurchaseDateSaveMessage(
+                            (
+                                error.message
+                                || "保存に失敗しました。"
+                            )
+                        );
+
+                    } finally {
+                        dateInput.disabled =
+                            false;
+                    }
+                }
+            );
         });
 
         const expirationCells =
