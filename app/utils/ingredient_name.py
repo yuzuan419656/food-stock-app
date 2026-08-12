@@ -14,11 +14,6 @@ def normalize_ingredient_name(name: str) -> str:
     return normalized_name.strip()
 
 
-def normalize_ingredient_name(name: str) -> str:
-    """食材名の前後空白や全角・半角表記を正規化する。"""
-    return unicodedata.normalize("NFKC", name).strip()
-
-
 def hiragana_to_katakana(text: str) -> str:
     """文字列内のひらがなをカタカナへ変換する。"""
     converted_chars = []
