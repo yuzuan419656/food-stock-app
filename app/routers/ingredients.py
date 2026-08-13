@@ -783,9 +783,7 @@ def auto_update_purchase_date_route(
     db: Session = Depends(get_db),
 ):
     """
-    一覧画面から購入日を自動保存する。
-
-    ページ遷移は行わず、JSONを返す。
+    一覧画面から最古ロットの購入日を更新する。
     """
     ingredient = get_ingredient_by_id(
         db=db,
@@ -804,29 +802,33 @@ def auto_update_purchase_date_route(
             },
         )
 
-    parsed_purchase_date, purchase_date_error = (
+    parsed_purchase_date, error_message = (
         parse_required_date(
             purchase_date,
             field_label="購入日",
         )
     )
 
-    if purchase_date_error:
+    if error_message:
         return JSONResponse(
             status_code=400,
             content={
                 "success": False,
-                "message": purchase_date_error,
+                "message": error_message,
             },
         )
 
     assert parsed_purchase_date is not None
 
     try:
-        update_inventory_purchase_date(
-            db=db,
-            ingredient_id=ingredient_id,
-            purchase_date=parsed_purchase_date,
+        updated_inventory = (
+            update_inventory_purchase_date(
+                db=db,
+                ingredient_id=ingredient_id,
+                purchase_date=(
+                    parsed_purchase_date
+                ),
+            )
         )
 
     except Exception:
@@ -843,11 +845,36 @@ def auto_update_purchase_date_route(
             },
         )
 
+    if updated_inventory is None:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "success": False,
+                "message": (
+                    "在庫のあるロットがありません。"
+                    "新しいロットを追加してください。"
+                ),
+            },
+        )
+
+    updated_ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    assert updated_ingredient is not None
+
+    representative_purchase_date = (
+        get_inventory_purchase_date(
+            updated_ingredient
+        )
+    )
+
     return {
         "success": True,
         "message": "保存しました。",
         "purchase_date": date_to_form_value(
-            parsed_purchase_date
+            representative_purchase_date
         ),
     }
 
@@ -861,9 +888,8 @@ def auto_update_expiration_date_route(
     db: Session = Depends(get_db),
 ):
     """
-    一覧画面から消費期限を自動保存する。
-
-    ページ遷移は行わず、JSONを返す。
+    一覧画面から最短期限ロットの
+    消費期限を更新する。
     """
     ingredient = get_ingredient_by_id(
         db=db,
@@ -884,27 +910,29 @@ def auto_update_expiration_date_route(
 
     (
         parsed_expiration_date,
-        expiration_date_error,
+        error_message,
     ) = parse_optional_date(
         expiration_date
     )
 
-    if expiration_date_error:
+    if error_message:
         return JSONResponse(
             status_code=400,
             content={
                 "success": False,
-                "message": expiration_date_error,
+                "message": error_message,
             },
         )
 
     try:
-        update_inventory_expiration_date(
-            db=db,
-            ingredient_id=ingredient_id,
-            expiration_date=(
-                parsed_expiration_date
-            ),
+        updated_inventory = (
+            update_inventory_expiration_date(
+                db=db,
+                ingredient_id=ingredient_id,
+                expiration_date=(
+                    parsed_expiration_date
+                ),
+            )
         )
 
     except Exception:
@@ -921,10 +949,24 @@ def auto_update_expiration_date_route(
             },
         )
 
+    if updated_inventory is None:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "success": False,
+                "message": (
+                    "在庫のあるロットがありません。"
+                    "新しいロットを追加してください。"
+                ),
+            },
+        )
+
     updated_ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
     )
+
+    assert updated_ingredient is not None
 
     expiration_display = (
         build_expiration_display_by_ingredient_id(

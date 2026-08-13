@@ -10,7 +10,10 @@ from app.crud.inventory import (
     get_inventory_quantity,
     get_latest_active_inventory_lot,
     increment_latest_inventory_lot,
-    sort_inventory_lots_for_consumption,
+    get_nearest_expiration_inventory_lot,
+    get_oldest_active_inventory_lot,
+    update_inventory_expiration_date,
+    update_inventory_purchase_date,
 )
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
@@ -1149,3 +1152,274 @@ def test_latest_lot_uses_larger_id_when_purchase_dates_are_same(
 
     assert result is not None
     assert result.id == expected_inventory_id
+
+
+def test_update_purchase_date_updates_oldest_active_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": None,
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+                "expiration_date": None,
+            },
+        ],
+    )
+
+    lot_by_purchase_date = {
+        inventory.purchase_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = update_inventory_purchase_date(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        purchase_date=date(
+            2026,
+            8,
+            5,
+        ),
+    )
+
+    assert result is not None
+
+    db_session.expire_all()
+
+    oldest_lot = db_session.get(
+        Inventory,
+        lot_by_purchase_date[
+            date(2026, 8, 1)
+        ],
+    )
+
+    newer_lot = db_session.get(
+        Inventory,
+        lot_by_purchase_date[
+            date(2026, 8, 10)
+        ],
+    )
+
+    assert oldest_lot is not None
+    assert newer_lot is not None
+
+    assert oldest_lot.purchase_date == date(
+        2026,
+        8,
+        5,
+    )
+
+    assert newer_lot.purchase_date == date(
+        2026,
+        8,
+        10,
+    )
+
+
+def test_update_expiration_date_updates_nearest_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    15,
+                ),
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    lot_by_expiration_date = {
+        inventory.expiration_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = update_inventory_expiration_date(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        expiration_date=date(
+            2026,
+            8,
+            25,
+        ),
+    )
+
+    assert result is not None
+
+    db_session.expire_all()
+
+    updated_lot = db_session.get(
+        Inventory,
+        lot_by_expiration_date[
+            date(2026, 8, 15)
+        ],
+    )
+
+    untouched_lot = db_session.get(
+        Inventory,
+        lot_by_expiration_date[
+            date(2026, 8, 20)
+        ],
+    )
+
+    assert updated_lot is not None
+    assert untouched_lot is not None
+
+    assert updated_lot.expiration_date == date(
+        2026,
+        8,
+        25,
+    )
+
+    assert untouched_lot.expiration_date == date(
+        2026,
+        8,
+        20,
+    )
+
+
+def test_update_expiration_uses_oldest_lot_when_all_dates_unset(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": None,
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": None,
+            },
+        ],
+    )
+
+    oldest_lot_id = min(
+        ingredient.inventories,
+        key=lambda inventory: (
+            inventory.purchase_date,
+            inventory.id,
+        ),
+    ).id
+
+    result = update_inventory_expiration_date(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        expiration_date=date(
+            2026,
+            8,
+            15,
+        ),
+    )
+
+    assert result is not None
+
+    db_session.expire_all()
+
+    oldest_lot = db_session.get(
+        Inventory,
+        oldest_lot_id,
+    )
+
+    assert oldest_lot is not None
+    assert oldest_lot.expiration_date == date(
+        2026,
+        8,
+        15,
+    )
+
+
+def test_representative_date_update_ignores_empty_lots(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 0,
+                "purchase_date": date(
+                    2026,
+                    7,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    7,
+                    10,
+                ),
+            },
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+        ],
+    )
+
+    result = get_oldest_active_inventory_lot(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    assert result is not None
+    assert result.quantity == pytest.approx(2.0)
+    assert result.purchase_date == date(
+        2026,
+        8,
+        1,
+    )

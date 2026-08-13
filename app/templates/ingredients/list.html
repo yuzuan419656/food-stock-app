@@ -461,26 +461,66 @@
 
                         <td>
                             {% if quantity > 0 %}
-                                {{ purchase_date }}
+                                <div class="date-inline-editor">
+                                    <input
+                                        type="date"
+                                        class="purchase-date-input"
+                                        value="{{ purchase_date }}"
+                                        data-ingredient-id="{{ ingredient.id }}"
+                                        aria-label="{{ ingredient.name }}の最古ロットの購入日"
+                                        title="在庫ありロットの最古購入日を編集します"
+                                    >
+
+                                    <span
+                                        class="date-save-status"
+                                        aria-live="polite"
+                                    ></span>
+                                </div>
+
+                                <span class="representative-date-note">
+                                    最古ロット
+                                </span>
                             {% else %}
-                                -
+                                <span class="date-unavailable">
+                                    -
+                                </span>
                             {% endif %}
                         </td>
 
                         <td
                             class="expiration-cell expiration-{{ expiration_info.status }}"
+                            data-expiration-cell="{{ ingredient.id }}"
                         >
-                            {% if expiration_info.status == "unset" %}
-                                未設定
-                            {% else %}
-                                {{ expiration_info.date }}
-                            {% endif %}
+                            {% if quantity > 0 %}
+                                <div class="date-inline-editor">
+                                    <input
+                                        type="date"
+                                        class="expiration-date-input"
+                                        value="{% if expiration_info.status != 'unset' %}{{ expiration_info.date }}{% endif %}"
+                                        data-ingredient-id="{{ ingredient.id }}"
+                                        aria-label="{{ ingredient.name }}の最短消費期限"
+                                        title="在庫ありロットの最短消費期限を編集します"
+                                    >
 
-                            {% if expiration_info.label %}
+                                    <span
+                                        class="date-save-status"
+                                        aria-live="polite"
+                                    ></span>
+                                </div>
+
                                 <span
                                     class="expiration-status-label"
+                                    data-expiration-label="{{ ingredient.id }}"
                                 >
                                     {{ expiration_info.label }}
+                                </span>
+
+                                <span class="representative-date-note">
+                                    最短期限ロット
+                                </span>
+                            {% else %}
+                                <span class="date-unavailable">
+                                    未設定
                                 </span>
                             {% endif %}
                         </td>
@@ -670,6 +710,161 @@
                 }
             );
         }
+
+        const saveDateInput = async ({
+            input,
+            fieldName,
+            endpointSuffix,
+        }) => {
+            const ingredientId =
+                input.dataset.ingredientId;
+
+            const editor =
+                input.closest(".date-inline-editor");
+
+            const statusElement =
+                editor.querySelector(
+                    ".date-save-status"
+                );
+
+            const previousValue =
+                input.dataset.savedValue
+                ?? input.value;
+
+            input.disabled = true;
+            statusElement.textContent = "保存中...";
+
+            const formData = new FormData();
+
+            formData.append(
+                fieldName,
+                input.value
+            );
+
+            try {
+                const response = await fetch(
+                    `/ingredients/${ingredientId}/${endpointSuffix}`,
+                    {
+                        method: "POST",
+                        body: formData,
+                    }
+                );
+
+                const result = await response.json();
+
+                if (!response.ok || !result.success) {
+                    throw new Error(
+                        result.message
+                        || "保存に失敗しました。"
+                    );
+                }
+
+                if (fieldName === "purchase_date") {
+                    input.value =
+                        result.purchase_date;
+                }
+
+                if (fieldName === "expiration_date") {
+                    input.value =
+                        result.status === "unset"
+                        ? ""
+                        : result.expiration_date;
+
+                    const expirationCell =
+                        document.querySelector(
+                            `[data-expiration-cell="${ingredientId}"]`
+                        );
+
+                    const expirationLabel =
+                        document.querySelector(
+                            `[data-expiration-label="${ingredientId}"]`
+                        );
+
+                    if (expirationCell) {
+                        expirationCell.classList.remove(
+                            "expiration-normal",
+                            "expiration-expired",
+                            "expiration-expiring-soon",
+                            "expiration-unset"
+                        );
+
+                        expirationCell.classList.add(
+                            `expiration-${result.status}`
+                        );
+                    }
+
+                    if (expirationLabel) {
+                        expirationLabel.textContent =
+                            result.label || "";
+                    }
+                }
+
+                input.dataset.savedValue =
+                    input.value;
+
+                statusElement.textContent =
+                    result.message;
+
+                window.setTimeout(() => {
+                    statusElement.textContent = "";
+                }, 2000);
+
+            } catch (error) {
+                input.value = previousValue;
+
+                statusElement.textContent =
+                    error.message;
+
+            } finally {
+                input.disabled = false;
+            }
+        };
+
+        const purchaseDateInputs =
+            document.querySelectorAll(
+                ".purchase-date-input"
+            );
+
+        purchaseDateInputs.forEach((input) => {
+            input.dataset.savedValue =
+                input.value;
+
+            input.addEventListener(
+                "change",
+                () => {
+                    saveDateInput({
+                        input,
+                        fieldName:
+                            "purchase_date",
+                        endpointSuffix:
+                            "purchase-date/auto",
+                    });
+                }
+            );
+        });
+
+        const expirationDateInputs =
+            document.querySelectorAll(
+                ".expiration-date-input"
+            );
+
+        expirationDateInputs.forEach((input) => {
+            input.dataset.savedValue =
+                input.value;
+
+            input.addEventListener(
+                "change",
+                () => {
+                    saveDateInput({
+                        input,
+                        fieldName:
+                            "expiration_date",
+                        endpointSuffix:
+                            "expiration-date/auto",
+                    });
+                }
+            );
+        });
 
     });
 </script>

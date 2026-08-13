@@ -593,3 +593,41 @@ a.quantity-button:visited {
     outline: 2px solid #005fcc;
     outline-offset: 2px;
 }
+
+.date-inline-editor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.purchase-date-input,
+.expiration-date-input {
+    box-sizing: border-box;
+    width: 145px;
+    max-width: 100%;
+    padding: 4px;
+}
+
+.purchase-date-input:disabled,
+.expiration-date-input:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.date-save-status {
+    min-width: 72px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.representative-date-note {
+    display: block;
+    margin-top: 4px;
+    color: #666666;
+    font-size: 11px;
+}
+
+.date-unavailable {
+    color: #777777;
+}

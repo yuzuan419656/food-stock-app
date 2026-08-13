@@ -80,3 +80,41 @@ def test_create_inventory_lot_route(
         8,
         20,
     )
+
+
+def test_create_inventory_lot_route_rejects_zero(
+    client,
+    db_session,
+):
+    ingredient = Ingredient(
+        name="牛乳",
+        category="乳製品",
+        default_unit="L",
+    )
+
+    db_session.add(ingredient)
+    db_session.commit()
+
+    response = client.post(
+        f"/ingredients/{ingredient.id}/inventories",
+        data={
+            "quantity": "0",
+            "purchase_date": "2026-08-13",
+            "expiration_date": "",
+            "sort": "category",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 400
+
+    inventory_count = (
+        db_session.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == ingredient.id
+        )
+        .count()
+    )
+
+    assert inventory_count == 0

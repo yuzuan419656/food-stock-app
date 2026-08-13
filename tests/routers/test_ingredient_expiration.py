@@ -88,29 +88,44 @@ def test_expiration_display_statuses(
     )
 
 
-def test_list_displays_representative_expiration_date(
+def test_list_displays_representative_expiration_date_input(
     client: TestClient,
     db_session: Session,
 ):
-    create_ingredient(
+    ingredient = create_ingredient(
         db=db_session,
         name="牛乳",
         category="乳製品",
         default_unit="本",
         quantity=1,
-        expiration_date=date(2026, 8, 15),
+        expiration_date=date(
+            2026,
+            8,
+            15,
+        ),
     )
 
     response = client.get("/")
 
     assert response.status_code == 200
     assert "消費期限" in response.text
-    assert "2026-08-15" in response.text
+
     assert (
         'class="expiration-date-input"'
-        not in response.text
+        in response.text
     )
 
+    assert (
+        f'data-ingredient-id="{ingredient.id}"'
+        in response.text
+    )
+
+    assert (
+        'value="2026-08-15"'
+        in response.text
+    )
+
+    assert "最短期限ロット" in response.text
 
 def test_auto_update_expiration_date(
     client: TestClient,

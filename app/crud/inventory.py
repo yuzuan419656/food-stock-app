@@ -232,6 +232,68 @@ def get_inventory_purchase_date(
     return min(purchase_dates)
 
 
+def get_oldest_active_inventory_lot(
+    db: Session,
+    ingredient_id: int,
+) -> Inventory | None:
+    """
+    在庫が残っているロットのうち、
+    購入日が最も古いロットを取得する。
+
+    購入日が同じ場合はIDが小さいロットを優先する。
+    """
+    return (
+        db.query(Inventory)
+        .filter(
+            Inventory.ingredient_id == ingredient_id,
+            Inventory.quantity > 0,
+        )
+        .order_by(
+            Inventory.purchase_date.asc(),
+            Inventory.id.asc(),
+        )
+        .first()
+    )
+
+
+def get_nearest_expiration_inventory_lot(
+    db: Session,
+    ingredient_id: int,
+) -> Inventory | None:
+    """
+    在庫が残っているロットのうち、
+    消費期限が最も近いロットを取得する。
+
+    期限設定済みロットがない場合は、
+    購入日が最も古い在庫ありロットを返す。
+    """
+    inventory = (
+        db.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == ingredient_id,
+            Inventory.quantity > 0,
+            Inventory.expiration_date.is_not(
+                None
+            ),
+        )
+        .order_by(
+            Inventory.expiration_date.asc(),
+            Inventory.purchase_date.asc(),
+            Inventory.id.asc(),
+        )
+        .first()
+    )
+
+    if inventory is not None:
+        return inventory
+
+    return get_oldest_active_inventory_lot(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+
 def get_earlier_expiration_date(
     current_expiration_date: date | None,
     new_expiration_date: date | None,
@@ -388,72 +450,59 @@ def add_inventory_quantity(
     return ingredient
 
 
-def update_inventory_expiration_date(
-    db: Session,
-    ingredient_id: int,
-    expiration_date: date | None,
-) -> Ingredient | None:
-    """指定した食材の消費期限だけを更新する。"""
-    ingredient = get_ingredient_by_id(
-        db=db,
-        ingredient_id=ingredient_id,
-    )
-
-    if ingredient is None:
-        return None
-
-    if ingredient.inventories:
-        inventory = ingredient.inventories[0]
-        inventory.expiration_date = expiration_date
-
-    else:
-        inventory = Inventory(
-            ingredient_id=ingredient.id,
-            quantity=0,
-            purchase_date=date.today(),
-            expiration_date=expiration_date,
-        )
-
-        db.add(inventory)
-
-    db.commit()
-    db.refresh(ingredient)
-
-    return ingredient
-
-
 def update_inventory_purchase_date(
     db: Session,
     ingredient_id: int,
     purchase_date: date,
-) -> Ingredient | None:
-    """指定した食材の購入日だけを更新する。"""
-    ingredient = get_ingredient_by_id(
+) -> Inventory | None:
+    """
+    在庫ありロットのうち、
+    購入日が最も古いロットの購入日を更新する。
+    """
+    inventory = get_oldest_active_inventory_lot(
         db=db,
         ingredient_id=ingredient_id,
     )
 
-    if ingredient is None:
+    if inventory is None:
         return None
 
-    if ingredient.inventories:
-        inventory = ingredient.inventories[0]
-        inventory.purchase_date = purchase_date
-
-    else:
-        inventory = Inventory(
-            ingredient_id=ingredient.id,
-            quantity=0,
-            purchase_date=purchase_date,
-            expiration_date=None,
-        )
-
-        db.add(inventory)
+    inventory.purchase_date = purchase_date
 
     db.commit()
-    db.refresh(ingredient)
+    db.refresh(inventory)
 
-    return ingredient
+    return inventory
+
+
+def update_inventory_expiration_date(
+    db: Session,
+    ingredient_id: int,
+    expiration_date: date | None,
+) -> Inventory | None:
+    """
+    最短期限の在庫ありロットについて、
+    消費期限を更新する。
+
+    期限設定済みロットがない場合は、
+    最古購入日の在庫ありロットを更新する。
+    """
+    inventory = (
+        get_nearest_expiration_inventory_lot(
+            db=db,
+            ingredient_id=ingredient_id,
+        )
+    )
+
+    if inventory is None:
+        return None
+
+    inventory.expiration_date = expiration_date
+
+    db.commit()
+    db.refresh(inventory)
+
+    return inventory
 
 
 def update_inventory_expiration_dates(
