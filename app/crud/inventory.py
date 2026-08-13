@@ -7,46 +7,79 @@ from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
 
 
+
+def get_active_inventory_lots(
+    ingredient: Ingredient,
+) -> list[Inventory]:
+    """
+    数量が0より大きい在庫ロットを取得する。
+
+    戻り値のリストは新しく生成し、
+    relationshipの元データは変更しない。
+    """
+    return [
+        inventory
+        for inventory in ingredient.inventories
+        if float(inventory.quantity or 0) > 0
+    ]
+
+
 def get_inventory_quantity(
     ingredient: Ingredient,
 ) -> float:
-    """食材の現在庫数量を取得する。"""
-    if not ingredient.inventories:
-        return 0.0
-
-    quantity = ingredient.inventories[0].quantity
-
-    if quantity is None:
-        return 0.0
-
-    return float(quantity)
+    """食材に紐づく全在庫ロットの合計数量を取得する。"""
+    return float(
+        sum(
+            float(inventory.quantity or 0)
+            for inventory in ingredient.inventories
+        )
+    )
 
 
 def get_inventory_expiration_date(
     ingredient: Ingredient,
 ) -> date | None:
-    """食材の現在庫に設定された消費期限を取得する。"""
-    if not ingredient.inventories:
+    """
+    数量が残っている在庫ロットのうち、
+    最も早い消費期限を取得する。
+
+    期限未設定ロットは比較対象外とする。
+    """
+    expiration_dates = [
+        inventory.expiration_date
+        for inventory in get_active_inventory_lots(
+            ingredient
+        )
+        if inventory.expiration_date is not None
+    ]
+
+    if not expiration_dates:
         return None
 
-    return ingredient.inventories[0].expiration_date
-
+    return min(expiration_dates)
 
 def get_inventory_purchase_date(
     ingredient: Ingredient,
 ) -> date:
-    """食材の現在庫に設定された購入日を取得する。"""
-    if not ingredient.inventories:
+    """
+    数量が残っている在庫ロットのうち、
+    最も古い購入日を取得する。
+
+    在庫がない場合は、既存画面との互換性を保つため
+    当日を返す。
+    """
+    purchase_dates = [
+        inventory.purchase_date
+        for inventory in get_active_inventory_lots(
+            ingredient
+        )
+        if inventory.purchase_date is not None
+    ]
+
+    if not purchase_dates:
         return date.today()
 
-    purchase_date = (
-        ingredient.inventories[0].purchase_date
-    )
-
-    if purchase_date is None:
-        return date.today()
-
-    return purchase_date
+    return min(purchase_dates)
 
 
 def get_earlier_expiration_date(

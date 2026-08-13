@@ -1,4 +1,4 @@
-from sqlalchemy import case, func, or_
+from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session, joinedload
 from datetime import date
 
@@ -312,27 +312,68 @@ def get_filtered_ingredients(
 
     order_conditions = []
 
-    needs_inventory_join = (
+    needs_inventory_summary = (
         out_of_stock_first
         or sort in [
             "expiration_asc",
             "expiration_desc",
-        ]
+        ]   
     )
 
-    if needs_inventory_join:
-        query = query.outerjoin(Inventory)
+    inventory_summary = None
+
+    if needs_inventory_summary:
+        inventory_summary = (
+            db.query(
+                Inventory.ingredient_id.label(
+                    "ingredient_id"
+                ),
+                func.sum(
+                    Inventory.quantity
+                ).label(
+                    "total_quantity"
+                ),
+                func.min(
+                    case(
+                        (
+                            and_(
+                                Inventory.quantity > 0,
+                                Inventory.expiration_date.isnot(
+                                    None
+                                ),
+                            ),
+                            Inventory.expiration_date,
+                        ),
+                        else_=None,
+                    )
+                ).label(
+                    "nearest_expiration_date"
+                ),
+            )
+            .group_by(
+                Inventory.ingredient_id
+            )
+            .subquery()
+        )
+
+        query = query.outerjoin(
+            inventory_summary,
+            Ingredient.id
+            == inventory_summary.c.ingredient_id,
+        )
 
     if out_of_stock_first:
+        assert inventory_summary is not None
+
+        total_quantity = func.coalesce(
+            inventory_summary.c.total_quantity,
+            0,
+        )
+
         order_conditions.append(
             case(
                 (
-                    (
-                        Inventory.quantity.is_(None)
-                    )
-                    | (
-                        Inventory.quantity <= 0
-                    ),
+                    total_quantity <= 0,
                     0,
                 ),
                 else_=1,
@@ -353,31 +394,43 @@ def get_filtered_ingredients(
         )
 
     elif sort == "expiration_asc":
+        assert inventory_summary is not None
+
+        nearest_expiration_date = (
+            inventory_summary.c.nearest_expiration_date
+        )
+
         order_conditions.extend(
             [
                 case(
                     (
-                        Inventory.expiration_date.is_(None),
+                        nearest_expiration_date.is_(None),
                         1,
                     ),
                     else_=0,
                 ),
-                Inventory.expiration_date.asc(),
+                nearest_expiration_date.asc(),
                 Ingredient.name,
             ]
         )
 
     elif sort == "expiration_desc":
+        assert inventory_summary is not None
+
+        nearest_expiration_date = (
+            inventory_summary.c.nearest_expiration_date
+        )
+
         order_conditions.extend(
             [
                 case(
                     (
-                        Inventory.expiration_date.is_(None),
+                        nearest_expiration_date.is_(None),
                         1,
                     ),
                     else_=0,
                 ),
-                Inventory.expiration_date.desc(),
+                nearest_expiration_date.desc(),
                 Ingredient.name,
             ]
         )
