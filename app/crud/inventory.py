@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import date
 
 from sqlalchemy.orm import Session, joinedload
@@ -6,6 +7,155 @@ from app.crud.ingredient import get_ingredient_by_id
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
 
+
+@dataclass(frozen=True)
+class LotAllocation:
+    """1つの在庫ロットから消費した数量。"""
+
+    inventory_id: int
+    quantity: float
+
+
+@dataclass(frozen=True)
+class InventoryConsumptionResult:
+    """在庫ロットの減算結果。"""
+
+    requested_quantity: float
+    consumed_quantity: float
+    shortage_quantity: float
+    allocations: tuple[LotAllocation, ...]
+
+
+def sort_inventory_lots_for_consumption(
+    inventories: list[Inventory],
+) -> list[Inventory]:
+    """
+    在庫ロットを消費する優先順に並べる。
+
+    優先順位:
+    1. 消費期限が設定されている
+    2. 消費期限が早い
+    3. 購入日が古い
+    4. 登録日時が古い
+    5. IDが小さい
+    """
+    return sorted(
+        inventories,
+        key=lambda inventory: (
+            inventory.expiration_date is None,
+            (
+                inventory.expiration_date
+                or date.max
+            ),
+            (
+                inventory.purchase_date
+                or date.max
+            ),
+            inventory.created_at,
+            inventory.id,
+        ),
+    )
+
+
+def consume_inventory_quantity(
+    db: Session,
+    ingredient_id: int,
+    amount: float,
+) -> InventoryConsumptionResult | None:
+    """
+    指定量を消費優先順に在庫ロットから減算する。
+
+    在庫が不足している場合は、
+    在庫に存在する数量だけを減算する。
+
+    食材が存在しない場合はNoneを返す。
+    """
+    if amount <= 0:
+        raise ValueError(
+            "減算量は0より大きい値を指定してください。"
+        )
+
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return None
+
+    active_lots = [
+        inventory
+        for inventory in ingredient.inventories
+        if float(inventory.quantity or 0) > 0
+    ]
+
+    sorted_lots = (
+        sort_inventory_lots_for_consumption(
+            active_lots
+        )
+    )
+
+    requested_quantity = float(amount)
+    remaining_quantity = requested_quantity
+    allocations: list[LotAllocation] = []
+
+    try:
+        for inventory in sorted_lots:
+            if remaining_quantity <= 0:
+                break
+
+            current_quantity = float(
+                inventory.quantity or 0
+            )
+
+            consumed_quantity = min(
+                current_quantity,
+                remaining_quantity,
+            )
+
+            new_quantity = (
+                current_quantity
+                - consumed_quantity
+            )
+
+            # Floatの計算誤差によって、
+            # 0に近い値が残ることを防ぐ。
+            if abs(new_quantity) < 1e-9:
+                new_quantity = 0.0
+
+            inventory.quantity = new_quantity
+
+            allocations.append(
+                LotAllocation(
+                    inventory_id=inventory.id,
+                    quantity=consumed_quantity,
+                )
+            )
+
+            remaining_quantity -= (
+                consumed_quantity
+            )
+
+        if abs(remaining_quantity) < 1e-9:
+            remaining_quantity = 0.0
+
+        consumed_total = (
+            requested_quantity
+            - remaining_quantity
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return InventoryConsumptionResult(
+        requested_quantity=requested_quantity,
+        consumed_quantity=consumed_total,
+        shortage_quantity=remaining_quantity,
+        allocations=tuple(allocations),
+    )
 
 
 def get_active_inventory_lots(

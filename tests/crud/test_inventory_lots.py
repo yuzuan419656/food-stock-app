@@ -3,9 +3,11 @@ from datetime import date
 import pytest
 
 from app.crud.inventory import (
+    consume_inventory_quantity,
     get_inventory_expiration_date,
     get_inventory_purchase_date,
     get_inventory_quantity,
+    sort_inventory_lots_for_consumption,
 )
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
@@ -327,3 +329,495 @@ def test_get_inventory_purchase_date_returns_today_without_active_lots(
     )
 
     assert result == date.today()
+
+
+def get_inventory_lot(
+    db_session,
+    inventory_id: int,
+) -> Inventory:
+    """IDを指定してテスト対象の在庫ロットを取得する。"""
+    inventory = db_session.get(
+        Inventory,
+        inventory_id,
+    )
+
+    assert inventory is not None
+
+    return inventory
+
+
+def test_consume_inventory_uses_earliest_expiration_first(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+            {
+                "quantity": 1.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+        ],
+    )
+
+    lot_by_expiration = {
+        inventory.expiration_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+    assert result.consumed_quantity == pytest.approx(
+        0.5
+    )
+    assert result.shortage_quantity == pytest.approx(
+        0.0
+    )
+
+    earlier_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=lot_by_expiration[
+            date(2026, 8, 10)
+        ],
+    )
+    later_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=lot_by_expiration[
+            date(2026, 8, 20)
+        ],
+    )
+
+    assert earlier_lot.quantity == pytest.approx(
+        0.5
+    )
+    assert later_lot.quantity == pytest.approx(
+        2.0
+    )
+
+
+def test_consume_inventory_uses_oldest_purchase_date_when_expiration_is_same(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+            {
+                "quantity": 1.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    lot_by_purchase_date = {
+        inventory.purchase_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+
+    older_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=lot_by_purchase_date[
+            date(2026, 8, 1)
+        ],
+    )
+    newer_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=lot_by_purchase_date[
+            date(2026, 8, 5)
+        ],
+    )
+
+    assert older_lot.quantity == pytest.approx(
+        0.5
+    )
+    assert newer_lot.quantity == pytest.approx(
+        2.0
+    )
+
+
+def test_consume_inventory_uses_unset_expiration_last(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": None,
+            },
+            {
+                "quantity": 1.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    dated_lot = next(
+        inventory
+        for inventory in ingredient.inventories
+        if inventory.expiration_date is not None
+    )
+    unset_lot = next(
+        inventory
+        for inventory in ingredient.inventories
+        if inventory.expiration_date is None
+    )
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+
+    db_session.refresh(dated_lot)
+    db_session.refresh(unset_lot)
+
+    assert dated_lot.quantity == pytest.approx(
+        0.5
+    )
+    assert unset_lot.quantity == pytest.approx(
+        2.0
+    )
+
+
+def test_consume_inventory_across_multiple_lots(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 1.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    lot_by_expiration = {
+        inventory.expiration_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=2.5,
+    )
+
+    assert result is not None
+    assert result.requested_quantity == pytest.approx(
+        2.5
+    )
+    assert result.consumed_quantity == pytest.approx(
+        2.5
+    )
+    assert result.shortage_quantity == pytest.approx(
+        0.0
+    )
+
+    earlier_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=lot_by_expiration[
+            date(2026, 8, 10)
+        ],
+    )
+    later_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=lot_by_expiration[
+            date(2026, 8, 20)
+        ],
+    )
+
+    assert earlier_lot.quantity == pytest.approx(
+        0.0
+    )
+    assert later_lot.quantity == pytest.approx(
+        1.5
+    )
+
+    assert len(result.allocations) == 2
+
+    assert (
+        result.allocations[0].inventory_id
+        == earlier_lot.id
+    )
+    assert result.allocations[
+        0
+    ].quantity == pytest.approx(1.0)
+
+    assert (
+        result.allocations[1].inventory_id
+        == later_lot.id
+    )
+    assert result.allocations[
+        1
+    ].quantity == pytest.approx(1.5)
+
+
+def test_consume_inventory_returns_shortage_when_stock_is_insufficient(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 1.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+            {
+                "quantity": 0.5,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=3.0,
+    )
+
+    assert result is not None
+    assert result.requested_quantity == pytest.approx(
+        3.0
+    )
+    assert result.consumed_quantity == pytest.approx(
+        1.5
+    )
+    assert result.shortage_quantity == pytest.approx(
+        1.5
+    )
+
+    for inventory in ingredient.inventories:
+        db_session.refresh(inventory)
+
+        assert inventory.quantity == pytest.approx(
+            0.0
+        )
+
+
+def test_consume_inventory_skips_empty_lots(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 0.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+            },
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+    assert len(result.allocations) == 1
+
+    allocated_lot = get_inventory_lot(
+        db_session=db_session,
+        inventory_id=(
+            result.allocations[0].inventory_id
+        ),
+    )
+
+    assert allocated_lot.expiration_date == date(
+        2026,
+        8,
+        20,
+    )
+    assert allocated_lot.quantity == pytest.approx(
+        1.5
+    )
+
+
+@pytest.mark.parametrize(
+    "amount",
+    [
+        0,
+        -0.5,
+    ],
+)
+def test_consume_inventory_rejects_non_positive_amount(
+    db_session,
+    amount,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    with pytest.raises(
+        ValueError,
+        match="減算量は0より大きい値",
+    ):
+        consume_inventory_quantity(
+            db=db_session,
+            ingredient_id=ingredient.id,
+            amount=amount,
+        )
+
+
+def test_consume_inventory_returns_none_for_unknown_ingredient(
+    db_session,
+):
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=999999,
+        amount=0.5,
+    )
+
+    assert result is None
+
+
