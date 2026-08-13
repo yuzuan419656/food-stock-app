@@ -154,9 +154,46 @@ button {
 }
 
 .quantity-button {
-    width: 32px;
-    height: 32px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    width: 36px;
+    min-width: 36px;
+    height: 36px;
+    padding: 0;
+    border: 1px solid #767676;
+    border-radius: 3px;
+    background-color: #efefef;
+    color: #000000;
+    font: inherit;
+    line-height: 1;
+    text-decoration: none;
+    vertical-align: middle;
     cursor: pointer;
+    appearance: none;
+}
+
+a.quantity-button,
+a.quantity-button:link,
+a.quantity-button:visited {
+    color: #000000;
+    text-decoration: none;
+}
+
+.quantity-button:hover:not(:disabled) {
+    background-color: #e2e2e2;
+    color: #000000;
+    text-decoration: none;
+}
+
+.quantity-button:active:not(:disabled) {
+    background-color: #d5d5d5;
+}
+
+.quantity-button:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
 }
 
 .quantity-button:disabled {
@@ -514,4 +551,45 @@ button {
 .shopping-list-selection-message {
     color: #c62828;
     font-size: 14px;
+}
+
+.quantity-control {
+    flex-wrap: wrap;
+}
+
+.new-inventory-lot-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    margin: 0 0 0 4px;
+    padding: 0 10px;
+    border: 1px solid #767676;
+    border-radius: 3px;
+    background-color: #ffffff;
+    color: #333333;
+    font-size: 13px;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.new-inventory-lot-link:link,
+.new-inventory-lot-link:visited {
+    color: #333333;
+    text-decoration: none;
+}
+
+.new-inventory-lot-link:hover {
+    background-color: #f0f0f0;
+    color: #333333;
+    text-decoration: none;
+}
+
+.new-inventory-lot-link:active {
+    background-color: #e2e2e2;
+}
+
+.new-inventory-lot-link:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
 }

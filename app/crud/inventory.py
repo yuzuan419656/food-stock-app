@@ -539,3 +539,106 @@ def update_inventory_expiration_dates(
         raise
 
     return len(expiration_updates)
+
+
+def create_inventory_lot(
+    db: Session,
+    ingredient_id: int,
+    quantity: float,
+    purchase_date: date,
+    expiration_date: date | None,
+) -> Inventory | None:
+    """指定した食材へ新しい在庫ロットを追加する。"""
+    if quantity <= 0:
+        raise ValueError(
+            "在庫数量は0より大きい値を指定してください。"
+        )
+
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return None
+
+    inventory = Inventory(
+        ingredient_id=ingredient.id,
+        quantity=quantity,
+        purchase_date=purchase_date,
+        expiration_date=expiration_date,
+    )
+
+    try:
+        db.add(inventory)
+        db.commit()
+        db.refresh(inventory)
+
+    except Exception:
+        db.rollback()
+        raise
+
+    return inventory
+
+
+def get_latest_active_inventory_lot(
+    db: Session,
+    ingredient_id: int,
+) -> Inventory | None:
+    """
+    在庫が残っているロットのうち、
+    購入日が最も新しいロットを取得する。
+
+    購入日が同じ場合はIDが大きいロットを優先する。
+    購入日未設定のロットは最後に扱う。
+    """
+    return (
+        db.query(Inventory)
+        .filter(
+            Inventory.ingredient_id == ingredient_id,
+            Inventory.quantity > 0,
+        )
+        .order_by(
+            Inventory.purchase_date.is_(None),
+            Inventory.purchase_date.desc(),
+            Inventory.id.desc(),
+        )
+        .first()
+    )
+
+
+def increment_latest_inventory_lot(
+    db: Session,
+    ingredient_id: int,
+    amount: float = 0.5,
+) -> Inventory | None:
+    """
+    購入日が最も新しい在庫ありロットへ数量を追加する。
+
+    在庫のあるロットが存在しない場合はNoneを返す。
+    """
+    if amount <= 0:
+        raise ValueError(
+            "追加数量は0より大きい値にしてください。"
+        )
+
+    inventory = get_latest_active_inventory_lot(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if inventory is None:
+        return None
+
+    current_quantity = float(
+        inventory.quantity or 0
+    )
+
+    inventory.quantity = (
+        current_quantity + amount
+    )
+
+    db.commit()
+    db.refresh(inventory)
+
+    return inventory

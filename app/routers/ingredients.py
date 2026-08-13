@@ -264,6 +264,13 @@ def list_ingredients(
         out_of_stock_first=out_of_stock_first,
     )
 
+    quantity_by_ingredient_id = {
+        ingredient.id: get_inventory_quantity(
+            ingredient
+        )
+        for ingredient in ingredients
+    }
+
     purchase_date_by_ingredient_id = {
         ingredient.id: date_to_form_value(
             get_inventory_purchase_date(ingredient)
@@ -282,6 +289,9 @@ def list_ingredients(
         name="ingredients/list.html",
         context={
             "ingredients": ingredients,
+            "quantity_by_ingredient_id": (
+                quantity_by_ingredient_id
+            ),
             "keyword": keyword or "",
             "category_filters": category_filters,
             "categories": categories,

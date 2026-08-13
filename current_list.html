@@ -407,82 +407,62 @@
                                     {% endif %}
                                 </div>
 
-                                <form
-                                    action="/ingredients/{{ ingredient.id }}/increment"
-                                    method="post"
-                                    class="quantity-form"
-                                >
-                                    <input
-                                        type="hidden"
-                                        name="keyword"
-                                        value="{{ keyword }}"
-                                    >
-
-                                    {% for category in category_filters %}
-                                        <input
-                                            type="hidden"
-                                            name="category_filters"
-                                            value="{{ category }}"
-                                        >
-                                    {% endfor %}
-
-                                    <input
-                                        type="hidden"
-                                        name="sort"
-                                        value="{{ sort }}"
-                                    >
-
-                                    {% if out_of_stock_first %}
-                                        <input
-                                            type="hidden"
-                                            name="out_of_stock_first"
-                                            value="true"
-                                        >
-                                    {% endif %}
-
-                                    <button
-                                        type="submit"
-                                        class="quantity-button"
-                                        aria-label="{{ ingredient.name }}の最新ロットへ0.5追加する"
-                                        title="最新の購入ロットへ0.5追加"
-                                    >
-                                        ＋
-                                    </button>
-                                </form>
-
                                 <a
                                     href="/ingredients/{{ ingredient.id }}/inventories/new?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort={{ sort }}{% if out_of_stock_first %}&out_of_stock_first=true{% endif %}"
-                                    class="new-inventory-lot-link"
+                                    class="quantity-button inventory-add-link"
+                                    aria-label="{{ ingredient.name }}へ新しい在庫を追加する"
                                 >
-                                    新しいロットを追加
+                                    ＋
                                 </a>
                             </div>
                         </td>
 
-                        <td>
-                            {% if quantity > 0 %}
-                                {{ purchase_date }}
-                            {% else %}
-                                -
-                            {% endif %}
+                        <td
+                            class="purchase-date-cell"
+                            data-ingredient-id="{{ ingredient.id }}"
+                        >
+                            <div class="purchase-date-inline-editor">
+                                <input
+                                    type="date"
+                                    value="{{ purchase_date }}"
+                                    class="purchase-date-input"
+                                    aria-label="{{ ingredient.name }}の購入日"
+                                    required
+                                >
+
+                                <span
+                                    class="purchase-date-save-status"
+                                    aria-live="polite"
+                                ></span>
+                            </div>
                         </td>
 
                         <td
                             class="expiration-cell expiration-{{ expiration_info.status }}"
+                            data-ingredient-id="{{ ingredient.id }}"
                         >
-                            {% if expiration_info.status == "unset" %}
-                                未設定
-                            {% else %}
-                                {{ expiration_info.date }}
-                            {% endif %}
+                            <div class="expiration-inline-editor">
+                                <input
+                                    type="date"
+                                    value="{% if expiration_info.status != 'unset' %}{{ expiration_info.date }}{% endif %}"
+                                    class="expiration-date-input"
+                                    aria-label="{{ ingredient.name }}の消費期限"
+                                >
 
-                            {% if expiration_info.label %}
                                 <span
                                     class="expiration-status-label"
+                                    {% if not expiration_info.label %}
+                                        hidden
+                                    {% endif %}
                                 >
                                     {{ expiration_info.label }}
                                 </span>
-                            {% endif %}
+
+                                <span
+                                    class="expiration-save-status"
+                                    aria-live="polite"
+                                ></span>
+                            </div>
                         </td>
 
                         <td>
@@ -671,6 +651,294 @@
             );
         }
 
+        const purchaseDateCells =
+            document.querySelectorAll(
+                ".purchase-date-cell"
+            );
+
+        purchaseDateCells.forEach((cell) => {
+            const ingredientId =
+                cell.dataset.ingredientId;
+
+            const dateInput =
+                cell.querySelector(
+                    ".purchase-date-input"
+                );
+
+            const saveStatus =
+                cell.querySelector(
+                    ".purchase-date-save-status"
+                );
+
+            if (
+                !ingredientId
+                || !dateInput
+                || !saveStatus
+            ) {
+                return;
+            }
+
+            let savedValue = dateInput.value;
+            let saveMessageTimer = null;
+
+            const showPurchaseDateSaveMessage = (
+                message
+            ) => {
+                if (saveMessageTimer !== null) {
+                    window.clearTimeout(
+                        saveMessageTimer
+                    );
+                }
+
+                saveStatus.textContent =
+                    message;
+
+                saveMessageTimer =
+                    window.setTimeout(() => {
+                        saveStatus.textContent =
+                            "";
+                    }, 1200);
+            };
+
+            dateInput.addEventListener(
+                "change",
+                async () => {
+                    const previousValue =
+                        savedValue;
+
+                    const selectedValue =
+                        dateInput.value;
+
+                    if (!selectedValue) {
+                        dateInput.value =
+                            previousValue;
+
+                        showPurchaseDateSaveMessage(
+                            "購入日は必須です"
+                        );
+
+                        return;
+                    }
+
+                    dateInput.disabled = true;
+                    saveStatus.textContent =
+                        "保存中…";
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "purchase_date",
+                        selectedValue
+                    );
+
+                    try {
+                        const response =
+                            await fetch(
+                                (
+                                    `/ingredients/${ingredientId}`
+                                    + "/purchase-date/auto"
+                                ),
+                                {
+                                    method: "POST",
+                                    body: formData,
+                                }
+                            );
+
+                        const result =
+                            await response.json();
+
+                        if (
+                            !response.ok
+                            || !result.success
+                        ) {
+                            throw new Error(
+                                result.message
+                                || "保存に失敗しました。"
+                            );
+                        }
+
+                        savedValue =
+                            result.purchase_date;
+
+                        dateInput.value =
+                            result.purchase_date;
+
+                        showPurchaseDateSaveMessage(
+                            "保存しました"
+                        );
+
+                    } catch (error) {
+                        dateInput.value =
+                            previousValue;
+
+                        showPurchaseDateSaveMessage(
+                            (
+                                error.message
+                                || "保存に失敗しました。"
+                            )
+                        );
+
+                    } finally {
+                        dateInput.disabled =
+                            false;
+                    }
+                }
+            );
+        });
+
+        const expirationCells =
+            document.querySelectorAll(
+                ".expiration-cell"
+            );
+
+        expirationCells.forEach((cell) => {
+            const ingredientId =
+                cell.dataset.ingredientId;
+
+            const dateInput =
+                cell.querySelector(
+                    ".expiration-date-input"
+                );
+
+            const statusLabel =
+                cell.querySelector(
+                    ".expiration-status-label"
+                );
+
+            const saveStatus =
+                cell.querySelector(
+                    ".expiration-save-status"
+                );
+
+            if (
+                !ingredientId
+                || !dateInput
+                || !statusLabel
+                || !saveStatus
+            ) {
+                return;
+            }
+
+            let savedValue = dateInput.value;
+            let saveMessageTimer = null;
+
+            const setExpirationStatusClass = (
+                status
+            ) => {
+                cell.classList.remove(
+                    "expiration-unset",
+                    "expiration-expired",
+                    "expiration-expiring-soon",
+                    "expiration-normal"
+                );
+
+                cell.classList.add(
+                    `expiration-${status}`
+                );
+            };
+
+            const showSaveMessage = (
+                message
+            ) => {
+                if (saveMessageTimer !== null) {
+                    window.clearTimeout(
+                        saveMessageTimer
+                    );
+                }
+
+                saveStatus.textContent =
+                    message;
+
+                saveMessageTimer =
+                    window.setTimeout(() => {
+                        saveStatus.textContent =
+                            "";
+                    }, 1200);
+            };
+
+            dateInput.addEventListener(
+                "change",
+                async () => {
+                    const previousValue =
+                        savedValue;
+
+                    const selectedValue =
+                        dateInput.value;
+
+                    dateInput.disabled = true;
+                    saveStatus.textContent =
+                        "保存中…";
+
+                    const formData =
+                        new FormData();
+
+                    formData.append(
+                        "expiration_date",
+                        selectedValue
+                    );
+
+                    try {
+                        const response =
+                            await fetch(
+                                (
+                                    `/ingredients/${ingredientId}`
+                                    + "/expiration-date/auto"
+                                ),
+                                {
+                                    method: "POST",
+                                    body: formData,
+                                }
+                            );
+
+                        const result =
+                            await response.json();
+
+                        if (
+                            !response.ok
+                            || !result.success
+                        ) {
+                            throw new Error(
+                                result.message
+                                || "保存に失敗しました。"
+                            );
+                        }
+
+                        savedValue =
+                            selectedValue;
+
+                        statusLabel.textContent =
+                            result.label;
+
+                        statusLabel.hidden =
+                            !result.label;
+
+                        setExpirationStatusClass(
+                            result.status
+                        );
+
+                        showSaveMessage(
+                            "保存しました"
+                        );
+
+                    } catch (error) {
+                        dateInput.value =
+                            previousValue;
+
+                        showSaveMessage(
+                            (
+                                error.message
+                                || "保存に失敗しました。"
+                            )
+                        );
+
+                    } finally {
+                        dateInput.disabled =
+                            false;
+                    }
+                }
+            );
+        });
     });
 </script>
 {% endblock %}

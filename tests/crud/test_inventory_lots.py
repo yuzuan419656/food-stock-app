@@ -4,9 +4,12 @@ import pytest
 
 from app.crud.inventory import (
     consume_inventory_quantity,
+    create_inventory_lot,
     get_inventory_expiration_date,
     get_inventory_purchase_date,
     get_inventory_quantity,
+    get_latest_active_inventory_lot,
+    increment_latest_inventory_lot,
     sort_inventory_lots_for_consumption,
 )
 from app.models.ingredient import Ingredient
@@ -821,3 +824,328 @@ def test_consume_inventory_returns_none_for_unknown_ingredient(
     assert result is None
 
 
+def test_create_inventory_lot_adds_new_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+        ],
+    )
+
+    inventory = create_inventory_lot(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        quantity=3.0,
+        purchase_date=date(
+            2026,
+            8,
+            5,
+        ),
+        expiration_date=date(
+            2026,
+            8,
+            20,
+        ),
+    )
+
+    assert inventory is not None
+
+    inventories = (
+        db_session.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == ingredient.id
+        )
+        .order_by(Inventory.id)
+        .all()
+    )
+
+    assert len(inventories) == 2
+    assert inventories[0].quantity == pytest.approx(
+        2.0
+    )
+    assert inventories[1].quantity == pytest.approx(
+        3.0
+    )
+    assert sum(
+        lot.quantity
+        for lot in inventories
+    ) == pytest.approx(5.0)
+
+
+def test_create_inventory_lot_returns_none_for_unknown_ingredient(
+    db_session,
+):
+    result = create_inventory_lot(
+        db=db_session,
+        ingredient_id=999999,
+        quantity=1.0,
+        purchase_date=date(
+            2026,
+            8,
+            13,
+        ),
+        expiration_date=None,
+    )
+
+    assert result is None
+
+
+@pytest.mark.parametrize(
+    "quantity",
+    [
+        0,
+        -0.5,
+    ],
+)
+def test_create_inventory_lot_rejects_non_positive_quantity(
+    db_session,
+    quantity,
+):
+    with pytest.raises(
+        ValueError,
+        match="在庫数量は0より大きい値",
+    ):
+        create_inventory_lot(
+            db=db_session,
+            ingredient_id=1,
+            quantity=quantity,
+            purchase_date=date(
+                2026,
+                8,
+                13,
+            ),
+            expiration_date=None,
+        )
+
+
+def test_increment_latest_inventory_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+        ],
+    )
+
+    lot_by_purchase_date = {
+        inventory.purchase_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = increment_latest_inventory_lot(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+
+    db_session.expire_all()
+
+    older_lot = db_session.get(
+        Inventory,
+        lot_by_purchase_date[
+            date(2026, 8, 1)
+        ],
+    )
+
+    latest_lot = db_session.get(
+        Inventory,
+        lot_by_purchase_date[
+            date(2026, 8, 10)
+        ],
+    )
+
+    assert older_lot is not None
+    assert latest_lot is not None
+
+    assert older_lot.quantity == pytest.approx(
+        2.0
+    )
+    assert latest_lot.quantity == pytest.approx(
+        3.5
+    )
+
+
+def test_increment_ignores_empty_latest_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": None,
+            },
+            {
+                "quantity": 0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+                "expiration_date": None,
+            },
+        ],
+    )
+
+    lot_by_purchase_date = {
+        inventory.purchase_date: inventory.id
+        for inventory in ingredient.inventories
+    }
+
+    result = increment_latest_inventory_lot(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+
+    db_session.expire_all()
+
+    active_lot = db_session.get(
+        Inventory,
+        lot_by_purchase_date[
+            date(2026, 8, 1)
+        ],
+    )
+
+    empty_lot = db_session.get(
+        Inventory,
+        lot_by_purchase_date[
+            date(2026, 8, 10)
+        ],
+    )
+
+    assert active_lot is not None
+    assert empty_lot is not None
+
+    assert active_lot.quantity == pytest.approx(
+        2.5
+    )
+    assert empty_lot.quantity == pytest.approx(
+        0
+    )
+
+
+def test_increment_returns_none_without_active_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+                "expiration_date": None,
+            },
+        ],
+    )
+
+    result = increment_latest_inventory_lot(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is None
+
+
+def test_latest_lot_uses_larger_id_when_purchase_dates_are_same(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    20,
+                ),
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    25,
+                ),
+            },
+        ],
+    )
+
+    expected_inventory_id = max(
+        inventory.id
+        for inventory in ingredient.inventories
+    )
+
+    result = get_latest_active_inventory_lot(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    assert result is not None
+    assert result.id == expected_inventory_id
