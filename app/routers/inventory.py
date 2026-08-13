@@ -2,7 +2,10 @@ from fastapi import APIRouter, Depends, Form
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
-from app.crud.inventory import change_inventory_quantity
+from app.crud.inventory import (
+    change_inventory_quantity,
+    consume_inventory_quantity,
+)
 from app.database import get_db
 from app.utils.list_url import build_list_redirect_url
 
@@ -48,11 +51,11 @@ def decrement_inventory_quantity(
     out_of_stock_first: bool = Form(False),
     db: Session = Depends(get_db),
 ):
-    """対象食材の在庫数量を0.5減らす。"""
-    change_inventory_quantity(
+    """期限が近い在庫ロットから数量を0.5減らす。"""
+    consume_inventory_quantity(
         db=db,
         ingredient_id=ingredient_id,
-        amount=-0.5,
+        amount=0.5,
     )
 
     redirect_url = build_list_redirect_url(
