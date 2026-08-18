@@ -20,6 +20,7 @@ from app.crud.ingredient import (
     get_ingredient_by_id,
     get_ingredient_by_name,
     update_ingredient,
+    update_ingredient_basic_info,
 )
 from app.crud.inventory import (
     get_inventory_expiration_date,
@@ -27,6 +28,7 @@ from app.crud.inventory import (
     get_inventory_quantity,
     update_inventory_expiration_date,
     update_inventory_purchase_date,
+    get_inventory_lots,
 )
 from app.database import get_db
 from app.services.ingredient_form import (
@@ -264,6 +266,13 @@ def list_ingredients(
         out_of_stock_first=out_of_stock_first,
     )
 
+    quantity_by_ingredient_id = {
+        ingredient.id: get_inventory_quantity(
+            ingredient
+        )
+        for ingredient in ingredients
+    }
+
     purchase_date_by_ingredient_id = {
         ingredient.id: date_to_form_value(
             get_inventory_purchase_date(ingredient)
@@ -282,6 +291,9 @@ def list_ingredients(
         name="ingredients/list.html",
         context={
             "ingredients": ingredients,
+            "quantity_by_ingredient_id": (
+                quantity_by_ingredient_id
+            ),
             "keyword": keyword or "",
             "category_filters": category_filters,
             "categories": categories,
@@ -502,9 +514,13 @@ def create_ingredient_route(
 def edit_ingredient(
     ingredient_id: int,
     request: Request,
+    lot_message: str | None = Query(None),
+    lot_error: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    """食材編集画面を表示する。"""
+    """
+    食材基本情報と在庫ロットを表示する。
+    """
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -516,24 +532,36 @@ def edit_ingredient(
             status_code=303,
         )
 
-    category_select, category_other = get_option_form_values(
-        current_value=ingredient.category,
-        allowed_options=CATEGORY_OPTIONS,
+    category_select, category_other = (
+        get_option_form_values(
+            current_value=ingredient.category,
+            allowed_options=CATEGORY_OPTIONS,
+        )
     )
 
-    unit_select, unit_other = get_option_form_values(
-        current_value=ingredient.default_unit,
-        allowed_options=UNIT_OPTIONS,
+    unit_select, unit_other = (
+        get_option_form_values(
+            current_value=(
+                ingredient.default_unit
+            ),
+            allowed_options=UNIT_OPTIONS,
+        )
     )
 
-    quantity = get_inventory_quantity(ingredient)
-
-    purchase_date = get_inventory_purchase_date(
-        ingredient
+    inventory_lots = get_inventory_lots(
+        db=db,
+        ingredient_id=ingredient_id,
     )
 
-    expiration_date = get_inventory_expiration_date(
-        ingredient
+    total_quantity = sum(
+        float(inventory.quantity or 0)
+        for inventory in inventory_lots
+    )
+
+    active_lot_count = sum(
+        1
+        for inventory in inventory_lots
+        if float(inventory.quantity or 0) > 0
     )
 
     return templates.TemplateResponse(
@@ -541,23 +569,41 @@ def edit_ingredient(
         name="ingredients/edit.html",
         context={
             "ingredient": ingredient,
-            "category_options": CATEGORY_OPTIONS,
+            "category_options": (
+                CATEGORY_OPTIONS
+            ),
             "unit_options": UNIT_OPTIONS,
             "other_option": OTHER_OPTION,
             "form_data": {
                 "name": ingredient.name,
-                "category_select": category_select,
-                "category_other": category_other,
-                "default_unit_select": unit_select,
-                "default_unit_other": unit_other,
-                "quantity": quantity,
-                "purchase_date": date_to_form_value(
-                    purchase_date
+                "category_select": (
+                    category_select
                 ),
-                "expiration_date": date_to_form_value(
-                    expiration_date
+                "category_other": (
+                    category_other
+                ),
+                "default_unit_select": (
+                    unit_select
+                ),
+                "default_unit_other": (
+                    unit_other
                 ),
             },
+            "inventory_lots": inventory_lots,
+            "total_quantity": total_quantity,
+            "active_lot_count": (
+                active_lot_count
+            ),
+            "today": date.today(),
+            "new_lot_form": {
+                "quantity": 0.5,
+                "purchase_date": (
+                    date.today().isoformat()
+                ),
+                "expiration_date": "",
+            },
+            "lot_message": lot_message,
+            "lot_error": lot_error,
         },
     )
 
@@ -571,12 +617,9 @@ def update_ingredient_route(
     category_other: str | None = Form(None),
     default_unit_select: str = Form(...),
     default_unit_other: str | None = Form(None),
-    quantity: float = Form(...),
-    purchase_date: str = Form(...),
-    expiration_date: str | None = Form(None),
     db: Session = Depends(get_db),
 ):
-    """食材情報・在庫数量・購入日・消費期限を更新する。"""
+    """食材の基本情報だけを更新する。"""
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -588,33 +631,73 @@ def update_ingredient_route(
             status_code=303,
         )
 
-    normalized_name = normalize_ingredient_name(name)
-
-    form_data = build_new_form_data(
-        name=normalized_name,
-        category_select=category_select,
-        category_other=category_other,
-        default_unit_select=default_unit_select,
-        default_unit_other=default_unit_other,
-        quantity=quantity,
-        purchase_date=purchase_date,
-        expiration_date=expiration_date,
+    normalized_name = normalize_ingredient_name(
+        name
     )
+
+    form_data = {
+        "name": normalized_name,
+        "category_select": category_select,
+        "category_other": (
+            category_other or ""
+        ),
+        "default_unit_select": (
+            default_unit_select
+        ),
+        "default_unit_other": (
+            default_unit_other or ""
+        ),
+    }
 
     def render_edit_error(
         error_message: str,
         status_code: int = 400,
     ):
+        inventory_lots = get_inventory_lots(
+            db=db,
+            ingredient_id=ingredient_id,
+        )
+
         return templates.TemplateResponse(
             request=request,
             name="ingredients/edit.html",
             context={
                 "ingredient": ingredient,
-                "category_options": CATEGORY_OPTIONS,
+                "category_options": (
+                    CATEGORY_OPTIONS
+                ),
                 "unit_options": UNIT_OPTIONS,
                 "other_option": OTHER_OPTION,
                 "form_data": form_data,
-                "error_message": error_message,
+                "inventory_lots": (
+                    inventory_lots
+                ),
+                "total_quantity": sum(
+                    float(
+                        inventory.quantity or 0
+                    )
+                    for inventory
+                    in inventory_lots
+                ),
+                "active_lot_count": sum(
+                    1
+                    for inventory
+                    in inventory_lots
+                    if float(
+                        inventory.quantity or 0
+                    ) > 0
+                ),
+                "today": date.today(),
+                "new_lot_form": {
+                    "quantity": 0.5,
+                    "purchase_date": (
+                        date.today().isoformat()
+                    ),
+                    "expiration_date": "",
+                },
+                "error_message": (
+                    error_message
+                ),
             },
             status_code=status_code,
         )
@@ -624,87 +707,66 @@ def update_ingredient_route(
             "食材名を入力してください。"
         )
 
-    category, category_error = resolve_selected_option(
-        selected_value=category_select,
-        other_value=category_other,
-        allowed_options=CATEGORY_OPTIONS,
-        field_label="カテゴリ",
+    category, category_error = (
+        resolve_selected_option(
+            selected_value=category_select,
+            other_value=category_other,
+            allowed_options=CATEGORY_OPTIONS,
+            field_label="カテゴリ",
+        )
     )
 
     if category_error:
-        return render_edit_error(category_error)
+        return render_edit_error(
+            category_error
+        )
 
-    default_unit, unit_error = resolve_selected_option(
-        selected_value=default_unit_select,
-        other_value=default_unit_other,
-        allowed_options=UNIT_OPTIONS,
-        field_label="単位",
+    default_unit, unit_error = (
+        resolve_selected_option(
+            selected_value=(
+                default_unit_select
+            ),
+            other_value=default_unit_other,
+            allowed_options=UNIT_OPTIONS,
+            field_label="単位",
+        )
     )
 
     if unit_error:
-        return render_edit_error(unit_error)
-
-    if quantity < 0:
         return render_edit_error(
-            "在庫数量は0以上で入力してください。"
+            unit_error
         )
 
-    if not is_valid_quantity_step(quantity):
-        return render_edit_error(
-            "在庫数量は0.5刻みで入力してください。"
+    duplicate_ingredient = (
+        get_ingredient_by_name(
+            db=db,
+            name=normalized_name,
+            exclude_ingredient_id=(
+                ingredient_id
+            ),
         )
-
-    parsed_purchase_date, purchase_date_error = (
-        parse_required_date(
-            purchase_date,
-            field_label="購入日",
-        )
-    )
-
-    if purchase_date_error:
-        return render_edit_error(
-            purchase_date_error
-        )
-
-    assert parsed_purchase_date is not None
-
-    parsed_expiration_date, expiration_date_error = (
-        parse_optional_date(expiration_date)
-    )
-
-    if expiration_date_error:
-        return render_edit_error(
-            expiration_date_error
-        )
-
-    assert category is not None
-    assert default_unit is not None
-
-    duplicate_ingredient = get_ingredient_by_name(
-        db=db,
-        name=normalized_name,
-        exclude_ingredient_id=ingredient_id,
     )
 
     if duplicate_ingredient is not None:
         return render_edit_error(
             (
-                f"「{normalized_name}」はすでに"
-                "別の食材として登録されています。"
+                f"「{normalized_name}」は"
+                "すでに別の食材として"
+                "登録されています。"
             ),
             status_code=409,
         )
 
+    assert category is not None
+    assert default_unit is not None
+
     try:
-        update_ingredient(
+        update_ingredient_basic_info(
             db=db,
             ingredient_id=ingredient_id,
             name=normalized_name,
             category=category,
             default_unit=default_unit,
-            quantity=quantity,
-            purchase_date=parsed_purchase_date,
-            expiration_date=parsed_expiration_date,
         )
 
     except IntegrityError:
@@ -715,7 +777,10 @@ def update_ingredient_route(
         )
 
     return RedirectResponse(
-        url=f"/#ingredient-{ingredient_id}",
+        url=(
+            f"/ingredients/{ingredient_id}"
+            "/edit#ingredient-basic-info"
+        ),
         status_code=303,
     )
 
@@ -773,9 +838,7 @@ def auto_update_purchase_date_route(
     db: Session = Depends(get_db),
 ):
     """
-    一覧画面から購入日を自動保存する。
-
-    ページ遷移は行わず、JSONを返す。
+    一覧画面から最古ロットの購入日を更新する。
     """
     ingredient = get_ingredient_by_id(
         db=db,
@@ -794,29 +857,33 @@ def auto_update_purchase_date_route(
             },
         )
 
-    parsed_purchase_date, purchase_date_error = (
+    parsed_purchase_date, error_message = (
         parse_required_date(
             purchase_date,
             field_label="購入日",
         )
     )
 
-    if purchase_date_error:
+    if error_message:
         return JSONResponse(
             status_code=400,
             content={
                 "success": False,
-                "message": purchase_date_error,
+                "message": error_message,
             },
         )
 
     assert parsed_purchase_date is not None
 
     try:
-        update_inventory_purchase_date(
-            db=db,
-            ingredient_id=ingredient_id,
-            purchase_date=parsed_purchase_date,
+        updated_inventory = (
+            update_inventory_purchase_date(
+                db=db,
+                ingredient_id=ingredient_id,
+                purchase_date=(
+                    parsed_purchase_date
+                ),
+            )
         )
 
     except Exception:
@@ -833,11 +900,36 @@ def auto_update_purchase_date_route(
             },
         )
 
+    if updated_inventory is None:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "success": False,
+                "message": (
+                    "在庫のあるロットがありません。"
+                    "新しいロットを追加してください。"
+                ),
+            },
+        )
+
+    updated_ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    assert updated_ingredient is not None
+
+    representative_purchase_date = (
+        get_inventory_purchase_date(
+            updated_ingredient
+        )
+    )
+
     return {
         "success": True,
         "message": "保存しました。",
         "purchase_date": date_to_form_value(
-            parsed_purchase_date
+            representative_purchase_date
         ),
     }
 
@@ -851,9 +943,8 @@ def auto_update_expiration_date_route(
     db: Session = Depends(get_db),
 ):
     """
-    一覧画面から消費期限を自動保存する。
-
-    ページ遷移は行わず、JSONを返す。
+    一覧画面から最短期限ロットの
+    消費期限を更新する。
     """
     ingredient = get_ingredient_by_id(
         db=db,
@@ -874,27 +965,29 @@ def auto_update_expiration_date_route(
 
     (
         parsed_expiration_date,
-        expiration_date_error,
+        error_message,
     ) = parse_optional_date(
         expiration_date
     )
 
-    if expiration_date_error:
+    if error_message:
         return JSONResponse(
             status_code=400,
             content={
                 "success": False,
-                "message": expiration_date_error,
+                "message": error_message,
             },
         )
 
     try:
-        update_inventory_expiration_date(
-            db=db,
-            ingredient_id=ingredient_id,
-            expiration_date=(
-                parsed_expiration_date
-            ),
+        updated_inventory = (
+            update_inventory_expiration_date(
+                db=db,
+                ingredient_id=ingredient_id,
+                expiration_date=(
+                    parsed_expiration_date
+                ),
+            )
         )
 
     except Exception:
@@ -911,10 +1004,24 @@ def auto_update_expiration_date_route(
             },
         )
 
+    if updated_inventory is None:
+        return JSONResponse(
+            status_code=409,
+            content={
+                "success": False,
+                "message": (
+                    "在庫のあるロットがありません。"
+                    "新しいロットを追加してください。"
+                ),
+            },
+        )
+
     updated_ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
     )
+
+    assert updated_ingredient is not None
 
     expiration_display = (
         build_expiration_display_by_ingredient_id(

@@ -44,25 +44,47 @@ def test_update_inventory_purchase_date(
         category="卵・乳製品",
         default_unit="個",
         quantity=6,
-        purchase_date=date(2026, 8, 1),
+        purchase_date=date(
+            2026,
+            8,
+            1,
+        ),
     )
 
-    updated_ingredient = (
+    updated_inventory = (
         update_inventory_purchase_date(
             db=db_session,
             ingredient_id=ingredient.id,
-            purchase_date=date(2026, 8, 6),
+            purchase_date=date(
+                2026,
+                8,
+                6,
+            ),
         )
     )
 
+    assert updated_inventory is not None
+
+    assert (
+        updated_inventory.purchase_date
+        == date(2026, 8, 6)
+    )
+
+    db_session.expire_all()
+
+    updated_ingredient = get_ingredient_by_id(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
     assert updated_ingredient is not None
+
     assert (
         get_inventory_purchase_date(
             updated_ingredient
         )
         == date(2026, 8, 6)
     )
-
 
 def test_auto_update_purchase_date(
     client: TestClient,
