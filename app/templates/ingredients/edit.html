@@ -161,6 +161,18 @@
         id="inventory-lots"
         class="inventory-lot-section"
     >
+        {% if lot_message %}
+            <p class="success-message">
+                {{ lot_message }}
+            </p>
+        {% endif %}
+
+        {% if lot_error %}
+            <p class="error-message">
+                {{ lot_error }}
+            </p>
+        {% endif %}
+
         <div class="inventory-lot-heading">
             <div>
                 <h3>在庫ロット</h3>
@@ -194,6 +206,7 @@
                             <th>消費期限</th>
                             <th>数量</th>
                             <th>状態</th>
+                            <th>操作</th>
                         </tr>
                     </thead>
 
@@ -205,8 +218,13 @@
                                 and inventory.expiration_date
                                 and inventory.expiration_date < today
                             %}
+                            {% set edit_form_id =
+                                "inventory-lot-edit-"
+                                ~ inventory.id
+                            %}
 
                             <tr
+                                data-inventory-lot-row
                                 class="{% if lot_quantity <= 0 %}inventory-lot-empty{% elif is_expired %}inventory-lot-expired{% endif %}"
                             >
                                 <td>
@@ -214,33 +232,75 @@
                                 </td>
 
                                 <td>
-                                    {{ inventory.purchase_date }}
+                                    <span data-lot-display>
+                                        {{ inventory.purchase_date }}
+                                    </span>
+
+                                    <input
+                                        type="date"
+                                        name="purchase_date"
+                                        value="{{ inventory.purchase_date }}"
+                                        form="{{ edit_form_id }}"
+                                        class="inventory-lot-edit-input"
+                                        data-lot-edit-field
+                                        required
+                                        hidden
+                                    >
                                 </td>
 
                                 <td>
-                                    {% if inventory.expiration_date %}
-                                        {{ inventory.expiration_date }}
-
-                                        {% if is_expired %}
-                                            <span class="lot-status-expired">
-                                                期限切れ
+                                    <span data-lot-display>
+                                        {% if inventory.expiration_date %}
+                                            {{ inventory.expiration_date }}
+                                        {% else %}
+                                            <span class="date-unavailable">
+                                                未設定
                                             </span>
                                         {% endif %}
-                                    {% else %}
-                                        <span class="date-unavailable">
-                                            未設定
-                                        </span>
-                                    {% endif %}
+                                    </span>
+
+                                    <input
+                                        type="date"
+                                        name="expiration_date"
+                                        value="{{ inventory.expiration_date or '' }}"
+                                        form="{{ edit_form_id }}"
+                                        class="inventory-lot-edit-input"
+                                        data-lot-edit-field
+                                        hidden
+                                    >
                                 </td>
 
                                 <td>
-                                    {% if lot_quantity == lot_quantity | int %}
-                                        {{ lot_quantity | int }}
-                                    {% else %}
-                                        {{ lot_quantity }}
-                                    {% endif %}
+                                    <span data-lot-display>
+                                        {% if lot_quantity == lot_quantity | int %}
+                                            {{ lot_quantity | int }}
+                                        {% else %}
+                                            {{ lot_quantity }}
+                                        {% endif %}
 
-                                    {{ ingredient.default_unit }}
+                                        {{ ingredient.default_unit }}
+                                    </span>
+
+                                    <div
+                                        class="inventory-lot-quantity-edit"
+                                        data-lot-edit-field
+                                        hidden
+                                    >
+                                        <input
+                                            type="number"
+                                            name="quantity"
+                                            value="{{ lot_quantity }}"
+                                            min="0"
+                                            step="0.5"
+                                            form="{{ edit_form_id }}"
+                                            class="inventory-lot-edit-input inventory-lot-quantity-input"
+                                            required
+                                        >
+
+                                        <span>
+                                            {{ ingredient.default_unit }}
+                                        </span>
+                                    </div>
                                 </td>
 
                                 <td>
@@ -257,6 +317,40 @@
                                             在庫あり
                                         </span>
                                     {% endif %}
+                                </td>
+
+                                <td class="inventory-lot-operation-cell">
+                                    <div data-lot-view-actions>
+                                        <button
+                                            type="button"
+                                            class="inventory-lot-edit-button"
+                                            data-lot-edit-start
+                                            aria-expanded="false"
+                                        >
+                                            編集
+                                        </button>
+                                    </div>
+
+                                    <form
+                                        id="{{ edit_form_id }}"
+                                        action="/inventories/{{ inventory.id }}/edit"
+                                        method="post"
+                                        class="inventory-lot-edit-form"
+                                        data-lot-edit-actions
+                                        hidden
+                                    >
+                                        <button type="submit">
+                                            保存
+                                        </button>
+
+                                        <button
+                                            type="button"
+                                            class="inventory-lot-cancel-button"
+                                            data-lot-edit-cancel
+                                        >
+                                            取消
+                                        </button>
+                                    </form>
                                 </td>
                             </tr>
                         {% endfor %}
@@ -456,6 +550,105 @@
             ) {
                 newInventoryLotPanel.open = true;
             }
+
+            const inventoryLotRows =
+                document.querySelectorAll(
+                    "[data-inventory-lot-row]"
+                );
+
+            inventoryLotRows.forEach((row) => {
+                const editStartButton =
+                    row.querySelector(
+                        "[data-lot-edit-start]"
+                    );
+
+                const cancelButton =
+                    row.querySelector(
+                        "[data-lot-edit-cancel]"
+                    );
+
+                const viewActions =
+                    row.querySelector(
+                        "[data-lot-view-actions]"
+                    );
+
+                const editActions =
+                    row.querySelector(
+                        "[data-lot-edit-actions]"
+                    );
+
+                const displayElements =
+                    row.querySelectorAll(
+                        "[data-lot-display]"
+                    );
+
+                const editFields =
+                    row.querySelectorAll(
+                        "[data-lot-edit-field]"
+                    );
+
+                if (
+                    !editStartButton
+                    || !cancelButton
+                    || !viewActions
+                    || !editActions
+                ) {
+                    return;
+                }
+
+                const setEditing = (
+                    isEditing
+                ) => {
+                    displayElements.forEach(
+                        (element) => {
+                            element.hidden =
+                                isEditing;
+                        }
+                    );
+
+                    editFields.forEach(
+                        (element) => {
+                            element.hidden =
+                                !isEditing;
+                        }
+                    );
+
+                    viewActions.hidden =
+                        isEditing;
+
+                    editActions.hidden =
+                        !isEditing;
+
+                    editStartButton.setAttribute(
+                        "aria-expanded",
+                        String(isEditing)
+                    );
+                };
+
+                editStartButton.addEventListener(
+                    "click",
+                    () => {
+                        setEditing(true);
+
+                        const firstInput =
+                            row.querySelector(
+                                "input[data-lot-edit-field]"
+                            );
+
+                        if (firstInput) {
+                            firstInput.focus();
+                        }
+                    }
+                );
+
+                cancelButton.addEventListener(
+                    "click",
+                    () => {
+                        editActions.reset();
+                        setEditing(false);
+                    }
+                );
+            });
         }
     );
 </script>

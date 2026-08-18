@@ -1,4 +1,5 @@
 from datetime import date
+from urllib.parse import urlencode
 
 from fastapi import (
     APIRouter,
@@ -19,6 +20,8 @@ from app.crud.inventory import (
     consume_inventory_quantity,
     create_inventory_lot,
     increment_latest_inventory_lot,
+    get_inventory_lot_by_id,
+    update_inventory_lot,
 )
 from app.database import get_db
 from app.services.ingredient_form import (
@@ -85,6 +88,40 @@ def build_new_inventory_lot_url(
         url = f"{url}?{query_string}"
 
     return url
+
+
+
+def build_ingredient_edit_url(
+    ingredient_id: int,
+    lot_message: str | None = None,
+    lot_error: str | None = None,
+) -> str:
+    """
+    ロット編集結果を含む食材編集画面の
+    URLを作成する。
+    """
+    query_params: dict[str, str] = {}
+
+    if lot_message:
+        query_params["lot_message"] = (
+            lot_message
+        )
+
+    if lot_error:
+        query_params["lot_error"] = lot_error
+
+    url = (
+        f"/ingredients/{ingredient_id}/edit"
+    )
+
+    if query_params:
+        url = (
+            f"{url}?"
+            f"{urlencode(query_params)}"
+        )
+
+    return f"{url}#inventory-lots"
+
 
 
 @router.post(
@@ -405,5 +442,147 @@ def create_inventory_lot_route(
 
     return RedirectResponse(
         url=redirect_url,
+        status_code=303,
+    )
+
+
+@router.post(
+    "/inventories/{inventory_id}/edit"
+)
+def update_inventory_lot_route(
+    inventory_id: int,
+    quantity: float = Form(...),
+    purchase_date: str = Form(...),
+    expiration_date: str | None = Form(None),
+    db: Session = Depends(get_db),
+):
+    """在庫ロットを個別に更新する。"""
+    inventory = get_inventory_lot_by_id(
+        db=db,
+        inventory_id=inventory_id,
+    )
+
+    if inventory is None:
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    ingredient_id = inventory.ingredient_id
+
+    if quantity < 0:
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=(
+                    "在庫数量は0以上で"
+                    "入力してください。"
+                ),
+            ),
+            status_code=303,
+        )
+
+    if not is_valid_quantity_step(quantity):
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=(
+                    "在庫数量は0.5刻みで"
+                    "入力してください。"
+                ),
+            ),
+            status_code=303,
+        )
+
+    (
+        parsed_purchase_date,
+        purchase_date_error,
+    ) = parse_required_date(
+        purchase_date,
+        field_label="購入日",
+    )
+
+    if purchase_date_error:
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=purchase_date_error,
+            ),
+            status_code=303,
+        )
+
+    assert parsed_purchase_date is not None
+
+    (
+        parsed_expiration_date,
+        expiration_date_error,
+    ) = parse_optional_date(
+        expiration_date
+    )
+
+    if expiration_date_error:
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=(
+                    expiration_date_error
+                ),
+            ),
+            status_code=303,
+        )
+
+    try:
+        updated_inventory = (
+            update_inventory_lot(
+                db=db,
+                inventory_id=inventory_id,
+                quantity=quantity,
+                purchase_date=(
+                    parsed_purchase_date
+                ),
+                expiration_date=(
+                    parsed_expiration_date
+                ),
+            )
+        )
+
+    except ValueError as error:
+        db.rollback()
+
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=str(error),
+            ),
+            status_code=303,
+        )
+
+    except Exception:
+        db.rollback()
+
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=(
+                    "在庫ロットの更新に"
+                    "失敗しました。"
+                ),
+            ),
+            status_code=303,
+        )
+
+    if updated_inventory is None:
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=build_ingredient_edit_url(
+            ingredient_id=ingredient_id,
+            lot_message=(
+                "在庫ロットを更新しました。"
+            ),
+        ),
         status_code=303,
     )

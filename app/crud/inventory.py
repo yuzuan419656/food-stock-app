@@ -7,6 +7,10 @@ from sqlalchemy.orm import Session, joinedload
 from app.crud.ingredient import get_ingredient_by_id
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
+from app.utils.quantity import (
+    is_valid_quantity_step,
+)
+
 
 
 @dataclass(frozen=True)
@@ -737,3 +741,56 @@ def get_inventory_lots(
         )
         .all()
     )
+
+
+def get_inventory_lot_by_id(
+    db: Session,
+    inventory_id: int,
+) -> Inventory | None:
+    """IDを指定して在庫ロットを取得する。"""
+    return db.get(
+        Inventory,
+        inventory_id,
+    )
+
+
+def update_inventory_lot(
+    db: Session,
+    inventory_id: int,
+    quantity: float,
+    purchase_date: date,
+    expiration_date: date | None,
+) -> Inventory | None:
+    """
+    在庫ロットを個別に更新する。
+
+    他のロットは変更しない。
+    """
+    if quantity < 0:
+        raise ValueError(
+            "在庫数量は0以上で入力してください。"
+        )
+
+    if not is_valid_quantity_step(quantity):
+        raise ValueError(
+            "在庫数量は0.5刻みで入力してください。"
+        )
+
+    inventory = get_inventory_lot_by_id(
+        db=db,
+        inventory_id=inventory_id,
+    )
+
+    if inventory is None:
+        return None
+
+    inventory.quantity = quantity
+    inventory.purchase_date = purchase_date
+    inventory.expiration_date = (
+        expiration_date
+    )
+
+    db.commit()
+    db.refresh(inventory)
+
+    return inventory

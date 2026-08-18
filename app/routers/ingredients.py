@@ -514,6 +514,8 @@ def create_ingredient_route(
 def edit_ingredient(
     ingredient_id: int,
     request: Request,
+    lot_message: str | None = Query(None),
+    lot_error: str | None = Query(None),
     db: Session = Depends(get_db),
 ):
     """
@@ -600,6 +602,8 @@ def edit_ingredient(
                 ),
                 "expiration_date": "",
             },
+            "lot_message": lot_message,
+            "lot_error": lot_error,
         },
     )
 
