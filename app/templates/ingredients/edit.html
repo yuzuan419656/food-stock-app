@@ -1,3 +1,4 @@
+{# 在庫ロット行内編集・論理削除対応完成版 2026-08-18 #}
 {% extends "base.html" %}
 
 {% block content %}
@@ -320,7 +321,10 @@
                                 </td>
 
                                 <td class="inventory-lot-operation-cell">
-                                    <div data-lot-view-actions>
+                                    <div
+                                        class="inventory-lot-view-actions"
+                                        data-lot-view-actions
+                                    >
                                         <button
                                             type="button"
                                             class="inventory-lot-edit-button"
@@ -329,6 +333,20 @@
                                         >
                                             編集
                                         </button>
+
+                                        <form
+                                            action="/inventories/{{ inventory.id }}/delete"
+                                            method="post"
+                                            class="inventory-lot-delete-form"
+                                            onsubmit="return window.confirm('この在庫ロットを削除しますか？');"
+                                        >
+                                            <button
+                                                type="submit"
+                                                class="inventory-lot-delete-button"
+                                            >
+                                                削除
+                                            </button>
+                                        </form>
                                     </div>
 
                                     <form

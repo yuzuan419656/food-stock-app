@@ -14,6 +14,7 @@ from app.crud.inventory import (
     get_oldest_active_inventory_lot,
     update_inventory_expiration_date,
     update_inventory_purchase_date,
+    soft_delete_inventory_lot,
 )
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
@@ -1422,4 +1423,158 @@ def test_representative_date_update_ignores_empty_lots(
         2026,
         8,
         1,
+    )
+
+
+def test_soft_deleted_lot_is_excluded_from_total_quantity(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    15,
+                ),
+            },
+        ],
+    )
+
+    first_lot_id = min(
+        inventory.id
+        for inventory in ingredient.inventories
+    )
+
+    deleted_inventory = (
+        soft_delete_inventory_lot(
+            db=db_session,
+            inventory_id=first_lot_id,
+        )
+    )
+
+    assert deleted_inventory is not None
+    assert (
+        deleted_inventory.deleted_at
+        is not None
+    )
+
+    db_session.expire_all()
+
+    updated_ingredient = (
+        db_session.get(
+            Ingredient,
+            ingredient.id,
+        )
+    )
+
+    assert updated_ingredient is not None
+
+    assert get_inventory_quantity(
+        updated_ingredient
+    ) == pytest.approx(3.0)
+
+
+def test_consumption_ignores_soft_deleted_lot(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    1,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    10,
+                ),
+            },
+            {
+                "quantity": 3.0,
+                "purchase_date": date(
+                    2026,
+                    8,
+                    5,
+                ),
+                "expiration_date": date(
+                    2026,
+                    8,
+                    15,
+                ),
+            },
+        ],
+    )
+
+    lot_by_expiration = {
+        inventory.expiration_date:
+            inventory.id
+        for inventory
+        in ingredient.inventories
+    }
+
+    deleted_lot_id = lot_by_expiration[
+        date(2026, 8, 10)
+    ]
+
+    soft_delete_inventory_lot(
+        db=db_session,
+        inventory_id=deleted_lot_id,
+    )
+
+    result = consume_inventory_quantity(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=0.5,
+    )
+
+    assert result is not None
+
+    db_session.expire_all()
+
+    deleted_lot = db_session.get(
+        Inventory,
+        deleted_lot_id,
+    )
+
+    active_lot = db_session.get(
+        Inventory,
+        lot_by_expiration[
+            date(2026, 8, 15)
+        ],
+    )
+
+    assert deleted_lot is not None
+    assert active_lot is not None
+
+    assert deleted_lot.quantity == pytest.approx(
+        2.0
+    )
+
+    assert active_lot.quantity == pytest.approx(
+        2.5
     )

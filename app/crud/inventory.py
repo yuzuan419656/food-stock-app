@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 
 from sqlalchemy import case
 from sqlalchemy.orm import Session, joinedload
@@ -67,19 +67,6 @@ def consume_inventory_quantity(
     ingredient_id: int,
     amount: float,
 ) -> InventoryConsumptionResult | None:
-    """
-    指定量を消費優先順に在庫ロットから減算する。
-
-    在庫が不足している場合は、
-    在庫に存在する数量だけを減算する。
-
-    食材が存在しない場合はNoneを返す。
-    """
-    if amount <= 0:
-        raise ValueError(
-            "減算量は0より大きい値を指定してください。"
-        )
-
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -88,78 +75,69 @@ def consume_inventory_quantity(
     if ingredient is None:
         return None
 
-    active_lots = [
-        inventory
-        for inventory in ingredient.inventories
-        if float(inventory.quantity or 0) > 0
-    ]
+    if amount <= 0:
+        raise ValueError(
+            "減算量は0より大きい値にしてください。"
+        )
 
-    sorted_lots = (
-        sort_inventory_lots_for_consumption(
-            active_lots
+    active_inventories = (
+        get_active_inventory_lots(
+            ingredient
         )
     )
 
-    requested_quantity = float(amount)
-    remaining_quantity = requested_quantity
+    sorted_inventories = (
+        sort_inventory_lots_for_consumption(
+            active_inventories
+        )
+    )
+
+    remaining_quantity = amount
     allocations: list[LotAllocation] = []
 
-    try:
-        for inventory in sorted_lots:
-            if remaining_quantity <= 0:
-                break
+    for inventory in sorted_inventories:
+        if remaining_quantity <= 0:
+            break
 
-            current_quantity = float(
-                inventory.quantity or 0
-            )
-
-            consumed_quantity = min(
-                current_quantity,
-                remaining_quantity,
-            )
-
-            new_quantity = (
-                current_quantity
-                - consumed_quantity
-            )
-
-            # Floatの計算誤差によって、
-            # 0に近い値が残ることを防ぐ。
-            if abs(new_quantity) < 1e-9:
-                new_quantity = 0.0
-
-            inventory.quantity = new_quantity
-
-            allocations.append(
-                LotAllocation(
-                    inventory_id=inventory.id,
-                    quantity=consumed_quantity,
-                )
-            )
-
-            remaining_quantity -= (
-                consumed_quantity
-            )
-
-        if abs(remaining_quantity) < 1e-9:
-            remaining_quantity = 0.0
-
-        consumed_total = (
-            requested_quantity
-            - remaining_quantity
+        current_quantity = float(
+            inventory.quantity or 0
         )
 
-        db.commit()
+        consumed_quantity = min(
+            current_quantity,
+            remaining_quantity,
+        )
 
-    except Exception:
-        db.rollback()
-        raise
+        if consumed_quantity <= 0:
+            continue
+
+        inventory.quantity = (
+            current_quantity
+            - consumed_quantity
+        )
+
+        allocations.append(
+            LotAllocation(
+                inventory_id=inventory.id,
+                quantity=consumed_quantity,
+            )
+        )
+
+        remaining_quantity -= (
+            consumed_quantity
+        )
+
+    consumed_quantity = (
+        amount - remaining_quantity
+    )
+
+    db.commit()
 
     return InventoryConsumptionResult(
-        requested_quantity=requested_quantity,
-        consumed_quantity=consumed_total,
+        requested_quantity=amount,
+        consumed_quantity=consumed_quantity,
         shortage_quantity=remaining_quantity,
-        allocations=tuple(allocations),
+        allocations=allocations,
     )
 
 
@@ -167,26 +145,30 @@ def get_active_inventory_lots(
     ingredient: Ingredient,
 ) -> list[Inventory]:
     """
+    論理削除されておらず、
     数量が0より大きい在庫ロットを取得する。
-
-    戻り値のリストは新しく生成し、
-    relationshipの元データは変更しない。
     """
     return [
         inventory
         for inventory in ingredient.inventories
-        if float(inventory.quantity or 0) > 0
+        if (
+            inventory.deleted_at is None
+            and float(inventory.quantity or 0) > 0
+        )
     ]
 
 
 def get_inventory_quantity(
     ingredient: Ingredient,
 ) -> float:
-    """食材に紐づく全在庫ロットの合計数量を取得する。"""
-    return float(
-        sum(
-            float(inventory.quantity or 0)
-            for inventory in ingredient.inventories
+    """
+    論理削除されていない在庫ありロットの
+    合計数量を返す。
+    """
+    return sum(
+        float(inventory.quantity or 0)
+        for inventory in get_active_inventory_lots(
+            ingredient
         )
     )
 
@@ -241,17 +223,13 @@ def get_oldest_active_inventory_lot(
     db: Session,
     ingredient_id: int,
 ) -> Inventory | None:
-    """
-    在庫が残っているロットのうち、
-    購入日が最も古いロットを取得する。
-
-    購入日が同じ場合はIDが小さいロットを優先する。
-    """
     return (
         db.query(Inventory)
         .filter(
-            Inventory.ingredient_id == ingredient_id,
+            Inventory.ingredient_id
+            == ingredient_id,
             Inventory.quantity > 0,
+            Inventory.deleted_at.is_(None),
         )
         .order_by(
             Inventory.purchase_date.asc(),
@@ -265,19 +243,13 @@ def get_nearest_expiration_inventory_lot(
     db: Session,
     ingredient_id: int,
 ) -> Inventory | None:
-    """
-    在庫が残っているロットのうち、
-    消費期限が最も近いロットを取得する。
-
-    期限設定済みロットがない場合は、
-    購入日が最も古い在庫ありロットを返す。
-    """
     inventory = (
         db.query(Inventory)
         .filter(
             Inventory.ingredient_id
             == ingredient_id,
             Inventory.quantity > 0,
+            Inventory.deleted_at.is_(None),
             Inventory.expiration_date.is_not(
                 None
             ),
@@ -639,21 +611,18 @@ def get_latest_active_inventory_lot(
     db: Session,
     ingredient_id: int,
 ) -> Inventory | None:
-    """
-    在庫が残っているロットのうち、
-    購入日が最も新しいロットを取得する。
-
-    購入日が同じ場合はIDが大きいロットを優先する。
-    購入日未設定のロットは最後に扱う。
-    """
     return (
         db.query(Inventory)
         .filter(
-            Inventory.ingredient_id == ingredient_id,
+            Inventory.ingredient_id
+            == ingredient_id,
             Inventory.quantity > 0,
+            Inventory.deleted_at.is_(None),
         )
         .order_by(
-            Inventory.purchase_date.is_(None),
+            Inventory.purchase_date.is_(
+                None
+            ),
             Inventory.purchase_date.desc(),
             Inventory.id.desc(),
         )
@@ -703,20 +672,14 @@ def get_inventory_lots(
     ingredient_id: int,
 ) -> list[Inventory]:
     """
-    食材に紐づく在庫ロットを一覧取得する。
-
-    並び順：
-    1. 在庫あり
-    2. 消費期限設定済み
-    3. 消費期限が近い
-    4. 購入日が古い
-    5. IDが小さい
+    削除されていない在庫ロットを一覧取得する。
     """
     return (
         db.query(Inventory)
         .filter(
             Inventory.ingredient_id
-            == ingredient_id
+            == ingredient_id,
+            Inventory.deleted_at.is_(None),
         )
         .order_by(
             case(
@@ -747,10 +710,17 @@ def get_inventory_lot_by_id(
     db: Session,
     inventory_id: int,
 ) -> Inventory | None:
-    """IDを指定して在庫ロットを取得する。"""
-    return db.get(
-        Inventory,
-        inventory_id,
+    """
+    IDを指定して、削除されていない
+    在庫ロットを取得する。
+    """
+    return (
+        db.query(Inventory)
+        .filter(
+            Inventory.id == inventory_id,
+            Inventory.deleted_at.is_(None),
+        )
+        .first()
     )
 
 
@@ -789,6 +759,32 @@ def update_inventory_lot(
     inventory.expiration_date = (
         expiration_date
     )
+
+    db.commit()
+    db.refresh(inventory)
+
+    return inventory
+
+
+def soft_delete_inventory_lot(
+    db: Session,
+    inventory_id: int,
+) -> Inventory | None:
+    """
+    在庫ロットを論理削除する。
+
+    DBからは削除せず、deleted_atへ
+    削除日時を記録する。
+    """
+    inventory = get_inventory_lot_by_id(
+        db=db,
+        inventory_id=inventory_id,
+    )
+
+    if inventory is None:
+        return None
+
+    inventory.deleted_at = datetime.now()
 
     db.commit()
     db.refresh(inventory)

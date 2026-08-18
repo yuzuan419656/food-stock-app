@@ -63,6 +63,13 @@ class Inventory(Base):
         nullable=False,
     )
 
+    deleted_at: Mapped[datetime | None] = (
+        mapped_column(
+            DateTime,
+            nullable=True,
+        )
+    )
+
     ingredient = relationship(
         "Ingredient",
         back_populates="inventories",

@@ -545,6 +545,74 @@ a.quantity-button:visited {
     margin-top: 20px;
 }
 
+.inventory-lot-edit-input {
+    box-sizing: border-box;
+    width: 145px;
+    max-width: 100%;
+    padding: 5px;
+}
+
+.inventory-lot-quantity-edit {
+    align-items: center;
+    gap: 6px;
+}
+
+.inventory-lot-quantity-edit:not([hidden]) {
+    display: flex;
+}
+
+.inventory-lot-quantity-input {
+    width: 100px;
+}
+
+.inventory-lot-operation-cell {
+    min-width: 140px;
+    white-space: nowrap;
+}
+
+.inventory-lot-edit-form {
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+}
+
+.inventory-lot-edit-form:not([hidden]) {
+    display: flex;
+}
+
+.inventory-lot-edit-button,
+.inventory-lot-cancel-button,
+.inventory-lot-edit-form button {
+    padding: 5px 10px;
+}
+
+.inventory-lot-view-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.inventory-lot-delete-form {
+    margin: 0;
+}
+
+.inventory-lot-delete-button {
+    padding: 5px 10px;
+    border: 1px solid #c62828;
+    border-radius: 3px;
+    background-color: #fff;
+    color: #c62828;
+}
+
+.inventory-lot-delete-button:hover {
+    background-color: #fdeaea;
+}
+
+.inventory-lot-delete-button:focus-visible {
+    outline: 2px solid #c62828;
+    outline-offset: 2px;
+}
+
 /* 買うものリスト */
 
 .shopping-list-header {

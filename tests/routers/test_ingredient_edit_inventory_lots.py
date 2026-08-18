@@ -280,3 +280,50 @@ def test_update_inventory_lot_route_rejects_invalid_step(
 
     assert inventory is not None
     assert inventory.quantity == 6
+
+
+def test_delete_inventory_lot_route_soft_deletes_lot(
+    client,
+    db_session,
+):
+    ingredient = create_ingredient(
+        db=db_session,
+        name="たまご",
+        category="卵",
+        default_unit="個",
+        quantity=6,
+        purchase_date=date(
+            2026,
+            8,
+            1,
+        ),
+    )
+
+    inventory_id = (
+        ingredient.inventories[0].id
+    )
+
+    response = client.post(
+        (
+            f"/inventories/"
+            f"{inventory_id}/delete"
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+    assert (
+        f"/ingredients/{ingredient.id}/edit"
+        in response.headers["location"]
+    )
+
+    db_session.expire_all()
+
+    inventory = db_session.get(
+        Inventory,
+        inventory_id,
+    )
+
+    assert inventory is not None
+    assert inventory.deleted_at is not None

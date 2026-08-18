@@ -21,6 +21,7 @@ from app.crud.inventory import (
     create_inventory_lot,
     increment_latest_inventory_lot,
     get_inventory_lot_by_id,
+    soft_delete_inventory_lot,
     update_inventory_lot,
 )
 from app.database import get_db
@@ -582,6 +583,71 @@ def update_inventory_lot_route(
             ingredient_id=ingredient_id,
             lot_message=(
                 "在庫ロットを更新しました。"
+            ),
+        ),
+        status_code=303,
+    )
+
+@router.post(
+    "/inventories/{inventory_id}/delete"
+)
+def delete_inventory_lot_route(
+    inventory_id: int,
+    db: Session = Depends(get_db),
+):
+    """在庫ロットを論理削除する。"""
+    inventory = get_inventory_lot_by_id(
+        db=db,
+        inventory_id=inventory_id,
+    )
+
+    if inventory is None:
+        return RedirectResponse(
+            url="/",
+            status_code=303,
+        )
+
+    ingredient_id = inventory.ingredient_id
+
+    try:
+        deleted_inventory = (
+            soft_delete_inventory_lot(
+                db=db,
+                inventory_id=inventory_id,
+            )
+        )
+
+    except Exception:
+        db.rollback()
+
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=(
+                    "在庫ロットの削除に"
+                    "失敗しました。"
+                ),
+            ),
+            status_code=303,
+        )
+
+    if deleted_inventory is None:
+        return RedirectResponse(
+            url=build_ingredient_edit_url(
+                ingredient_id=ingredient_id,
+                lot_error=(
+                    "削除対象の在庫ロットが"
+                    "見つかりません。"
+                ),
+            ),
+            status_code=303,
+        )
+
+    return RedirectResponse(
+        url=build_ingredient_edit_url(
+            ingredient_id=ingredient_id,
+            lot_message=(
+                "在庫ロットを削除しました。"
             ),
         ),
         status_code=303,
