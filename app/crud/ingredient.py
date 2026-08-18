@@ -445,3 +445,34 @@ def get_filtered_ingredients(
     )
 
     return query.all()
+
+
+def update_ingredient_basic_info(
+    db: Session,
+    ingredient_id: int,
+    name: str,
+    category: str,
+    default_unit: str,
+) -> Ingredient | None:
+    """
+    食材の基本情報だけを更新する。
+
+    在庫ロットの数量・購入日・消費期限は
+    変更しない。
+    """
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+    )
+
+    if ingredient is None:
+        return None
+
+    ingredient.name = name
+    ingredient.category = category
+    ingredient.default_unit = default_unit
+
+    db.commit()
+    db.refresh(ingredient)
+
+    return ingredient

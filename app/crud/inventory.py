@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import date
 
+from sqlalchemy import case
 from sqlalchemy.orm import Session, joinedload
 
 from app.crud.ingredient import get_ingredient_by_id
@@ -691,3 +692,48 @@ def increment_latest_inventory_lot(
     db.refresh(inventory)
 
     return inventory
+
+
+def get_inventory_lots(
+    db: Session,
+    ingredient_id: int,
+) -> list[Inventory]:
+    """
+    食材に紐づく在庫ロットを一覧取得する。
+
+    並び順：
+    1. 在庫あり
+    2. 消費期限設定済み
+    3. 消費期限が近い
+    4. 購入日が古い
+    5. IDが小さい
+    """
+    return (
+        db.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == ingredient_id
+        )
+        .order_by(
+            case(
+                (
+                    Inventory.quantity > 0,
+                    0,
+                ),
+                else_=1,
+            ),
+            case(
+                (
+                    Inventory.expiration_date.is_(
+                        None
+                    ),
+                    1,
+                ),
+                else_=0,
+            ),
+            Inventory.expiration_date.asc(),
+            Inventory.purchase_date.asc(),
+            Inventory.id.asc(),
+        )
+        .all()
+    )

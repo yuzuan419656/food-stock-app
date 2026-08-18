@@ -276,6 +276,7 @@ def create_inventory_lot_route(
     ),
     sort: str = Form("category"),
     out_of_stock_first: bool = Form(False),
+    redirect_to_edit: bool = Form(False),
     db: Session = Depends(get_db),
 ):
     """新しい在庫ロットを登録する。"""
@@ -383,6 +384,15 @@ def create_inventory_lot_route(
             parsed_expiration_date
         ),
     )
+
+    if redirect_to_edit:
+        return RedirectResponse(
+            url=(
+                f"/ingredients/{ingredient_id}"
+                "/edit#inventory-lots"
+            ),
+            status_code=303,
+        )
 
     separator = "&" if "?" in list_url else "?"
 

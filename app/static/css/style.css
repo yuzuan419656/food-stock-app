@@ -51,6 +51,12 @@ button {
     font-weight: bold;
 }
 
+.success-message {
+    margin-bottom: 16px;
+    color: #2e7d32;
+    font-weight: bold;
+}
+
 /* 削除ボタン */
 
 .danger-button {
@@ -144,6 +150,7 @@ button {
 
 .quantity-control {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 8px;
@@ -161,11 +168,12 @@ button {
     width: 36px;
     min-width: 36px;
     height: 36px;
+    margin: 0;
     padding: 0;
     border: 1px solid #767676;
     border-radius: 3px;
     background-color: #efefef;
-    color: #000000;
+    color: #000;
     font: inherit;
     line-height: 1;
     text-decoration: none;
@@ -177,13 +185,13 @@ button {
 a.quantity-button,
 a.quantity-button:link,
 a.quantity-button:visited {
-    color: #000000;
+    color: #000;
     text-decoration: none;
 }
 
 .quantity-button:hover:not(:disabled) {
     background-color: #e2e2e2;
-    color: #000000;
+    color: #000;
     text-decoration: none;
 }
 
@@ -211,6 +219,43 @@ a.quantity-button:visited {
 .out-of-stock-label {
     font-size: 12px;
     font-weight: bold;
+}
+
+.new-inventory-lot-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 36px;
+    margin: 0 0 0 4px;
+    padding: 0 10px;
+    border: 1px solid #767676;
+    border-radius: 3px;
+    background-color: #fff;
+    color: #333;
+    font-size: 13px;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.new-inventory-lot-link:link,
+.new-inventory-lot-link:visited {
+    color: #333;
+    text-decoration: none;
+}
+
+.new-inventory-lot-link:hover {
+    background-color: #f0f0f0;
+    color: #333;
+    text-decoration: none;
+}
+
+.new-inventory-lot-link:active {
+    background-color: #e2e2e2;
+}
+
+.new-inventory-lot-link:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
 }
 
 /* 一覧画面の検索・並び替え */
@@ -327,14 +372,10 @@ a.quantity-button:visited {
     margin-top: 24px;
 }
 
-/* 消費期限 */
+/* 一覧の購入日・消費期限 */
 
 .expiration-cell {
     white-space: nowrap;
-}
-
-.expiration-date {
-    display: block;
 }
 
 .expiration-status-label {
@@ -366,50 +407,7 @@ a.quantity-button:visited {
     color: #777;
 }
 
-/* 消費期限の一覧編集 */
-
-.success-message {
-    margin-bottom: 16px;
-    color: #2e7d32;
-    font-weight: bold;
-}
-
-.expiration-edit-form {
-    margin: 0;
-}
-
-.expiration-date-input {
-    box-sizing: border-box;
-    width: 145px;
-    max-width: 100%;
-    padding: 4px;
-}
-
-.expiration-edit-actions {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-top: 6px;
-}
-
-.expiration-save-button,
-.expiration-cancel-button {
-    padding: 3px 8px;
-    font-size: 12px;
-}
-
-
-.expiration-save-status {
-    min-width: 72px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-.expiration-date-input:disabled {
-    opacity: 0.7;
-    cursor: wait;
-}
-
+.date-inline-editor,
 .expiration-inline-editor {
     display: flex;
     align-items: center;
@@ -417,20 +415,137 @@ a.quantity-button:visited {
     white-space: nowrap;
 }
 
+.purchase-date-input,
 .expiration-date-input {
+    box-sizing: border-box;
+    width: 145px;
     min-width: 145px;
+    max-width: 100%;
+    padding: 4px;
 }
 
+.purchase-date-input:disabled,
+.expiration-date-input:disabled {
+    opacity: 0.7;
+    cursor: wait;
+}
+
+.date-save-status,
 .expiration-save-status {
     min-width: 72px;
     font-size: 12px;
     white-space: nowrap;
 }
 
-.expiration-date-input:disabled {
-    opacity: 0.7;
-    cursor: wait;
+.representative-date-note {
+    display: block;
+    margin-top: 4px;
+    color: #666;
+    font-size: 11px;
 }
+
+.date-unavailable {
+    color: #777;
+}
+
+/* 食材編集・ロット管理 */
+
+.ingredient-edit-page > h2 {
+    margin-top: 0;
+}
+
+.ingredient-basic-section,
+.inventory-lot-section {
+    max-width: 100%;
+}
+
+.ingredient-basic-section h3,
+.inventory-lot-section h3 {
+    margin-top: 0;
+}
+
+.inventory-lot-section {
+    margin-top: 40px;
+    padding-top: 24px;
+    border-top: 2px solid #ddd;
+}
+
+.inventory-lot-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+}
+
+.inventory-lot-heading p {
+    margin: 4px 0;
+}
+
+.inventory-lot-table-wrapper {
+    overflow-x: auto;
+    margin-top: 16px;
+}
+
+.inventory-lot-table {
+    min-width: 680px;
+}
+
+.inventory-lot-empty {
+    background-color: #f5f5f5;
+    opacity: 0.65;
+}
+
+.inventory-lot-expired {
+    background-color: #fdeaea;
+}
+
+.lot-status-active,
+.lot-status-empty,
+.lot-status-expired {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.lot-status-active {
+    color: #2e7d32;
+}
+
+.lot-status-empty {
+    color: #666;
+}
+
+.lot-status-expired {
+    color: #b42318;
+}
+
+.empty-inventory-lot-message {
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.inventory-lot-add-panel {
+    margin-top: 24px;
+    padding: 12px;
+    border: 1px solid #ccc;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.inventory-lot-add-panel summary {
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.inventory-lot-add-form {
+    margin-top: 20px;
+}
+
+/* 買うものリスト */
 
 .shopping-list-header {
     display: flex;
@@ -497,9 +612,9 @@ a.quantity-button:visited {
 
 .empty-state {
     padding: 32px;
-    text-align: center;
-    border: 1px solid #dddddd;
+    border: 1px solid #ddd;
     border-radius: 8px;
+    text-align: center;
 }
 
 .empty-state p {
@@ -509,17 +624,6 @@ a.quantity-button:visited {
 .empty-state .primary-button {
     display: inline-block;
     margin-top: 16px;
-}
-
-@media (max-width: 700px) {
-    .shopping-list-header {
-        flex-direction: column;
-    }
-
-    .shopping-list-actions {
-        flex-direction: column;
-        align-items: stretch;
-    }
 }
 
 .shopping-list-controls {
@@ -536,10 +640,10 @@ a.quantity-button:visited {
 .shopping-list-view-button {
     display: inline-block;
     padding: 7px 14px;
-    border: 1px solid #999999;
+    border: 1px solid #999;
     border-radius: 4px;
-    background-color: #ffffff;
-    color: #333333;
+    background-color: #fff;
+    color: #333;
     text-decoration: none;
     white-space: nowrap;
 }
@@ -553,81 +657,29 @@ a.quantity-button:visited {
     font-size: 14px;
 }
 
-.quantity-control {
-    flex-wrap: wrap;
-}
+@media (max-width: 700px) {
+    body {
+        margin: 16px;
+    }
 
-.new-inventory-lot-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 36px;
-    margin: 0 0 0 4px;
-    padding: 0 10px;
-    border: 1px solid #767676;
-    border-radius: 3px;
-    background-color: #ffffff;
-    color: #333333;
-    font-size: 13px;
-    line-height: 1;
-    text-decoration: none;
-    white-space: nowrap;
-}
+    main {
+        padding: 16px;
+    }
 
-.new-inventory-lot-link:link,
-.new-inventory-lot-link:visited {
-    color: #333333;
-    text-decoration: none;
-}
+    .shopping-list-header {
+        flex-direction: column;
+    }
 
-.new-inventory-lot-link:hover {
-    background-color: #f0f0f0;
-    color: #333333;
-    text-decoration: none;
-}
+    .shopping-list-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
 
-.new-inventory-lot-link:active {
-    background-color: #e2e2e2;
-}
+    .shopping-list-controls {
+        flex-wrap: wrap;
+    }
 
-.new-inventory-lot-link:focus-visible {
-    outline: 2px solid #005fcc;
-    outline-offset: 2px;
-}
-
-.date-inline-editor {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    white-space: nowrap;
-}
-
-.purchase-date-input,
-.expiration-date-input {
-    box-sizing: border-box;
-    width: 145px;
-    max-width: 100%;
-    padding: 4px;
-}
-
-.purchase-date-input:disabled,
-.expiration-date-input:disabled {
-    opacity: 0.7;
-    cursor: wait;
-}
-
-.date-save-status {
-    min-width: 72px;
-    font-size: 12px;
-    white-space: nowrap;
-}
-
-.representative-date-note {
-    display: block;
-    margin-top: 4px;
-    color: #666666;
-    font-size: 11px;
-}
-
-.date-unavailable {
-    color: #777777;
+    .inventory-lot-heading {
+        flex-direction: column;
+    }
 }
