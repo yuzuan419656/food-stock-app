@@ -848,3 +848,162 @@ a.quantity-button:visited {
         border-bottom: 1px solid #dddddd;
     }
 }
+
+/* 買うものリストへの直接追加 */
+
+.shopping-item-add-section {
+    margin-bottom: 32px;
+    padding-bottom: 32px;
+    border-bottom: 1px solid #dddddd;
+}
+
+.shopping-item-add-section h2 {
+    margin-top: 0;
+}
+
+.shopping-item-add-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(280px, 1fr);
+    gap: 20px;
+}
+
+.shopping-item-add-panel {
+    padding: 20px;
+    border: 1px solid #dddddd;
+    border-radius: 8px;
+    background-color: #fafafa;
+}
+
+.shopping-item-add-panel h3 {
+    margin-top: 0;
+}
+
+.shopping-ingredient-search-form,
+.shopping-custom-add-form {
+    margin-bottom: 20px;
+}
+
+.shopping-search-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shopping-search-result-wrapper {
+    overflow-x: auto;
+    margin-bottom: 16px;
+}
+
+.shopping-search-result-table {
+    min-width: 560px;
+}
+
+.shopping-search-result-table th:first-child,
+.shopping-search-result-table td:first-child {
+    width: 60px;
+    text-align: center;
+}
+
+.shopping-item-registered {
+    color: #777777;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.shopping-item-addable {
+    color: #2e7d32;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.shopping-search-guide,
+.shopping-search-empty {
+    margin: 16px 0 0;
+    padding: 12px;
+    border-radius: 4px;
+    background-color: #f0f0f0;
+}
+
+.shopping-master-guide {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #dddddd;
+    font-size: 14px;
+}
+
+.shopping-list-content-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 12px;
+}
+
+.shopping-list-content-header h2 {
+    margin: 0;
+}
+
+.shopping-custom-item-label {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background-color: #e8e8e8;
+    color: #555555;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+@media (max-width: 900px) {
+    .shopping-item-add-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .shopping-list-content-header {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .shopping-search-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
+.shopping-list-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.shopping-category-filter {
+    margin: 0 0 20px;
+    padding: 16px;
+    border: 1px solid #cccccc;
+    border-radius: 6px;
+    background-color: #ffffff;
+}
+
+.shopping-category-filter legend {
+    padding: 0 8px;
+    font-weight: bold;
+}
+
+.shopping-category-filter-list {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px 16px;
+}
+
+.shopping-category-filter-list .checkbox-label {
+    margin: 0;
+}
+
+@media (max-width: 700px) {
+    .shopping-list-header-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}

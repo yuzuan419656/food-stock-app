@@ -30,12 +30,17 @@ from app.crud.inventory import (
     update_inventory_purchase_date,
     get_inventory_lots,
 )
+from app.crud.shopping_item import (
+    add_ingredients_to_shopping_list,
+)
 from app.database import get_db
 from app.services.ingredient_form import (
+    SHOPPING_LIST_SOURCE,
     build_duplicate_context,
     build_new_form_data,
     date_to_form_value,
     get_option_form_values,
+    normalize_registration_source,
     parse_optional_date,
     parse_required_date,
     resolve_selected_option,
@@ -198,32 +203,34 @@ def render_duplicate_confirmation(
     expiration_date: date | None,
     error_message: str | None = None,
     status_code: int = 409,
+    source: str = "",
 ):
     """重複食材の確認画面を表示する。"""
     context = build_duplicate_context(
-        existing_ingredient=existing_ingredient,
-        existing_quantity=get_inventory_quantity(
+    existing_ingredient=existing_ingredient,
+    existing_quantity=get_inventory_quantity(
+        existing_ingredient
+    ),
+    existing_purchase_date=(
+        get_inventory_purchase_date(
             existing_ingredient
-        ),
-        existing_purchase_date=(
-            get_inventory_purchase_date(
-                existing_ingredient
-            )
-        ),
-        existing_expiration_date=(
-            get_inventory_expiration_date(
-                existing_ingredient
-            )
-        ),
-        name=name,
-        category=category,
-        quantity=quantity,
-        default_unit=default_unit,
-        purchase_date=purchase_date,
-        expiration_date=expiration_date,
-        error_message=error_message,
-    )
-
+        )
+    ),
+    existing_expiration_date=(
+        get_inventory_expiration_date(
+            existing_ingredient
+        )
+    ),
+    name=name,
+    category=category,
+    quantity=quantity,
+    default_unit=default_unit,
+    purchase_date=purchase_date,
+    expiration_date=expiration_date,
+    error_message=error_message,
+    source=source,
+)
+    
     return templates.TemplateResponse(
         request=request,
         name="ingredients/duplicate_confirm.html",
@@ -314,13 +321,22 @@ def list_ingredients(
 @router.get("/ingredients/new")
 def new_ingredient(
     request: Request,
+    source: str = Query(default=""),
 ):
     """食材登録画面を表示する。"""
+    normalized_source = (
+        normalize_registration_source(
+            source
+        )
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="ingredients/new.html",
         context={
-            "category_options": CATEGORY_OPTIONS,
+            "category_options": (
+                CATEGORY_OPTIONS
+            ),
             "unit_options": UNIT_OPTIONS,
             "other_option": OTHER_OPTION,
             "form_data": {
@@ -330,8 +346,11 @@ def new_ingredient(
                 "default_unit_select": "",
                 "default_unit_other": "",
                 "quantity": 0,
-                "purchase_date": date.today().isoformat(),
+                "purchase_date": (
+                    date.today().isoformat()
+                ),
                 "expiration_date": "",
+                "source": normalized_source,
             },
         },
     )
@@ -348,20 +367,36 @@ def create_ingredient_route(
     quantity: float = Form(...),
     purchase_date: str = Form(...),
     expiration_date: str | None = Form(None),
+    source: str = Form(default=""),
     db: Session = Depends(get_db),
 ):
     """食材を新規登録する。"""
-    normalized_name = normalize_ingredient_name(name)
+    normalized_source = (
+        normalize_registration_source(
+            source
+        )
+    )
+
+    normalized_name = (
+        normalize_ingredient_name(
+            name
+        )
+    )
 
     form_data = build_new_form_data(
         name=normalized_name,
         category_select=category_select,
         category_other=category_other,
-        default_unit_select=default_unit_select,
-        default_unit_other=default_unit_other,
+        default_unit_select=(
+            default_unit_select
+        ),
+        default_unit_other=(
+            default_unit_other
+        ),
         quantity=quantity,
         purchase_date=purchase_date,
         expiration_date=expiration_date,
+        source=normalized_source,
     )
 
     if not normalized_name:
@@ -462,10 +497,11 @@ def create_ingredient_route(
             default_unit=default_unit,
             purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
+            source=normalized_source,
         )
 
     try:
-        create_ingredient(
+        created_ingredient = create_ingredient(
             db=db,
             name=normalized_name,
             category=category,
@@ -474,7 +510,6 @@ def create_ingredient_route(
             purchase_date=parsed_purchase_date,
             expiration_date=parsed_expiration_date,
         )
-
     except IntegrityError:
         db.rollback()
 
@@ -493,7 +528,9 @@ def create_ingredient_route(
                 category=category,
                 quantity=quantity,
                 default_unit=default_unit,
+                purchase_date=parsed_purchase_date,
                 expiration_date=parsed_expiration_date,
+                source=normalized_source,
             )
 
         return render_new_ingredient_error(
@@ -502,6 +539,45 @@ def create_ingredient_route(
             error_message=(
                 "食材の登録中にエラーが発生しました。"
             ),
+        )
+
+    if (
+        normalized_source
+        == SHOPPING_LIST_SOURCE
+    ):
+        added_count = (
+            add_ingredients_to_shopping_list(
+                db=db,
+                ingredient_ids=[
+                    created_ingredient.id
+                ],
+            )
+        )
+
+        if added_count == 0:
+            message = (
+                f"{created_ingredient.name}を"
+                "登録しました。"
+                "買うものリストには"
+                "すでに追加されています"
+            )
+        else:
+            message = (
+                f"{created_ingredient.name}を"
+                "新しい食材として登録し、"
+                "買うものリストへ追加しました"
+            )
+
+        return RedirectResponse(
+            url=(
+                "/shopping-list/add?"
+                + urlencode(
+                    {
+                        "message": message
+                    }
+                )
+            ),
+            status_code=303,
         )
 
     return RedirectResponse(
