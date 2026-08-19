@@ -1,0 +1,242 @@
+{% extends "base.html" %}
+
+{% block title %}
+買うものを追加
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="shopping-list-header">
+        <div>
+            <h1>買うものを追加</h1>
+
+            <p>
+                登録済み食材または手入力から
+                買うものを追加できます。
+            </p>
+        </div>
+
+        <a
+            href="/shopping-list"
+            class="secondary-button"
+        >
+            買うもの一覧へ戻る
+        </a>
+    </div>
+
+    {% if message %}
+        <div class="message">
+            {{ message }}
+        </div>
+    {% endif %}
+
+    <div class="shopping-item-add-grid">
+        <section class="shopping-item-add-panel">
+            <h2>登録済み食材から追加</h2>
+
+            <form
+                action="/shopping-list/add"
+                method="get"
+                class="shopping-ingredient-search-form"
+            >
+                <fieldset class="shopping-category-filter">
+                    <legend>カテゴリ</legend>
+
+                    <div class="shopping-category-filter-list">
+                        {% for category in available_categories %}
+                            <label class="checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    name="ingredient_categories"
+                                    value="{{ category }}"
+                                    {% if category in ingredient_categories %}
+                                        checked
+                                    {% endif %}
+                                >
+
+                                {{ category }}
+                            </label>
+                        {% endfor %}
+                    </div>
+                </fieldset>
+
+                <div class="form-group">
+                    <label for="ingredient_keyword">
+                        食材名
+                    </label>
+
+                    <input
+                        type="text"
+                        id="ingredient_keyword"
+                        name="ingredient_keyword"
+                        value="{{ ingredient_keyword }}"
+                        maxlength="100"
+                        placeholder="例：たまご"
+                    >
+                </div>
+
+                <div class="shopping-search-actions">
+                    <button type="submit">
+                        検索
+                    </button>
+
+                    {% if has_ingredient_search %}
+                        <a
+                            href="/shopping-list/add"
+                            class="secondary-button"
+                        >
+                            検索条件をクリア
+                        </a>
+                    {% endif %}
+                </div>
+            </form>
+
+            {% if has_ingredient_search %}
+                {% if ingredient_candidates %}
+                    <form
+                        action="/shopping-list/add-ingredients"
+                        method="post"
+                        class="shopping-ingredient-result-form"
+                    >
+                        <input
+                            type="hidden"
+                            name="ingredient_keyword"
+                            value="{{ ingredient_keyword }}"
+                        >
+
+                        {% for category in ingredient_categories %}
+                            <input
+                                type="hidden"
+                                name="ingredient_categories"
+                                value="{{ category }}"
+                            >
+                        {% endfor %}
+
+                        <div class="shopping-search-result-wrapper">
+                            <table class="shopping-search-result-table">
+                                <thead>
+                                    <tr>
+                                        <th>選択</th>
+                                        <th>食材名</th>
+                                        <th>カテゴリ</th>
+                                        <th>単位</th>
+                                        <th>登録状況</th>
+                                    </tr>
+                                </thead>
+
+                                <tbody>
+                                    {% for ingredient in ingredient_candidates %}
+                                        {% set is_registered =
+                                            ingredient.id
+                                            in registered_ingredient_ids
+                                        %}
+
+                                        <tr>
+                                            <td>
+                                                <input
+                                                    type="checkbox"
+                                                    name="ingredient_ids"
+                                                    value="{{ ingredient.id }}"
+                                                    aria-label="{{ ingredient.name }}を選択"
+                                                    {% if is_registered %}
+                                                        disabled
+                                                    {% endif %}
+                                                >
+                                            </td>
+
+                                            <td>
+                                                {{ ingredient.name }}
+                                            </td>
+
+                                            <td>
+                                                {{ ingredient.category or "未設定" }}
+                                            </td>
+
+                                            <td>
+                                                {{ ingredient.default_unit or "未設定" }}
+                                            </td>
+
+                                            <td>
+                                                {% if is_registered %}
+                                                    <span class="shopping-item-registered">
+                                                        追加済み
+                                                    </span>
+                                                {% else %}
+                                                    <span class="shopping-item-addable">
+                                                        追加可能
+                                                    </span>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <button type="submit">
+                            選択した食材をまとめて追加
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="shopping-search-empty">
+                        条件に一致する食材はありません。
+                    </p>
+                {% endif %}
+            {% else %}
+                <p class="shopping-search-guide">
+                    カテゴリまたは食材名を指定して
+                    検索してください。
+                </p>
+            {% endif %}
+        </section>
+
+        <section class="shopping-item-add-panel">
+            <h2>手入力で追加</h2>
+
+            <p>
+                食材マスタに登録しない項目を
+                買うものリストだけに追加します。
+            </p>
+
+            <form
+                action="/shopping-list/add-custom"
+                method="post"
+                class="shopping-custom-add-form"
+            >
+                <div class="form-group">
+                    <label for="custom_name">
+                        名称
+                    </label>
+
+                    <input
+                        type="text"
+                        id="custom_name"
+                        name="custom_name"
+                        maxlength="100"
+                        placeholder="例：キッチンペーパー"
+                        required
+                    >
+                </div>
+
+                <button type="submit">
+                    手入力項目を追加
+                </button>
+            </form>
+
+            <div class="shopping-master-guide">
+                <p>
+                    在庫管理する新しい食材の場合は、
+                    食材マスタと在庫へ登録してください。
+                </p>
+
+                <a
+                    href="/ingredients/new?source=shopping_list"
+                    class="secondary-button"
+                >
+                    新しい食材として登録
+                </a>
+            </div>
+        </section>
+    </div>
+</div>
+{% endblock %}

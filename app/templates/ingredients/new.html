@@ -4,6 +4,13 @@
 <section>
     <h2>食材登録</h2>
 
+    {% if form_data.source == "shopping_list" %}
+        <p class="form-guidance-message">
+            登録した食材は、在庫一覧と
+            買うものリストの両方へ追加されます。
+        </p>
+    {% endif %}
+
     {% if error_message %}
         <p class="error-message">
             {{ error_message }}
@@ -15,6 +22,12 @@
         method="post"
         class="ingredient-form"
     >
+        <input
+            type="hidden"
+            name="source"
+            value="{{ form_data.source or '' }}"
+        >
+
         <div class="form-group">
             <label for="name">
                 食材名
@@ -207,90 +220,145 @@
                 登録
             </button>
 
-            <a href="/">
-                キャンセル
-            </a>
+            {% if form_data.source == "shopping_list" %}
+                <a href="/shopping-list/add">
+                    買うもの追加画面へ戻る
+                </a>
+            {% else %}
+                <a href="/">
+                    キャンセル
+                </a>
+            {% endif %}
         </div>
     </form>
 </section>
 
 <script>
-    document.addEventListener("DOMContentLoaded", () => {
-        const otherOption = {{ other_option | tojson }};
+    document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+            const otherOption =
+                {{ other_option | tojson }};
 
-        function setupCustomOptionField({
-            selectId,
-            customFieldId,
-            customInputId,
-            returnButtonId
-        }) {
-            const selectElement =
-                document.getElementById(selectId);
+            function setupCustomOptionField({
+                selectId,
+                customFieldId,
+                customInputId,
+                returnButtonId
+            }) {
+                const selectElement =
+                    document.getElementById(
+                        selectId
+                    );
 
-            const customFieldElement =
-                document.getElementById(customFieldId);
+                const customFieldElement =
+                    document.getElementById(
+                        customFieldId
+                    );
 
-            const customInputElement =
-                document.getElementById(customInputId);
+                const customInputElement =
+                    document.getElementById(
+                        customInputId
+                    );
 
-            const returnButtonElement =
-                document.getElementById(returnButtonId);
+                const returnButtonElement =
+                    document.getElementById(
+                        returnButtonId
+                    );
 
-            function showCustomInput() {
-                selectElement.value = otherOption;
-                selectElement.hidden = true;
+                function showCustomInput() {
+                    selectElement.value =
+                        otherOption;
 
-                /*
-                 * selectは非表示になっても送信対象として残す。
-                 * 値は「その他」のまま送信する。
-                 */
-                selectElement.required = false;
+                    selectElement.hidden =
+                        true;
 
-                customFieldElement.hidden = false;
-                customInputElement.required = true;
-                customInputElement.focus();
-            }
+                    /*
+                     * selectは非表示になっても
+                     * フォームの送信対象として残す。
+                     */
+                    selectElement.required =
+                        false;
 
-            function showSelect() {
-                customFieldElement.hidden = true;
+                    customFieldElement.hidden =
+                        false;
 
-                customInputElement.required = false;
-                customInputElement.value = "";
+                    customInputElement.required =
+                        true;
 
-                selectElement.hidden = false;
-                selectElement.required = true;
-                selectElement.value = "";
-                selectElement.focus();
-            }
+                    customInputElement.focus();
+                }
 
-            selectElement.addEventListener("change", () => {
-                if (selectElement.value === otherOption) {
+                function showSelect() {
+                    customFieldElement.hidden =
+                        true;
+
+                    customInputElement.required =
+                        false;
+
+                    customInputElement.value =
+                        "";
+
+                    selectElement.hidden =
+                        false;
+
+                    selectElement.required =
+                        true;
+
+                    selectElement.value =
+                        "";
+
+                    selectElement.focus();
+                }
+
+                selectElement.addEventListener(
+                    "change",
+                    () => {
+                        if (
+                            selectElement.value
+                            === otherOption
+                        ) {
+                            showCustomInput();
+                        }
+                    }
+                );
+
+                returnButtonElement.addEventListener(
+                    "click",
+                    () => {
+                        showSelect();
+                    }
+                );
+
+                if (
+                    selectElement.value
+                    === otherOption
+                ) {
                     showCustomInput();
                 }
-            });
-
-            returnButtonElement.addEventListener("click", () => {
-                showSelect();
-            });
-
-            if (selectElement.value === otherOption) {
-                showCustomInput();
             }
+
+            setupCustomOptionField({
+                selectId: "category_select",
+                customFieldId:
+                    "category-custom-field",
+                customInputId:
+                    "category_other",
+                returnButtonId:
+                    "category-select-return"
+            });
+
+            setupCustomOptionField({
+                selectId:
+                    "default_unit_select",
+                customFieldId:
+                    "unit-custom-field",
+                customInputId:
+                    "default_unit_other",
+                returnButtonId:
+                    "unit-select-return"
+            });
         }
-
-        setupCustomOptionField({
-            selectId: "category_select",
-            customFieldId: "category-custom-field",
-            customInputId: "category_other",
-            returnButtonId: "category-select-return"
-        });
-
-        setupCustomOptionField({
-            selectId: "default_unit_select",
-            customFieldId: "unit-custom-field",
-            customInputId: "default_unit_other",
-            returnButtonId: "unit-select-return"
-        });
-    });
+    );
 </script>
 {% endblock %}

@@ -11,17 +11,26 @@
             <h1>買うものリスト</h1>
 
             <p>
-                購入する食材を確認し、
+                購入するものを確認し、
                 購入状況を管理できます。
             </p>
         </div>
 
-        <a
-            href="/"
-            class="secondary-button"
-        >
-            在庫一覧へ戻る
-        </a>
+        <div class="shopping-list-header-actions">
+            <a
+                href="/shopping-list/add"
+                class="primary-button"
+            >
+                買うものを追加
+            </a>
+
+            <a
+                href="/"
+                class="secondary-button"
+            >
+                在庫一覧へ戻る
+            </a>
+        </div>
     </div>
 
     {% if message %}
@@ -30,7 +39,9 @@
         </div>
     {% endif %}
 
-    {% if shopping_items %}
+    <div class="shopping-list-content-header">
+        <h2>登録中の項目</h2>
+
         {% if has_purchased_items %}
             <div class="shopping-list-toolbar">
                 <form
@@ -38,7 +49,7 @@
                     method="post"
                     onsubmit="
                         return confirm(
-                            '購入済みの食材をすべて削除しますか？'
+                            '購入済みの項目をすべて削除しますか？'
                         );
                     "
                 >
@@ -51,11 +62,13 @@
                 </form>
             </div>
         {% endif %}
+    </div>
 
+    {% if shopping_items %}
         <table class="shopping-list-table">
             <thead>
                 <tr>
-                    <th>食材名</th>
+                    <th>名称</th>
                     <th>カテゴリ</th>
                     <th>単位</th>
                     <th>状態</th>
@@ -66,29 +79,27 @@
             <tbody>
                 {% for item in shopping_items %}
                     <tr
-                        class="
-                            {% if item.is_purchased %}
-                                shopping-item-purchased
-                            {% endif %}
-                        "
+                        class="{% if item.is_purchased %}shopping-item-purchased{% endif %}"
                     >
                         <td class="shopping-item-name">
-                            {{ item.ingredient.name }}
+                            {{ item.display_name }}
                         </td>
 
                         <td>
-                            {% if item.ingredient.category %}
-                                {{ item.ingredient.category }}
+                            {% if item.ingredient %}
+                                {{ item.ingredient.category or "未設定" }}
                             {% else %}
-                                未設定
+                                <span class="shopping-custom-item-label">
+                                    手入力
+                                </span>
                             {% endif %}
                         </td>
 
                         <td>
-                            {% if item.ingredient.default_unit %}
-                                {{ item.ingredient.default_unit }}
+                            {% if item.ingredient %}
+                                {{ item.ingredient.default_unit or "未設定" }}
                             {% else %}
-                                未設定
+                                ―
                             {% endif %}
                         </td>
 
@@ -127,7 +138,7 @@
                                     method="post"
                                     onsubmit="
                                         return confirm(
-                                            '{{ item.ingredient.name }}を買うものリストから削除しますか？'
+                                            'この項目を削除しますか？'
                                         );
                                     "
                                 >
@@ -150,16 +161,11 @@
                 買うものリストは空です。
             </p>
 
-            <p>
-                在庫一覧から食材を選択して
-                追加してください。
-            </p>
-
             <a
-                href="/"
+                href="/shopping-list/add"
                 class="primary-button"
             >
-                在庫一覧へ戻る
+                買うものを追加
             </a>
         </div>
     {% endif %}
