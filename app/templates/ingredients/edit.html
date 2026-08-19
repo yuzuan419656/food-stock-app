@@ -1,4 +1,4 @@
-{# 在庫ロット行内編集・論理削除対応完成版 2026-08-18 #}
+{# 在庫ロット行内編集・削除確認画面対応版 #}
 {% extends "base.html" %}
 
 {% block content %}
@@ -213,12 +213,16 @@
 
                     <tbody>
                         {% for inventory in inventory_lots %}
-                            {% set lot_quantity = inventory.quantity or 0 %}
+                            {% set lot_quantity =
+                                inventory.quantity or 0
+                            %}
+
                             {% set is_expired =
                                 lot_quantity > 0
                                 and inventory.expiration_date
                                 and inventory.expiration_date < today
                             %}
+
                             {% set edit_form_id =
                                 "inventory-lot-edit-"
                                 ~ inventory.id
@@ -234,13 +238,19 @@
 
                                 <td>
                                     <span data-lot-display>
-                                        {{ inventory.purchase_date }}
+                                        {% if inventory.purchase_date %}
+                                            {{ inventory.purchase_date }}
+                                        {% else %}
+                                            <span class="date-unavailable">
+                                                未設定
+                                            </span>
+                                        {% endif %}
                                     </span>
 
                                     <input
                                         type="date"
                                         name="purchase_date"
-                                        value="{{ inventory.purchase_date }}"
+                                        value="{{ inventory.purchase_date or '' }}"
                                         form="{{ edit_form_id }}"
                                         class="inventory-lot-edit-input"
                                         data-lot-edit-field
@@ -334,19 +344,12 @@
                                             編集
                                         </button>
 
-                                        <form
-                                            action="/inventories/{{ inventory.id }}/delete"
-                                            method="post"
-                                            class="inventory-lot-delete-form"
-                                            onsubmit="return window.confirm('この在庫ロットを削除しますか？');"
+                                        <a
+                                            href="/inventories/{{ inventory.id }}/delete"
+                                            class="lot-delete-button"
                                         >
-                                            <button
-                                                type="submit"
-                                                class="inventory-lot-delete-button"
-                                            >
-                                                削除
-                                            </button>
-                                        </form>
+                                            削除
+                                        </a>
                                     </div>
 
                                     <form

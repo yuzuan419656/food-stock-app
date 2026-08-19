@@ -9,7 +9,7 @@ from fastapi import (
     Query,
     Request,
 )
-from fastapi.responses import RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
@@ -595,60 +595,78 @@ def delete_inventory_lot_route(
     inventory_id: int,
     db: Session = Depends(get_db),
 ):
-    """在庫ロットを論理削除する。"""
     inventory = get_inventory_lot_by_id(
         db=db,
         inventory_id=inventory_id,
     )
 
     if inventory is None:
-        return RedirectResponse(
-            url="/",
-            status_code=303,
+        raise HTTPException(
+            status_code=404,
+            detail="在庫ロットが見つかりません。",
         )
 
     ingredient_id = inventory.ingredient_id
 
-    try:
-        deleted_inventory = (
-            soft_delete_inventory_lot(
-                db=db,
-                inventory_id=inventory_id,
-            )
-        )
-
-    except Exception:
-        db.rollback()
-
-        return RedirectResponse(
-            url=build_ingredient_edit_url(
-                ingredient_id=ingredient_id,
-                lot_error=(
-                    "在庫ロットの削除に"
-                    "失敗しました。"
-                ),
-            ),
-            status_code=303,
-        )
+    deleted_inventory = soft_delete_inventory_lot(
+        db=db,
+        inventory_id=inventory_id,
+    )
 
     if deleted_inventory is None:
-        return RedirectResponse(
-            url=build_ingredient_edit_url(
-                ingredient_id=ingredient_id,
-                lot_error=(
-                    "削除対象の在庫ロットが"
-                    "見つかりません。"
-                ),
-            ),
-            status_code=303,
+        raise HTTPException(
+            status_code=404,
+            detail="在庫ロットが見つかりません。",
         )
 
     return RedirectResponse(
-        url=build_ingredient_edit_url(
-            ingredient_id=ingredient_id,
-            lot_message=(
-                "在庫ロットを削除しました。"
-            ),
+        url=(
+            f"/ingredients/{ingredient_id}/edit"
+            "#inventory-lots"
         ),
         status_code=303,
+    )
+
+
+@router.get(
+    "/inventories/{inventory_id}/delete",
+    response_class=HTMLResponse,
+)
+def show_inventory_lot_delete_confirmation(
+    request: Request,
+    inventory_id: int,
+    db: Session = Depends(get_db),
+):
+    inventory = get_inventory_lot_by_id(
+        db=db,
+        inventory_id=inventory_id,
+    )
+
+    if inventory is None:
+        raise HTTPException(
+            status_code=404,
+            detail="在庫ロットが見つかりません。",
+        )
+
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=inventory.ingredient_id,
+    )
+
+    if ingredient is None:
+        raise HTTPException(
+            status_code=404,
+            detail="食材が見つかりません。",
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name=(
+            "ingredients/"
+            "inventory_lot_delete.html"
+        ),
+        context={
+            "ingredient": ingredient,
+            "inventory": inventory,
+        },
     )
