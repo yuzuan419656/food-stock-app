@@ -751,3 +751,100 @@ a.quantity-button:visited {
         flex-direction: column;
     }
 }
+
+/* 在庫ロット削除確認 */
+
+.inventory-lot-delete-page {
+    max-width: 720px;
+}
+
+.delete-warning-message {
+    margin-bottom: 20px;
+    padding: 12px 16px;
+    border-left: 4px solid #d9534f;
+    background-color: #fdeaea;
+    color: #8b1e1e;
+}
+
+.inventory-lot-delete-summary {
+    margin-bottom: 24px;
+    border: 1px solid #dddddd;
+    border-radius: 6px;
+    background-color: #ffffff;
+}
+
+.inventory-lot-delete-details {
+    margin: 0;
+}
+
+.inventory-lot-delete-details div {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    border-bottom: 1px solid #dddddd;
+}
+
+.inventory-lot-delete-details div:last-child {
+    border-bottom: none;
+}
+
+.inventory-lot-delete-details dt,
+.inventory-lot-delete-details dd {
+    margin: 0;
+    padding: 12px 16px;
+}
+
+.inventory-lot-delete-details dt {
+    background-color: #f0f0f0;
+    font-weight: bold;
+}
+
+.inventory-lot-delete-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.inventory-lot-delete-actions form {
+    margin: 0;
+}
+
+.cancel-button {
+    display: inline-block;
+    padding: 6px 12px;
+    border: 1px solid #999999;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #333333;
+    text-decoration: none;
+}
+
+.cancel-button:hover {
+    background-color: #f0f0f0;
+}
+
+.lot-delete-button {
+    display: inline-block;
+    padding: 5px 10px;
+    border: 1px solid #d9534f;
+    border-radius: 4px;
+    background-color: #ffffff;
+    color: #b42318;
+    line-height: 1.4;
+    text-decoration: none;
+}
+
+.lot-delete-button:hover {
+    background-color: #fdeaea;
+    color: #8b1e1e;
+    text-decoration: none;
+}
+
+@media (max-width: 600px) {
+    .inventory-lot-delete-details div {
+        grid-template-columns: 1fr;
+    }
+
+    .inventory-lot-delete-details dt {
+        border-bottom: 1px solid #dddddd;
+    }
+}

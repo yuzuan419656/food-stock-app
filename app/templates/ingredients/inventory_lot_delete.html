@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="delete-confirmation-page">
+    <h2>在庫ロットの削除確認</h2>
+
+    <div class="delete-warning-box">
+        <p class="delete-warning-title">
+            この在庫ロットを削除しますか？
+        </p>
+
+        <p>
+            削除したロットは、通常画面や
+            在庫数量の計算から除外されます。
+        </p>
+    </div>
+
+    <section class="delete-target-section">
+        <h3>削除対象</h3>
+
+        <div class="delete-target-table-wrapper">
+            <table class="delete-target-table">
+                <tbody>
+                    <tr>
+                        <th scope="row">
+                            食材名
+                        </th>
+                        <td>
+                            {{ ingredient.name }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            ロットID
+                        </th>
+                        <td>
+                            {{ inventory.id }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            数量
+                        </th>
+                        <td>
+                            {% set lot_quantity =
+                                inventory.quantity or 0
+                            %}
+
+                            {% if lot_quantity == lot_quantity | int %}
+                                {{ lot_quantity | int }}
+                            {% else %}
+                                {{ lot_quantity }}
+                            {% endif %}
+
+                            {{ ingredient.default_unit }}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            購入日
+                        </th>
+                        <td>
+                            {% if inventory.purchase_date %}
+                                {{ inventory.purchase_date }}
+                            {% else %}
+                                <span class="date-unavailable">
+                                    未設定
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <tr>
+                        <th scope="row">
+                            消費期限
+                        </th>
+                        <td>
+                            {% if inventory.expiration_date %}
+                                {{ inventory.expiration_date }}
+                            {% else %}
+                                <span class="date-unavailable">
+                                    未設定
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <div class="delete-confirmation-actions">
+        <form
+            action="/inventories/{{ inventory.id }}/delete"
+            method="post"
+        >
+            <button
+                type="submit"
+                class="danger-button"
+            >
+                削除する
+            </button>
+        </form>
+
+        <a
+            href="/ingredients/{{ ingredient.id }}/edit#inventory-lots"
+            class="cancel-button"
+        >
+            キャンセル
+        </a>
+    </div>
+</div>
+{% endblock %}
