@@ -8,7 +8,14 @@ from app.crud.ingredient import (
     get_ingredient_by_id,
     get_ingredient_by_name,
     get_ingredients,
+    restore_ingredient,
     search_ingredients,
+)
+from app.crud.inventory import (
+    get_inventory_lot_by_id,
+    get_inventory_quantity,
+    soft_delete_inventory_lot,
+    update_inventory_lot,
 )
 from app.models.inventory import Inventory
 from app.crud.shopping_item import (
@@ -330,3 +337,331 @@ def test_existing_shopping_item_is_kept_after_ingredient_deletion(
         .is_active
         is False
     )
+
+
+def test_inventory_lot_of_deleted_ingredient_is_not_returned(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    inventory_id = (
+        ingredient.inventories[0].id
+    )
+
+    delete_ingredient(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    normal_result = (
+        get_inventory_lot_by_id(
+            db=db_session,
+            inventory_id=inventory_id,
+        )
+    )
+
+    history_result = (
+        get_inventory_lot_by_id(
+            db=db_session,
+            inventory_id=inventory_id,
+            include_inactive_ingredient=True,
+        )
+    )
+
+    assert normal_result is None
+    assert history_result is not None
+    assert history_result.id == inventory_id
+
+
+def test_inventory_lot_of_deleted_ingredient_cannot_be_updated(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    inventory = ingredient.inventories[0]
+    inventory_id = inventory.id
+    original_quantity = float(
+        inventory.quantity
+    )
+
+    delete_ingredient(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    result = update_inventory_lot(
+        db=db_session,
+        inventory_id=inventory_id,
+        quantity=10,
+        purchase_date=date(
+            2026,
+            8,
+            20,
+        ),
+        expiration_date=date(
+            2026,
+            8,
+            30,
+        ),
+    )
+
+    history_inventory = (
+        get_inventory_lot_by_id(
+            db=db_session,
+            inventory_id=inventory_id,
+            include_inactive_ingredient=True,
+        )
+    )
+
+    assert result is None
+    assert history_inventory is not None
+    assert (
+        float(history_inventory.quantity)
+        == original_quantity
+    )
+
+
+def test_inventory_lot_of_deleted_ingredient_cannot_be_deleted(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    inventory_id = (
+        ingredient.inventories[0].id
+    )
+
+    delete_ingredient(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    result = soft_delete_inventory_lot(
+        db=db_session,
+        inventory_id=inventory_id,
+    )
+
+    history_inventory = (
+        get_inventory_lot_by_id(
+            db=db_session,
+            inventory_id=inventory_id,
+            include_inactive_ingredient=True,
+        )
+    )
+
+    assert result is None
+    assert history_inventory is not None
+    assert (
+        history_inventory.deleted_at
+        is None
+    )
+
+
+def test_restore_ingredient_reactivates_same_record(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    ingredient_id = ingredient.id
+
+    original_inventory_ids = {
+        inventory.id
+        for inventory
+        in ingredient.inventories
+    }
+
+    delete_ingredient(
+        db=db_session,
+        ingredient_id=ingredient_id,
+    )
+
+    restored_ingredient = (
+        restore_ingredient(
+            db=db_session,
+            ingredient_id=ingredient_id,
+            category="葉物野菜",
+            default_unit="玉",
+            quantity=1,
+            purchase_date=date(
+                2026,
+                8,
+                20,
+            ),
+            expiration_date=date(
+                2026,
+                8,
+                28,
+            ),
+        )
+    )
+
+    assert restored_ingredient is not None
+    assert restored_ingredient.id == ingredient_id
+    assert restored_ingredient.is_active is True
+    assert restored_ingredient.deleted_at is None
+    assert (
+        restored_ingredient.category
+        == "葉物野菜"
+    )
+
+    restored_inventory_ids = {
+        inventory.id
+        for inventory
+        in restored_ingredient.inventories
+    }
+
+    assert original_inventory_ids.issubset(
+        restored_inventory_ids
+    )
+
+    assert (
+        len(restored_inventory_ids)
+        == len(original_inventory_ids) + 1
+    )
+
+    assert (
+        get_inventory_quantity(
+            restored_ingredient
+        )
+        == 3
+    )
+
+
+def test_restore_ingredient_with_zero_quantity_keeps_existing_lots_only(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    original_inventory_ids = {
+        inventory.id
+        for inventory
+        in ingredient.inventories
+    }
+
+    delete_ingredient(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    restored_ingredient = (
+        restore_ingredient(
+            db=db_session,
+            ingredient_id=ingredient.id,
+            category="野菜",
+            default_unit="玉",
+            quantity=0,
+            purchase_date=date(
+                2026,
+                8,
+                20,
+            ),
+            expiration_date=None,
+        )
+    )
+
+    assert restored_ingredient is not None
+
+    restored_inventory_ids = {
+        inventory.id
+        for inventory
+        in restored_ingredient.inventories
+    }
+
+    assert (
+        restored_inventory_ids
+        == original_inventory_ids
+    )
+
+
+def test_restore_ingredient_rejects_different_unit(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    delete_ingredient(
+        db=db_session,
+        ingredient_id=ingredient.id,
+    )
+
+    try:
+        restore_ingredient(
+            db=db_session,
+            ingredient_id=ingredient.id,
+            category="野菜",
+            default_unit="個",
+            quantity=1,
+            purchase_date=date(
+                2026,
+                8,
+                20,
+            ),
+            expiration_date=None,
+        )
+
+    except ValueError as error:
+        assert (
+            "単位が異なるため"
+            in str(error)
+        )
+
+    else:
+        raise AssertionError(
+            "ValueErrorが発生しませんでした。"
+        )
+
+    inactive_ingredient = (
+        get_ingredient_by_id(
+            db=db_session,
+            ingredient_id=ingredient.id,
+            include_inactive=True,
+        )
+    )
+
+    assert inactive_ingredient is not None
+    assert inactive_ingredient.is_active is False
+    assert (
+        inactive_ingredient.deleted_at
+        is not None
+    )
+
+
+def test_restore_ingredient_returns_none_for_active_ingredient(
+    db_session: Session,
+):
+    ingredient = create_test_ingredient(
+        db_session=db_session,
+        name="キャベツ",
+    )
+
+    result = restore_ingredient(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        category="野菜",
+        default_unit="玉",
+        quantity=1,
+        purchase_date=date(
+            2026,
+            8,
+            20,
+        ),
+        expiration_date=None,
+    )
+
+    assert result is None

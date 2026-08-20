@@ -709,19 +709,43 @@ def get_inventory_lots(
 def get_inventory_lot_by_id(
     db: Session,
     inventory_id: int,
+    include_inactive_ingredient: bool = False,
 ) -> Inventory | None:
     """
-    IDを指定して、削除されていない
-    在庫ロットを取得する。
+    在庫ロットをIDで取得する。
+
+    通常は以下を除外する。
+
+    - 論理削除済みの在庫ロット
+    - 論理削除済み食材に属する在庫ロット
+
+    履歴参照などで必要な場合は、
+    include_inactive_ingredient=Trueを指定する。
     """
-    return (
+    query = (
         db.query(Inventory)
+        .join(
+            Ingredient,
+            Inventory.ingredient_id
+            == Ingredient.id,
+        )
+        .options(
+            joinedload(
+                Inventory.ingredient
+            )
+        )
         .filter(
             Inventory.id == inventory_id,
             Inventory.deleted_at.is_(None),
         )
-        .first()
     )
+
+    if not include_inactive_ingredient:
+        query = query.filter(
+            Ingredient.is_active.is_(True)
+        )
+
+    return query.first()
 
 
 def update_inventory_lot(

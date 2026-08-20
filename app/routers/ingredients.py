@@ -485,6 +485,7 @@ def create_ingredient_route(
     existing_ingredient = get_ingredient_by_name(
         db=db,
         name=normalized_name,
+        include_inactive=True,
     )
 
     if existing_ingredient is not None:
@@ -518,6 +519,7 @@ def create_ingredient_route(
         existing_ingredient = get_ingredient_by_name(
             db=db,
             name=normalized_name,
+            include_inactive=True,
         )
 
         if existing_ingredient is not None:
@@ -884,6 +886,11 @@ def confirm_delete_ingredient(
         name="ingredients/delete.html",
         context={
             "ingredient": ingredient,
+            "inventory_quantity": (
+                get_inventory_quantity(
+                    ingredient
+                )
+            ),
         },
     )
 

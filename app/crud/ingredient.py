@@ -293,6 +293,69 @@ def delete_ingredient(
     return True
 
 
+def restore_ingredient(
+    db: Session,
+    ingredient_id: int,
+    category: str,
+    default_unit: str,
+    quantity: float = 0,
+    purchase_date: date | None = None,
+    expiration_date: date | None = None,
+) -> Ingredient | None:
+    """
+    論理削除済み食材を復元する。
+
+    過去の在庫ロットは保持し、
+    今回の数量が0より大きい場合は
+    新しい在庫ロットとして追加する。
+    """
+    ingredient = get_ingredient_by_id(
+        db=db,
+        ingredient_id=ingredient_id,
+        include_inactive=True,
+    )
+
+    if ingredient is None:
+        return None
+
+    if ingredient.is_active:
+        return None
+
+    if (
+        ingredient.default_unit
+        != default_unit
+    ):
+        raise ValueError(
+            "削除済み食材の単位と"
+            "今回入力した単位が異なるため、"
+            "復元できません。"
+        )
+
+    ingredient.category = category
+    ingredient.is_active = True
+    ingredient.deleted_at = None
+
+    if quantity > 0:
+        inventory = Inventory(
+            ingredient_id=ingredient.id,
+            quantity=quantity,
+            purchase_date=(
+                purchase_date
+                or date.today()
+            ),
+            expiration_date=(
+                expiration_date
+            ),
+        )
+
+        db.add(inventory)
+
+    db.commit()
+    db.refresh(ingredient)
+
+    return ingredient
+
+
 def get_categories(
     db: Session,
 ) -> list[str]:

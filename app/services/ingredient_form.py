@@ -219,6 +219,9 @@ def build_duplicate_context(
         "existing_ingredient": (
             existing_ingredient
         ),
+        "is_inactive": (
+            not existing_ingredient.is_active
+        ),
         "existing_quantity": (
             existing_quantity
         ),

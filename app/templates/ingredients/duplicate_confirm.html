@@ -2,13 +2,29 @@
 
 {% block content %}
 <section>
-    <h2>重複する食材の確認</h2>
+    {% if is_inactive %}
+        <h2>削除済み食材の復元確認</h2>
 
-    <p>
-        「{{ form_data.name }}」はすでに
-        登録されています。
-        処理方法を選択してください。
-    </p>
+        <p>
+            「{{ form_data.name }}」は、
+            過去に登録されていた削除済み食材です。
+        </p>
+
+        <p class="form-guidance-message">
+            復元すると以前の在庫ロットを保持したまま、
+            食材一覧へ再表示します。
+            今回入力した数量が0より大きい場合は、
+            新しい在庫ロットとして追加します。
+        </p>
+    {% else %}
+        <h2>重複する食材の確認</h2>
+
+        <p>
+            「{{ form_data.name }}」はすでに
+            登録されています。
+            処理方法を選択してください。
+        </p>
+    {% endif %}
 
     {% if form_data.source == "shopping_list" %}
         <p class="form-guidance-message">
@@ -27,6 +43,17 @@
 
     <table>
         <tbody>
+            <tr>
+                <th>状態</th>
+                <td>
+                    {% if is_inactive %}
+                        削除済み
+                    {% else %}
+                        登録中
+                    {% endif %}
+                </td>
+            </tr>
+
             <tr>
                 <th>食材名</th>
                 <td>
@@ -138,7 +165,13 @@
     {% if not can_add_quantity %}
         <p class="error-message">
             既存の単位と今回入力した単位が
-            異なるため、数量を加算できません。
+            異なります。
+
+            {% if is_inactive %}
+                単位が異なる食材は復元できません。
+            {% else %}
+                数量を加算できません。
+            {% endif %}
         </p>
     {% endif %}
 
@@ -196,24 +229,37 @@
         >
 
         <div class="form-actions">
-            <button
-                type="submit"
-                name="action"
-                value="overwrite"
-            >
-                既存データを上書き
-            </button>
+            {% if is_inactive %}
+                <button
+                    type="submit"
+                    name="action"
+                    value="restore"
+                    {% if not can_add_quantity %}
+                        disabled
+                    {% endif %}
+                >
+                    削除済み食材を復元
+                </button>
+            {% else %}
+                <button
+                    type="submit"
+                    name="action"
+                    value="overwrite"
+                >
+                    既存データを上書き
+                </button>
 
-            <button
-                type="submit"
-                name="action"
-                value="add"
-                {% if not can_add_quantity %}
-                    disabled
-                {% endif %}
-            >
-                数量を加算
-            </button>
+                <button
+                    type="submit"
+                    name="action"
+                    value="add"
+                    {% if not can_add_quantity %}
+                        disabled
+                    {% endif %}
+                >
+                    数量を加算
+                </button>
+            {% endif %}
 
             <button
                 type="submit"

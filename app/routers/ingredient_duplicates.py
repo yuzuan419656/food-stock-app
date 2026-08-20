@@ -20,6 +20,7 @@ from app.constants.ingredient_options import (
 from app.crud.ingredient import (
     get_ingredient_by_id,
     get_ingredient_by_name,
+    restore_ingredient,
     update_ingredient,
 )
 from app.crud.inventory import (
@@ -268,6 +269,7 @@ def resolve_duplicate_ingredient_route(
             ingredient_id=(
                 existing_ingredient_id
             ),
+            include_inactive=True,
         )
     )
 
@@ -461,6 +463,7 @@ def resolve_duplicate_ingredient_route(
         get_ingredient_by_name(
             db=db,
             name=normalized_name,
+            include_inactive=True,
         )
     )
 
@@ -510,6 +513,113 @@ def resolve_duplicate_ingredient_route(
                     "登録をキャンセルしました。"
                 ),
             },
+        )
+
+    if action == "restore":
+        if existing_ingredient.is_active:
+            return render_new_ingredient_error(
+                request=request,
+                form_data=new_form_data,
+                error_message=(
+                    "対象の食材はすでに"
+                    "復元されています。"
+                    "もう一度登録内容を"
+                    "確認してください。"
+                ),
+                status_code=409,
+            )
+
+        try:
+            restored_ingredient = (
+                restore_ingredient(
+                    db=db,
+                    ingredient_id=(
+                        existing_ingredient_id
+                    ),
+                    category=category,
+                    default_unit=default_unit,
+                    quantity=quantity,
+                    purchase_date=(
+                        parsed_purchase_date
+                    ),
+                    expiration_date=(
+                        parsed_expiration_date
+                    ),
+                )
+            )
+
+        except ValueError as error:
+            db.rollback()
+
+            return render_duplicate_confirmation(
+                request=request,
+                existing_ingredient=(
+                    existing_ingredient
+                ),
+                name=normalized_name,
+                category=category,
+                quantity=quantity,
+                default_unit=default_unit,
+                purchase_date=(
+                    parsed_purchase_date
+                ),
+                expiration_date=(
+                    parsed_expiration_date
+                ),
+                error_message=str(error),
+                status_code=400,
+                source=normalized_source,
+            )
+
+        if restored_ingredient is None:
+            return render_new_ingredient_error(
+                request=request,
+                form_data=new_form_data,
+                error_message=(
+                    "食材を復元できませんでした。"
+                    "もう一度登録内容を"
+                    "確認してください。"
+                ),
+                status_code=409,
+            )
+
+        return redirect_after_duplicate_action(
+            db=db,
+            ingredient_id=(
+                restored_ingredient.id
+            ),
+            ingredient_name=(
+                restored_ingredient.name
+            ),
+            source=normalized_source,
+            action_message=(
+                "削除済みデータを復元しました"
+            ),
+        )
+
+    if not existing_ingredient.is_active:
+        return render_duplicate_confirmation(
+            request=request,
+            existing_ingredient=(
+                existing_ingredient
+            ),
+            name=normalized_name,
+            category=category,
+            quantity=quantity,
+            default_unit=default_unit,
+            purchase_date=(
+                parsed_purchase_date
+            ),
+            expiration_date=(
+                parsed_expiration_date
+            ),
+            error_message=(
+                "削除済み食材には"
+                "上書き・数量加算できません。"
+                "復元を選択してください。"
+            ),
+            status_code=400,
+            source=normalized_source,
         )
 
     if action == "overwrite":
