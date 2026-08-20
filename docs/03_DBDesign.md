@@ -36,25 +36,41 @@
 | category | TEXT | - | - | - | NULL | カテゴリ |
 | default_unit | TEXT | - | - | - | NULL | 基本単位 |
 | created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 登録日時 |
-| updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 更新日時 |
+| is_active | BOOLEAN | - | ○ | - | true | 有効状態 |
+| deleted_at | DATETIME | - | - | - | NULL | 論理削除日時 |
+
+### 論理削除
+
+- 通常登録時は`is_active = true`、`deleted_at = NULL`とする
+- 削除時は`is_active = false`とし、`deleted_at`へ削除日時を保存する
+- 食材レコードおよび関連する在庫ロットは物理削除しない
+- 通常の一覧・検索・選択候補では`is_active = true`のみを対象とする
+- 復元時は`is_active = true`、`deleted_at = NULL`へ戻す
 
 ---
 
 ## 5. inventories
 
+
 | カラム | 型 | PK | NOT NULL | FK | 初期値 | 制約・説明 |
 |---|---|:---:|:---:|---|---|---|
-| id | INTEGER | ○ | ○ | - | - | 在庫ID |
+| id | INTEGER | ○ | ○ | - | - | 在庫ロットID |
 | ingredient_id | INTEGER | - | ○ | ingredients.id | - | 食材ID |
-| quantity | REAL | - | ○ | - | 0 | 0以上 |
+| quantity | REAL | - | ○ | - | 0 | 0以上・0.5刻み |
 | purchase_date | DATE | - | ○ | - | 登録日 | 購入日 |
 | expiration_date | DATE | - | - | - | NULL | 消費期限 |
+| deleted_at | DATETIME | - | - | - | NULL | ロットの論理削除日時 |
 | created_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 登録日時 |
 | updated_at | DATETIME | - | ○ | - | CURRENT_TIMESTAMP | 更新日時 |
 
-現在は1食材につき在庫レコード1件として利用する。モデル上は将来のロット管理を考慮して1:Nを維持する。
+1つの食材に対して、購入日・消費期限の異なる複数の在庫ロットを登録する。
 
-既存データへ購入日を追加した際は、在庫レコードの`created_at`の日付を初期値として補完する。
+在庫合計、代表購入日、代表消費期限の計算では、`deleted_at IS NULL`かつ数量が0より大きいロットを対象とする。
+
+- 合計数量：対象ロットの数量合計
+- 代表購入日：対象ロットの最も古い購入日
+- 代表消費期限：期限設定済み対象ロットの最も近い期限
+- 減算順序：消費期限、購入日、登録日時、IDの昇順
 
 ---
 
@@ -63,17 +79,21 @@
 | カラム | 型 | PK | NOT NULL | FK | UNIQUE | 初期値 | 説明 |
 |---|---|:---:|:---:|---|:---:|---|---|
 | id | INTEGER | ○ | ○ | - | - | - | リスト項目ID |
-| ingredient_id | INTEGER | - | ○ | ingredients.id | ○ | - | 対象食材 |
+| ingredient_id | INTEGER | - | - | ingredients.id | ○ | NULL | 食材マスタ由来の食材ID |
+| custom_name | TEXT | - | - | - | - | NULL | 手入力項目名 |
 | is_purchased | BOOLEAN | - | ○ | - | - | false | 購入済み状態 |
 | created_at | DATETIME | - | ○ | - | - | CURRENT_TIMESTAMP | 追加日時 |
 | updated_at | DATETIME | - | ○ | - | - | CURRENT_TIMESTAMP | 更新日時 |
 
 ### 制約
 
-- `ingredient_id`はUNIQUEとする
+- `ingredient_id`と`custom_name`のどちらか一方だけを設定する
+- 食材マスタ由来の項目では`ingredient_id`を設定する
+- 手入力項目では`custom_name`を設定する
 - 同じ食材を複数回追加しない
-- 食材削除時は関連項目を削除する
-- 購入済みに変更しても`inventories.quantity`は変更しない
+- 同じ手入力項目を表記揺れを含めて複数回追加しない
+- 食材を論理削除しても既存の買うものリスト項目は保持する
+- 購入済みに変更しても在庫数量は変更しない
 
 ---
 
@@ -85,9 +105,9 @@ ingredients
     1 ─── 0..1 shopping_items
 ```
 
-現在の運用では、`inventories`は1食材につき1件として利用する。
+`ingredients`と`inventories`は1対多とし、購入単位ごとに在庫ロットを管理する。
 
-`shopping_items`は`ingredient_id`にUNIQUE制約を設定するため、1食材につき最大1件とする。
+`shopping_items`は、食材マスタ由来の場合は`ingredient_id`を参照し、手入力の場合は`custom_name`を保持する。
 
 ---
 
@@ -112,7 +132,8 @@ ingredients
 - DB変更はAlembicで管理する
 - SQLite固有機能へ過度に依存しない
 - 未使用の将来カラムは先に追加しない
-- 購入単位の在庫明細管理はPhase1では行わない
+- 在庫は購入日・消費期限別のロットとして管理する
+- 履歴から参照される食材と在庫ロットは論理削除する
 
 ---
 
@@ -126,6 +147,10 @@ Phase1では、主に次の変更をAlembicで管理する。
 - 既存在庫データへの購入日の補完
 
 マイグレーション適用：
+
+- 在庫ロットへの論理削除日時の追加
+- 買うものリストの手入力項目対応
+- 食材への有効状態・論理削除日時の追加
 
 ```bash
 alembic upgrade head
