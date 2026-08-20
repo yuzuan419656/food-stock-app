@@ -1,6 +1,11 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import (
+    Boolean,
+    DateTime,
+    String,
+    true,
+)
 from sqlalchemy.orm import (
     Mapped,
     mapped_column,
@@ -39,6 +44,19 @@ class Ingredient(Base):
         DateTime,
         default=datetime.now,
         nullable=False,
+    )
+
+    is_active: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        server_default=true(),
+        nullable=False,
+    )
+
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+        default=None,
     )
 
     inventories = relationship(

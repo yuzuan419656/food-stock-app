@@ -1,6 +1,6 @@
 from sqlalchemy import and_, case, func, or_
 from sqlalchemy.orm import Session, joinedload
-from datetime import date
+from datetime import date, datetime
 
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
@@ -11,13 +11,23 @@ def get_ingredients(
     db: Session,
     sort: str = "id",
 ) -> list[Ingredient]:
-    """食材一覧を在庫情報と一緒に取得する。"""
-    query = db.query(Ingredient).options(
-        joinedload(Ingredient.inventories)
+    """有効な食材一覧を在庫情報と一緒に取得する。"""
+    query = (
+        db.query(Ingredient)
+        .options(
+            joinedload(
+                Ingredient.inventories
+            )
+        )
+        .filter(
+            Ingredient.is_active.is_(True)
+        )
     )
 
     if sort == "name":
-        query = query.order_by(Ingredient.name)
+        query = query.order_by(
+            Ingredient.name
+        )
 
     elif sort == "category":
         query = query.order_by(
@@ -26,7 +36,9 @@ def get_ingredients(
         )
 
     else:
-        query = query.order_by(Ingredient.id)
+        query = query.order_by(
+            Ingredient.id
+        )
 
     return query.all()
 
@@ -36,32 +48,53 @@ def search_ingredients(
     keyword: str,
     sort: str = "id",
 ) -> list[Ingredient]:
-    """食材名をひらがな・カタカナを区別せず検索する。"""
-    query = db.query(Ingredient).options(
-        joinedload(Ingredient.inventories)
+    """有効な食材を名前で検索する。"""
+    query = (
+        db.query(Ingredient)
+        .options(
+            joinedload(
+                Ingredient.inventories
+            )
+        )
+        .filter(
+            Ingredient.is_active.is_(True)
+        )
     )
 
-    search_keywords = create_search_keywords(keyword)
+    search_keywords = (
+        create_search_keywords(
+            keyword
+        )
+    )
 
     if search_keywords:
         query = query.filter(
             or_(
                 *[
-                    Ingredient.name.contains(search_keyword)
-                    for search_keyword in search_keywords
+                    Ingredient.name.contains(
+                        search_keyword
+                    )
+                    for search_keyword
+                    in search_keywords
                 ]
             )
         )
 
     if sort == "name":
-        query = query.order_by(Ingredient.name)
+        query = query.order_by(
+            Ingredient.name
+        )
+
     elif sort == "category":
         query = query.order_by(
             Ingredient.category,
             Ingredient.name,
         )
+
     else:
-        query = query.order_by(Ingredient.id)
+        query = query.order_by(
+            Ingredient.id
+        )
 
     return query.all()
 
@@ -69,51 +102,76 @@ def search_ingredients(
 def get_ingredient_by_id(
     db: Session,
     ingredient_id: int,
+    include_inactive: bool = False,
 ) -> Ingredient | None:
-    """IDを指定して食材と在庫情報を取得する。"""
-    return (
+    """
+    IDを指定して食材と在庫情報を取得する。
+
+    include_inactiveがFalseの場合は、
+    論理削除済み食材を除外する。
+    """
+    query = (
         db.query(Ingredient)
         .options(
-            joinedload(Ingredient.inventories)
+            joinedload(
+                Ingredient.inventories
+            )
         )
         .filter(
             Ingredient.id == ingredient_id
         )
-        .first()
     )
+
+    if not include_inactive:
+        query = query.filter(
+            Ingredient.is_active.is_(True)
+        )
+
+    return query.first()
 
 
 def get_ingredient_by_name(
     db: Session,
     name: str,
     exclude_ingredient_id: int | None = None,
+    include_inactive: bool = False,
 ) -> Ingredient | None:
     """
     指定された名前と一致する食材を取得する。
 
     英字の大文字・小文字は区別しない。
-
-    編集時はexclude_ingredient_idを指定することで、
-    編集対象自身を検索結果から除外する。
+    通常は論理削除済み食材を除外する。
     """
-    normalized_name = normalize_ingredient_name(name)
+    normalized_name = (
+        normalize_ingredient_name(name)
+    )
 
     query = (
         db.query(Ingredient)
         .options(
-            joinedload(Ingredient.inventories)
+            joinedload(
+                Ingredient.inventories
+            )
         )
         .filter(
             func.lower(
-                func.trim(Ingredient.name)
+                func.trim(
+                    Ingredient.name
+                )
             )
             == normalized_name.lower()
         )
     )
 
+    if not include_inactive:
+        query = query.filter(
+            Ingredient.is_active.is_(True)
+        )
+
     if exclude_ingredient_id is not None:
         query = query.filter(
-            Ingredient.id != exclude_ingredient_id
+            Ingredient.id
+            != exclude_ingredient_id
         )
 
     return query.first()
@@ -213,7 +271,12 @@ def delete_ingredient(
     db: Session,
     ingredient_id: int,
 ) -> bool:
-    """指定した食材を削除する。"""
+    """
+    指定した食材を論理削除する。
+
+    食材レコードと在庫ロットは
+    データベース上に保持する。
+    """
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -222,7 +285,9 @@ def delete_ingredient(
     if ingredient is None:
         return False
 
-    db.delete(ingredient)
+    ingredient.is_active = False
+    ingredient.deleted_at = datetime.now()
+
     db.commit()
 
     return True
@@ -234,6 +299,9 @@ def get_categories(
     """登録済み食材からカテゴリ一覧を取得する。"""
     results = (
         db.query(Ingredient.category)
+        .filter(
+            Ingredient.is_active.is_(True)
+        )
         .filter(
             Ingredient.category.isnot(None)
         )
@@ -257,6 +325,9 @@ def get_default_units(
     """登録済み食材から単位一覧を取得する。"""
     results = (
         db.query(Ingredient.default_unit)
+        .filter(
+            Ingredient.is_active.is_(True)
+        )
         .filter(
             Ingredient.default_unit.isnot(None)
         )
@@ -285,8 +356,16 @@ def get_filtered_ingredients(
     検索・絞り込み・並び替え条件付きで
     食材一覧を取得する。
     """
-    query = db.query(Ingredient).options(
-        joinedload(Ingredient.inventories)
+    query = (
+        db.query(Ingredient)
+        .options(
+            joinedload(
+                Ingredient.inventories
+            )
+        )
+        .filter(
+            Ingredient.is_active.is_(True)
+        )
     )
 
     # ひらがな・カタカナを区別せず検索する

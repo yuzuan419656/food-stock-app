@@ -74,9 +74,11 @@ def add_ingredients_to_shopping_list(
     ingredient_ids: list[int],
 ) -> int:
     """
-    複数の食材を買うものリストへ追加する。
+    複数の有効な食材を買うものリストへ追加する。
 
-    すでに追加済みの食材は重複登録しない。
+    存在しない食材、論理削除済み食材、
+    すでに追加済みの食材は追加しない。
+
     戻り値は新しく追加した件数。
     """
     unique_ingredient_ids = set(
@@ -86,7 +88,8 @@ def add_ingredients_to_shopping_list(
     if not unique_ingredient_ids:
         return 0
 
-    existing_ingredient_ids = {
+    # 実在し、かつ有効な食材IDだけを取得する
+    active_ingredient_ids = {
         ingredient_id
         for (ingredient_id,) in (
             db.query(
@@ -97,10 +100,18 @@ def add_ingredients_to_shopping_list(
                     unique_ingredient_ids
                 )
             )
+            .filter(
+                Ingredient.is_active.is_(True)
+            )
             .all()
         )
     }
 
+    if not active_ingredient_ids:
+        return 0
+
+    # すでに買うものリストへ登録済みの
+    # 食材IDを取得する
     registered_ingredient_ids = {
         ingredient_id
         for (ingredient_id,) in (
@@ -109,19 +120,22 @@ def add_ingredients_to_shopping_list(
             )
             .filter(
                 ShoppingItem.ingredient_id.in_(
-                    existing_ingredient_ids
+                    active_ingredient_ids
                 )
             )
             .all()
         )
+        if ingredient_id is not None
     }
 
     new_ingredient_ids = (
-        existing_ingredient_ids
+        active_ingredient_ids
         - registered_ingredient_ids
     )
 
-    for ingredient_id in new_ingredient_ids:
+    for ingredient_id in sorted(
+        new_ingredient_ids
+    ):
         db.add(
             ShoppingItem(
                 ingredient_id=ingredient_id,
@@ -331,7 +345,12 @@ def get_shopping_ingredient_candidates(
     複数カテゴリはOR条件、
     食材名は仮名を考慮した部分一致で検索する。
     """
-    query = db.query(Ingredient)
+    query = (
+    db.query(Ingredient)
+    .filter(
+        Ingredient.is_active.is_(True)
+    )
+)
 
     cleaned_categories = {
         category.strip()
