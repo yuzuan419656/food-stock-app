@@ -3,6 +3,22 @@ from datetime import date
 from app.constants.ingredient_options import OTHER_OPTION
 
 
+SHOPPING_LIST_SOURCE = "shopping_list"
+
+
+def normalize_registration_source(
+    source: str | None,
+) -> str:
+    """
+    食材登録画面の遷移元を正規化する。
+
+    許可されていない値は空文字にする。
+    """
+    if source == SHOPPING_LIST_SOURCE:
+        return SHOPPING_LIST_SOURCE
+
+    return ""
+
 def resolve_selected_option(
     selected_value: str,
     other_value: str | None,
@@ -135,6 +151,7 @@ def build_new_form_data(
     quantity: float,
     purchase_date: str | None = None,
     expiration_date: str | None = None,
+    source: str = "",
 ) -> dict:
     """新規登録・編集画面へ渡すフォームデータを作成する。"""
     return {
@@ -142,10 +159,17 @@ def build_new_form_data(
         "category_select": category_select,
         "category_other": category_other or "",
         "default_unit_select": default_unit_select,
-        "default_unit_other": default_unit_other or "",
+        "default_unit_other": (
+            default_unit_other or ""
+        ),
         "quantity": quantity,
         "purchase_date": purchase_date or "",
-        "expiration_date": expiration_date or "",
+        "expiration_date": (
+            expiration_date or ""
+        ),
+        "source": normalize_registration_source(
+            source
+        ),
     }
 
 
@@ -156,6 +180,7 @@ def build_duplicate_form_data(
     default_unit: str,
     purchase_date: date,
     expiration_date: date | None,
+    source: str = "",
 ) -> dict:
     """重複確認画面へ渡すフォームデータを作成する。"""
     return {
@@ -168,6 +193,9 @@ def build_duplicate_form_data(
         ),
         "expiration_date": date_to_form_value(
             expiration_date
+        ),
+        "source": normalize_registration_source(
+            source
         ),
     }
 
@@ -184,11 +212,19 @@ def build_duplicate_context(
     purchase_date: date,
     expiration_date: date | None,
     error_message: str | None = None,
+    source: str = "",
 ) -> dict:
     """重複確認画面へ渡すcontextを作成する。"""
     return {
-        "existing_ingredient": existing_ingredient,
-        "existing_quantity": existing_quantity,
+        "existing_ingredient": (
+            existing_ingredient
+        ),
+        "is_inactive": (
+            not existing_ingredient.is_active
+        ),
+        "existing_quantity": (
+            existing_quantity
+        ),
         "existing_purchase_date": (
             existing_purchase_date
         ),
@@ -202,6 +238,7 @@ def build_duplicate_context(
             default_unit=default_unit,
             purchase_date=purchase_date,
             expiration_date=expiration_date,
+            source=source,
         ),
         "can_add_quantity": (
             existing_ingredient.default_unit

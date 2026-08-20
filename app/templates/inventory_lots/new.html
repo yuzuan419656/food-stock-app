@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section>
+    <h2>在庫を追加する</h2>
+
+    <p>
+        食材：
+        <strong>{{ ingredient.name }}</strong>
+    </p>
+
+    <p>
+        単位：
+        {{ ingredient.default_unit or "未設定" }}
+    </p>
+
+    {% if error_message %}
+        <p class="error-message">
+            {{ error_message }}
+        </p>
+    {% endif %}
+
+    <form
+        action="/ingredients/{{ ingredient.id }}/inventories"
+        method="post"
+        class="ingredient-form"
+    >
+        <input
+            type="hidden"
+            name="keyword"
+            value="{{ form_data.keyword }}"
+        >
+
+        {% for category in form_data.category_filters %}
+            <input
+                type="hidden"
+                name="category_filters"
+                value="{{ category }}"
+            >
+        {% endfor %}
+
+        <input
+            type="hidden"
+            name="sort"
+            value="{{ form_data.sort }}"
+        >
+
+        {% if form_data.out_of_stock_first %}
+            <input
+                type="hidden"
+                name="out_of_stock_first"
+                value="true"
+            >
+        {% endif %}
+
+        <div class="form-group">
+            <label for="quantity">
+                追加数量
+            </label>
+
+            <div class="quantity-with-unit">
+                <input
+                    type="number"
+                    id="quantity"
+                    name="quantity"
+                    value="{{ form_data.quantity }}"
+                    min="0.5"
+                    step="0.5"
+                    required
+                >
+
+                <span>
+                    {{ ingredient.default_unit or "" }}
+                </span>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="purchase_date">
+                購入日
+            </label>
+
+            <input
+                type="date"
+                id="purchase_date"
+                name="purchase_date"
+                value="{{ form_data.purchase_date }}"
+                required
+            >
+        </div>
+
+        <div class="form-group">
+            <label for="expiration_date">
+                消費期限
+            </label>
+
+            <input
+                type="date"
+                id="expiration_date"
+                name="expiration_date"
+                value="{{ form_data.expiration_date }}"
+            >
+
+            <p class="form-help">
+                消費期限が分からない場合は
+                空欄のまま登録できます。
+            </p>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit">
+                新しい在庫として追加
+            </button>
+
+            <a href="{{ list_url }}">
+                キャンセル
+            </a>
+        </div>
+    </form>
+</section>
+{% endblock %}

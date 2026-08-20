@@ -3,6 +3,7 @@ from datetime import date, timedelta
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.models.inventory import Inventory
 from app.crud.ingredient import (
     create_ingredient,
     get_ingredient_by_id,
@@ -87,40 +88,44 @@ def test_expiration_display_statuses(
     )
 
 
-def test_list_contains_always_visible_date_input(
+def test_list_displays_representative_expiration_date_input(
     client: TestClient,
     db_session: Session,
 ):
-    create_ingredient(
+    ingredient = create_ingredient(
         db=db_session,
         name="牛乳",
         category="乳製品",
         default_unit="本",
         quantity=1,
-        expiration_date=date(2026, 8, 15),
+        expiration_date=date(
+            2026,
+            8,
+            15,
+        ),
     )
 
     response = client.get("/")
 
     assert response.status_code == 200
     assert "消費期限" in response.text
+
     assert (
         'class="expiration-date-input"'
         in response.text
     )
+
     assert (
-        'data-ingredient-id='
+        f'data-ingredient-id="{ingredient.id}"'
         in response.text
     )
+
     assert (
         'value="2026-08-15"'
         in response.text
     )
-    assert "まとめて更新" not in response.text
-    assert "expiration-edit-button" not in (
-        response.text
-    )
 
+    assert "最短期限ロット" in response.text
 
 def test_auto_update_expiration_date(
     client: TestClient,
@@ -274,3 +279,96 @@ def test_auto_update_missing_ingredient(
 
     assert response.status_code == 404
     assert response.json()["success"] is False
+
+
+def test_list_displays_nearest_expiration_date_from_multiple_lots(
+    client: TestClient,
+    db_session: Session,
+):
+    ingredient = create_ingredient(
+        db=db_session,
+        name="卵",
+        category="卵",
+        default_unit="個",
+        quantity=2,
+        purchase_date=date(
+            2026,
+            8,
+            1,
+        ),
+        expiration_date=date(
+            2026,
+            8,
+            20,
+        ),
+    )
+
+    later_lot = Inventory(
+        ingredient_id=ingredient.id,
+        quantity=3,
+        purchase_date=date(
+            2026,
+            8,
+            5,
+        ),
+        expiration_date=date(
+            2026,
+            8,
+            25,
+        ),
+    )
+
+    db_session.add(later_lot)
+    db_session.commit()
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "2026-08-20" in response.text
+
+
+def test_list_ignores_expiration_date_of_empty_lot(
+    client: TestClient,
+    db_session: Session,
+):
+    ingredient = create_ingredient(
+        db=db_session,
+        name="牛肉",
+        category="肉類",
+        default_unit="g",
+        quantity=0,
+        purchase_date=date(
+            2026,
+            8,
+            1,
+        ),
+        expiration_date=date(
+            2026,
+            8,
+            10,
+        ),
+    )
+
+    active_lot = Inventory(
+        ingredient_id=ingredient.id,
+        quantity=200,
+        purchase_date=date(
+            2026,
+            8,
+            5,
+        ),
+        expiration_date=date(
+            2026,
+            8,
+            20,
+        ),
+    )
+
+    db_session.add(active_lot)
+    db_session.commit()
+
+    response = client.get("/")
+
+    assert response.status_code == 200
+    assert "2026-08-20" in response.text
+    assert "2026-08-10" not in response.text

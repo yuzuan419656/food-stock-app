@@ -21,7 +21,15 @@ def build_list_redirect_url(
                 ("category_filters", category)
             )
 
-    if sort in ["id", "name", "category"]:
+    allowed_sorts = [
+        "id",
+        "name",
+        "category",
+        "expiration_asc",
+        "expiration_desc",
+    ]   
+
+    if sort in allowed_sorts:
         query_params.append(
             ("sort", sort)
         )
