@@ -94,12 +94,14 @@ class Recipe(Base):
         "RecipeIngredient",
         back_populates="recipe",
         cascade="all, delete-orphan",
+        order_by="RecipeIngredient.display_order",
     )
 
     steps = relationship(
         "RecipeStep",
         back_populates="recipe",
         cascade="all, delete-orphan",
+        order_by="RecipeStep.step_number",
     )
 
     __table_args__ = (
