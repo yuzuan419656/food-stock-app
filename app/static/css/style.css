@@ -1007,3 +1007,79 @@ a.quantity-button:visited {
         flex-direction: column;
     }
 }
+
+/* レシピ一覧 */
+
+.recipe-list-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.recipe-list-header h2 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.recipe-list-header p {
+    margin: 0;
+    color: #666;
+}
+
+.recipe-list-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.recipe-list-table {
+    margin-top: 16px;
+}
+
+.recipe-name {
+    font-weight: bold;
+}
+
+.recipe-favorite-column {
+    width: 100px;
+    text-align: center;
+}
+
+.recipe-favorite-mark {
+    color: #f5a623;
+    font-size: 20px;
+}
+
+.recipe-not-favorite-mark {
+    color: #999;
+}
+
+/* 共通ナビゲーション */
+
+.main-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.main-navigation a {
+    display: inline-block;
+    margin: 0;
+    padding: 8px 14px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    text-decoration: none;
+}
+
+.main-navigation a:hover {
+    background-color: #f0f0f0;
+}
+
+.main-navigation a:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block title %}
+レシピ一覧
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-list-header">
+        <div>
+            <h2>レシピ一覧</h2>
+
+            <p>
+                登録されているレシピを確認できます。
+            </p>
+        </div>
+
+        <div class="recipe-list-header-actions">
+            <a
+                href="/"
+                class="secondary-button"
+            >
+                在庫一覧へ戻る
+            </a>
+        </div>
+    </div>
+
+    {% if recipes %}
+        <table class="recipe-list-table">
+            <thead>
+                <tr>
+                    <th class="recipe-favorite-column">
+                        お気に入り
+                    </th>
+                    <th>レシピ名</th>
+                    <th>料理系統</th>
+                    <th>区分</th>
+                    <th>所要時間</th>
+                    <th>基準量</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for recipe in recipes %}
+                    <tr>
+                        <td class="recipe-favorite-column">
+                            {% if recipe.is_favorite %}
+                                <span
+                                    class="recipe-favorite-mark"
+                                    aria-label="お気に入り"
+                                >
+                                    ★
+                                </span>
+                            {% else %}
+                                <span
+                                    class="recipe-not-favorite-mark"
+                                    aria-label="お気に入り未登録"
+                                >
+                                    ―
+                                </span>
+                            {% endif %}
+                        </td>
+
+                        <td class="recipe-name">
+                            {{ recipe.name }}
+                        </td>
+
+                        <td>
+                            {{ recipe.cuisine_type }}
+                        </td>
+
+                        <td>
+                            {{ recipe.dish_category }}
+                        </td>
+
+                        <td>
+                            {{ recipe.cooking_time_minutes }}分
+                        </td>
+
+                        <td>
+                            {% if recipe.yield_type == "servings" %}
+                                {{ recipe.base_servings }}人分
+                            {% else %}
+                                {{ recipe.fixed_yield_text }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            <p>
+                登録されているレシピはありません。
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
