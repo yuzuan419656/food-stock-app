@@ -4,6 +4,12 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.models.recipe import Recipe
+from app.crud.recipe import (
+    RecipeIngredientInput,
+    RecipeStepInput,
+    create_recipe,
+)
+from app.models.ingredient import Ingredient
 
 
 def _create_recipe(
@@ -76,6 +82,10 @@ def test_recipe_list_displays_active_recipes(
     assert "12枚" in response.text
     assert "★" in response.text
     assert "削除済みレシピ" not in response.text
+    assert (
+        f'href="/recipes/{favorite_recipe.id}"'
+        in response.text
+    )
 
 
 def test_recipe_list_displays_empty_state(
@@ -88,3 +98,112 @@ def test_recipe_list_displays_empty_state(
         "登録されているレシピはありません。"
         in response.text
     )
+
+
+def test_recipe_detail_displays_recipe_relations(
+    client: TestClient,
+    db_session: Session,
+):
+    potato = Ingredient(
+        name="じゃがいも",
+        category="野菜",
+        default_unit="個",
+    )
+    salt = Ingredient(
+        name="塩",
+        category="調味料",
+        default_unit="g",
+    )
+    db_session.add_all([
+        potato,
+        salt,
+    ])
+    db_session.commit()
+
+    recipe = create_recipe(
+        db=db_session,
+        name="じゃがいもの塩煮",
+        cooking_time_minutes=20,
+        cuisine_type="和食",
+        dish_category="副菜",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=salt.id,
+                quantity_text="少々",
+                is_seasoning=True,
+                is_inventory_consumed=False,
+                notes="お好みで",
+                display_order=2,
+            ),
+            RecipeIngredientInput(
+                ingredient_id=potato.id,
+                quantity=2,
+                unit="個",
+                display_order=1,
+            ),
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=2,
+                description="鍋で煮る。",
+            ),
+            RecipeStepInput(
+                step_number=1,
+                description="じゃがいもを切る。",
+            ),
+        ],
+        is_favorite=True,
+    )
+
+    response = client.get(
+        f"/recipes/{recipe.id}"
+    )
+
+    assert response.status_code == 200
+    assert "じゃがいもの塩煮" in response.text
+    assert "和食" in response.text
+    assert "副菜" in response.text
+    assert "20分" in response.text
+    assert "2人分" in response.text
+    assert "じゃがいも" in response.text
+    assert "2" in response.text
+    assert "個" in response.text
+    assert "塩" in response.text
+    assert "少々" in response.text
+    assert "調味料" in response.text
+    assert "お好みで" in response.text
+    assert "★" in response.text
+
+    assert (
+        response.text.index("じゃがいも")
+        < response.text.index("塩")
+    )
+    assert (
+        response.text.index("じゃがいもを切る。")
+        < response.text.index("鍋で煮る。")
+    )
+
+
+def test_recipe_detail_returns_404_when_unavailable(
+    client: TestClient,
+    db_session: Session,
+):
+    inactive_recipe = _create_recipe(
+        name="削除済みレシピ",
+        is_active=False,
+    )
+    db_session.add(inactive_recipe)
+    db_session.commit()
+
+    inactive_response = client.get(
+        f"/recipes/{inactive_recipe.id}"
+    )
+    missing_response = client.get(
+        "/recipes/9999"
+    )
+
+    assert inactive_response.status_code == 404
+    assert missing_response.status_code == 404
