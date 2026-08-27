@@ -1154,3 +1154,193 @@ a.quantity-button:visited {
     padding-left: 4px;
     line-height: 1.6;
 }
+
+/* レシピ登録フォーム */
+
+.recipe-form-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.recipe-form-header h2 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.recipe-form-header p {
+    margin: 0;
+    color: #666;
+}
+
+.recipe-form {
+    max-width: 1100px;
+}
+
+.recipe-form-section {
+    margin-bottom: 28px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.recipe-form-section h3 {
+    margin-top: 0;
+}
+
+.recipe-form-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.recipe-form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.recipe-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.recipe-form input[type="text"],
+.recipe-form input[type="number"],
+.recipe-form select,
+.recipe-form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px;
+}
+
+.recipe-yield-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px;
+}
+
+.recipe-yield-fields .form-group {
+    min-width: 180px;
+}
+
+.required-label {
+    color: #c62828;
+    font-size: 12px;
+}
+
+.recipe-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 16px 8px 0;
+}
+
+.recipe-ingredient-row {
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.recipe-ingredient-main-fields {
+    display: grid;
+    grid-template-columns:
+        minmax(220px, 1.4fr)
+        minmax(160px, 0.8fr)
+        minmax(170px, 0.8fr)
+        minmax(220px, 1.2fr);
+    align-items: end;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+}
+
+.new-recipe-ingredient-fields {
+    max-width: 520px;
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid #e0c36e;
+    border-radius: 4px;
+    background-color: #fff8dc;
+}
+
+.new-ingredient-guidance {
+    margin-top: 0;
+    color: #665200;
+}
+
+.recipe-step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.recipe-step-row .form-group {
+    flex: 1;
+}
+
+.recipe-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #555;
+    color: #fff;
+    font-weight: bold;
+}
+
+.recipe-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.recipe-form-help {
+    color: #666;
+    font-size: 13px;
+}
+
+.recipe-ingredient-main-fields
+.recipe-checkbox-label {
+    font-size: 13px;
+}
+
+.recipe-ingredient-main-fields
+input,
+.recipe-ingredient-main-fields
+select {
+    min-width: 0;
+    padding: 7px 6px;
+}
+
+.recipe-ingredient-main-fields
+.option-field {
+    min-width: 0;
+}
+
+.recipe-ingredient-main-fields
+.custom-option-field {
+    min-width: 0;
+    margin-top: 6px;
+}
+
+.recipe-ingredient-main-fields
+.custom-option-field input {
+    width: 100%;
+}

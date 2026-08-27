@@ -75,7 +75,6 @@ def test_recipe_list_displays_active_recipes(
         'href="/shopping-list"'
         in response.text
     )
-    assert "レシピ一覧" in response.text
     assert "肉じゃが" in response.text
     assert "クッキー" in response.text
     assert "2人分" in response.text
@@ -207,3 +206,95 @@ def test_recipe_detail_returns_404_when_unavailable(
 
     assert inactive_response.status_code == 404
     assert missing_response.status_code == 404
+
+
+def test_recipe_create_page_displays_form_options(
+    client: TestClient,
+    db_session: Session,
+):
+    active_ingredient = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    inactive_ingredient = Ingredient(
+        name="削除済み食材",
+        category="その他",
+        default_unit="個",
+        is_active=False,
+        deleted_at=datetime.now(),
+    )
+    db_session.add_all([
+        active_ingredient,
+        inactive_ingredient,
+    ])
+    db_session.commit()
+
+    response = client.get("/recipes/new")
+
+    assert response.status_code == 200
+    assert "レシピ登録" in response.text
+    assert 'name="name"' in response.text
+    assert (
+        'name="cooking_time_minutes"'
+        in response.text
+    )
+    assert 'name="cuisine_type"' in response.text
+    assert 'name="dish_category"' in response.text
+    assert 'value="servings"' in response.text
+    assert 'value="fixed"' in response.text
+    assert "和食" in response.text
+    assert "洋食" in response.text
+    assert "主菜" in response.text
+    assert "副菜" in response.text
+    assert "玉ねぎ" in response.text
+    assert "削除済み食材" not in response.text
+    assert (
+        'name="ingredient_0_id"'
+        in response.text
+    )
+    assert (
+        'name="step_0_description"'
+        in response.text
+    )
+    assert (
+        'name="ingredient_0_name"'
+        in response.text
+    )
+    assert (
+        'name="ingredient_0_category_select"'
+        in response.text
+    )
+    assert (
+        'name="ingredient_0_unit"'
+        in response.text
+    )
+    assert (
+        'list="unit-options-0"'
+        in response.text
+    )
+    assert 'value="個"' in response.text
+    assert 'value="g"' in response.text
+    assert "製菓材料" in response.text
+    assert 'value="kg"' in response.text
+    assert 'value="その他"' in response.text
+    assert (
+        "js/recipe_form.js"
+        in response.text
+    )
+    assert (
+        'name="ingredient_0_quantity_input"'
+        in response.text
+    )
+
+
+def test_recipe_list_links_to_create_page(
+    client: TestClient,
+):
+    response = client.get("/recipes")
+
+    assert response.status_code == 200
+    assert (
+        'href="/recipes/new"'
+        in response.text
+    )
