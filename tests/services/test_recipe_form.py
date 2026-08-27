@@ -2,6 +2,7 @@ import pytest
 
 from app.services.recipe_form import (
     RecipeFormValidationError,
+    build_recipe_form_data,
     parse_recipe_form,
 )
 
@@ -178,3 +179,122 @@ def test_parse_recipe_form_resolves_other_category(
         parsed.ingredients[1].category
         == "香辛料"
     )
+
+
+def test_build_recipe_form_data_uses_defaults(
+):
+    form_data = build_recipe_form_data()
+
+    assert form_data["name"] == ""
+    assert (
+        form_data["yield_type"]
+        == "servings"
+    )
+    assert form_data["base_servings"] == "2"
+    assert form_data["is_favorite"] is False
+
+    assert len(form_data["ingredients"]) == 1
+    assert (
+        form_data["ingredients"][0]["index"]
+        == 0
+    )
+    assert (
+        form_data["ingredients"][0]["name"]
+        == ""
+    )
+
+    assert len(form_data["steps"]) == 1
+    assert form_data["steps"][0] == {
+        "index": 0,
+        "description": "",
+    }
+
+
+def test_build_recipe_form_data_preserves_inputs(
+):
+    submitted_form = {
+        "name": "入力途中のレシピ",
+        "cooking_time_minutes": "abc",
+        "cuisine_type": "和食",
+        "dish_category": "主菜",
+        "yield_type": "fixed",
+        "base_servings": "",
+        "fixed_yield_text": "12枚",
+        "is_favorite": "true",
+        "ingredient_0_name": "玉ねぎ",
+        "ingredient_0_id": "10",
+        "ingredient_0_quantity_input": "0.3",
+        "ingredient_0_unit": "個",
+        "ingredient_0_notes": "薄切り",
+        # 材料1を削除した後の欠番を想定。
+        "ingredient_2_name": "塩",
+        "ingredient_2_id": "",
+        "ingredient_2_quantity_input": "少々",
+        "ingredient_2_unit": "g",
+        "ingredient_2_notes": "",
+        "ingredient_2_category_select": (
+            "調味料"
+        ),
+        "ingredient_2_category_other": "",
+        "step_0_description": "材料を切る。",
+        "step_2_description": "鍋で煮る。",
+    }
+
+    form_data = build_recipe_form_data(
+        submitted_form
+    )
+
+    assert (
+        form_data["name"]
+        == "入力途中のレシピ"
+    )
+    assert (
+        form_data["cooking_time_minutes"]
+        == "abc"
+    )
+    assert (
+        form_data["yield_type"]
+        == "fixed"
+    )
+    assert (
+        form_data["fixed_yield_text"]
+        == "12枚"
+    )
+    assert form_data["is_favorite"] is True
+
+    assert [
+        ingredient["index"]
+        for ingredient
+        in form_data["ingredients"]
+    ] == [0, 1]
+
+    assert [
+        ingredient["name"]
+        for ingredient
+        in form_data["ingredients"]
+    ] == [
+        "玉ねぎ",
+        "塩",
+    ]
+
+    assert (
+        form_data["ingredients"][0]
+        ["quantity_input"]
+        == "0.3"
+    )
+    assert (
+        form_data["ingredients"][1]
+        ["category_select"]
+        == "調味料"
+    )
+
+    assert form_data["steps"] == [
+        {
+            "index": 0,
+            "description": "材料を切る。",
+        },
+        {
+            "index": 1,
+            "description": "鍋で煮る。",
+        },
+    ]

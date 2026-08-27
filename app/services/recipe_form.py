@@ -512,3 +512,156 @@ def parse_recipe_form(
         ingredients=ingredients,
         steps=steps,
     )
+
+
+def build_recipe_form_data(
+    form: Mapping[str, object] | None = None,
+) -> dict:
+    """
+    登録画面へ渡すフォームデータを作成する。
+
+    入力エラー時も、利用者が入力した文字列を
+    可能な限りそのまま保持する。
+    """
+    source = form or {}
+
+    ingredient_indices = _collect_indices(
+        form=source,
+        pattern=re.compile(
+            r"ingredient_(\d+)_name"
+        ),
+    )
+
+    if not ingredient_indices:
+        ingredient_indices = [0]
+
+    ingredients = [
+        {
+            "index": new_index,
+            "name": _get_string(
+                source,
+                f"ingredient_{old_index}_name",
+            ),
+            "ingredient_id": _get_string(
+                source,
+                f"ingredient_{old_index}_id",
+            ),
+            "quantity_input": _get_string(
+                source,
+                (
+                    f"ingredient_{old_index}"
+                    "_quantity_input"
+                ),
+            ),
+            "unit": _get_string(
+                source,
+                f"ingredient_{old_index}_unit",
+            ),
+            "notes": _get_string(
+                source,
+                f"ingredient_{old_index}_notes",
+            ),
+            "category_select": _get_string(
+                source,
+                (
+                    f"ingredient_{old_index}"
+                    "_category_select"
+                ),
+            ),
+            "category_other": _get_string(
+                source,
+                (
+                    f"ingredient_{old_index}"
+                    "_category_other"
+                ),
+            ),
+        }
+        for new_index, old_index in enumerate(
+            ingredient_indices
+        )
+    ]
+
+    step_indices = _collect_indices(
+        form=source,
+        pattern=re.compile(
+            r"step_(\d+)_description"
+        ),
+    )
+
+    if not step_indices:
+        step_indices = [0]
+
+    steps = [
+        {
+            "index": new_index,
+            "description": _get_string(
+                source,
+                (
+                    f"step_{old_index}"
+                    "_description"
+                ),
+            ),
+        }
+        for new_index, old_index in enumerate(
+            step_indices
+        )
+    ]
+
+    yield_type = _get_string(
+        source,
+        "yield_type",
+    )
+
+    if yield_type not in {
+        "servings",
+        "fixed",
+    }:
+        yield_type = "servings"
+
+    base_servings = _get_string(
+        source,
+        "base_servings",
+    )
+
+    if not form:
+        base_servings = "2"
+
+    return {
+        "name": _get_string(
+            source,
+            "name",
+        ),
+        "cooking_time_minutes": (
+            _get_string(
+                source,
+                "cooking_time_minutes",
+            )
+        ),
+        "cuisine_type": _get_string(
+            source,
+            "cuisine_type",
+        ),
+        "dish_category": _get_string(
+            source,
+            "dish_category",
+        ),
+        "yield_type": yield_type,
+        "base_servings": base_servings,
+        "fixed_yield_text": _get_string(
+            source,
+            "fixed_yield_text",
+        ),
+        "is_favorite": (
+            _get_string(
+                source,
+                "is_favorite",
+            )
+            in {
+                "true",
+                "on",
+                "1",
+            }
+        ),
+        "ingredients": ingredients,
+        "steps": steps,
+    }
