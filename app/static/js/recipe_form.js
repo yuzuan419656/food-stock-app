@@ -489,7 +489,221 @@ document.addEventListener(
             );
         }
 
+        function updateStepIndexedAttribute(
+            element,
+            attributeName,
+            index
+        ) {
+            const currentValue =
+                element.getAttribute(
+                    attributeName
+                );
+
+            if (!currentValue) {
+                return;
+            }
+
+            let updatedValue = currentValue;
+
+            if (attributeName === "name") {
+                updatedValue =
+                    currentValue.replace(
+                        /step_\d+_/g,
+                        `step_${index}_`
+                    );
+            } else {
+                updatedValue =
+                    currentValue.replace(
+                        /-\d+$/g,
+                        `-${index}`
+                    );
+            }
+
+            element.setAttribute(
+                attributeName,
+                updatedValue
+            );
+        }
+
+
+        function renumberStepRows(container) {
+            const rows =
+                container.querySelectorAll(
+                    "[data-step-row]"
+                );
+
+            rows.forEach(
+                (row, index) => {
+                    const stepNumber =
+                        row.querySelector(
+                            "[data-step-number]"
+                        );
+
+                    stepNumber.textContent =
+                        String(index + 1);
+
+                    row.querySelectorAll(
+                        "[name]"
+                    ).forEach(
+                        (element) => {
+                            updateStepIndexedAttribute(
+                                element,
+                                "name",
+                                index
+                            );
+                        }
+                    );
+
+                    row.querySelectorAll(
+                        "[id]"
+                    ).forEach(
+                        (element) => {
+                            updateStepIndexedAttribute(
+                                element,
+                                "id",
+                                index
+                            );
+                        }
+                    );
+
+                    row.querySelectorAll(
+                        "[for]"
+                    ).forEach(
+                        (element) => {
+                            updateStepIndexedAttribute(
+                                element,
+                                "for",
+                                index
+                            );
+                        }
+                    );
+                }
+            );
+        }
+
+
+        function resetStepRow(row) {
+            const description =
+                row.querySelector(
+                    "[data-step-description]"
+                );
+
+            description.value = "";
+        }
+
+
+        function updateStepDeleteButtons(
+            container
+        ) {
+            const rows =
+                container.querySelectorAll(
+                    "[data-step-row]"
+                );
+
+            rows.forEach(
+                (row) => {
+                    const deleteButton =
+                        row.querySelector(
+                            "[data-delete-step-row]"
+                        );
+
+                    deleteButton.disabled = (
+                        rows.length === 1
+                    );
+                }
+            );
+        }
+
+
+        function setupStepRepeater() {
+            const container =
+                document.getElementById(
+                    "recipe-step-rows"
+                );
+
+            const addButton =
+                document.getElementById(
+                    "add-step-row"
+                );
+
+            addButton.addEventListener(
+                "click",
+                () => {
+                    const sourceRow =
+                        container.querySelector(
+                            "[data-step-row]"
+                        );
+
+                    const newRow =
+                        sourceRow.cloneNode(true);
+
+                    resetStepRow(newRow);
+                    container.appendChild(newRow);
+
+                    renumberStepRows(
+                        container
+                    );
+
+                    updateStepDeleteButtons(
+                        container
+                    );
+
+                    const description =
+                        newRow.querySelector(
+                            "[data-step-description]"
+                        );
+
+                    description.focus();
+                }
+            );
+
+            container.addEventListener(
+                "click",
+                (event) => {
+                    const deleteButton =
+                        event.target.closest(
+                            "[data-delete-step-row]"
+                        );
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    const rows =
+                        container.querySelectorAll(
+                            "[data-step-row]"
+                        );
+
+                    if (rows.length === 1) {
+                        return;
+                    }
+
+                    const row =
+                        deleteButton.closest(
+                            "[data-step-row]"
+                        );
+
+                    row.remove();
+
+                    renumberStepRows(
+                        container
+                    );
+
+                    updateStepDeleteButtons(
+                        container
+                    );
+                }
+            );
+
+            renumberStepRows(container);
+
+            updateStepDeleteButtons(
+                container
+            );
+        }
+
         setupYieldFields();
         setupIngredientRepeater();
+        setupStepRepeater();
     }
 );

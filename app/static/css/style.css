@@ -1372,3 +1372,27 @@ select {
 #add-ingredient-row {
     margin: 0;
 }
+
+/* レシピ手順の複数行入力 */
+
+#recipe-step-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#add-step-row {
+    margin: 0;
+}
+
+.recipe-step-row
+.delete-button {
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.recipe-step-row
+.delete-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

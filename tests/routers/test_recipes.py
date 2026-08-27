@@ -298,6 +298,22 @@ def test_recipe_create_page_displays_form_options(
         "data-delete-ingredient-row"
         in response.text
     )
+    assert (
+        'id="add-step-row"'
+        in response.text
+    )
+    assert (
+        'id="recipe-step-rows"'
+        in response.text
+    )
+    assert (
+        "data-delete-step-row"
+        in response.text
+    )
+    assert (
+        "data-step-description"
+        in response.text
+    )
 
 
 def test_recipe_list_links_to_create_page(

@@ -388,33 +388,54 @@
         <section class="recipe-form-section">
             <div class="recipe-form-section-header">
                 <h3>調理手順</h3>
+
+                <button
+                    type="button"
+                    id="add-step-row"
+                    class="secondary-button"
+                >
+                    手順を追加
+                </button>
             </div>
 
-            <div class="recipe-step-row">
-                <span class="recipe-step-number">
-                    1
-                </span>
+            <div id="recipe-step-rows">
+                <div
+                    class="recipe-step-row"
+                    data-step-row
+                >
+                    <span
+                        class="recipe-step-number"
+                        data-step-number
+                    >
+                        1
+                    </span>
 
-                <div class="form-group">
-                    <label for="step-0">
-                        手順
-                        <span class="required-label">
-                            必須
-                        </span>
-                    </label>
+                    <div class="form-group">
+                        <label for="step-0">
+                            手順
+                            <span class="required-label">
+                                必須
+                            </span>
+                        </label>
 
-                    <textarea
-                        id="step-0"
-                        name="step_0_description"
-                        rows="4"
-                        required
-                    ></textarea>
+                        <textarea
+                            id="step-0"
+                            name="step_0_description"
+                            rows="4"
+                            required
+                            data-step-description
+                        ></textarea>
+                    </div>
+
+                    <button
+                        type="button"
+                        class="delete-button"
+                        data-delete-step-row
+                    >
+                        この手順を削除
+                    </button>
                 </div>
             </div>
-
-            <p class="recipe-form-help">
-                手順の追加・削除は次の作業で実装します。
-            </p>
         </section>
 
         <div class="recipe-form-actions">
@@ -437,6 +458,6 @@
     src="{{ url_for(
         'static',
         path='js/recipe_form.js'
-    ) }}?v=5"
+    ) }}?v=6"
 ></script>
 {% endblock %}
