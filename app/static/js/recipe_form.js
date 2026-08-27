@@ -215,7 +215,13 @@ document.addEventListener(
                 updateIngredientSelection
             );
 
-            hideNewIngredientFields();
+            if (ingredientId.value) {
+                hideNewIngredientFields();
+            } else if (ingredientName.value.trim()) {
+                showNewIngredientFields();
+            } else {
+                hideNewIngredientFields();
+}
         }
 
         function updateIndexedAttribute(

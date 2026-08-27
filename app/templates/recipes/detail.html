@@ -3,6 +3,11 @@
 {% block title %}
 {{ recipe.name }}
 {% endblock %}
+{% if message %}
+    <p class="success-message">
+        {{ message }}
+    </p>
+{% endif %}
 
 {% block content %}
 <div class="container">

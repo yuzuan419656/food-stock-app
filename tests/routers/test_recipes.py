@@ -3,6 +3,7 @@ from datetime import datetime
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.models.inventory import Inventory
 from app.models.recipe import Recipe
 from app.crud.recipe import (
     RecipeIngredientInput,
@@ -36,6 +37,42 @@ def _create_recipe(
             else datetime.now()
         ),
     )
+
+
+def _build_recipe_registration_form(
+    ingredient_name: str,
+    ingredient_id: str = "",
+    category: str = "野菜",
+    quantity: str = "1",
+    unit: str = "個",
+) -> dict[str, str]:
+    return {
+        "name": "登録テストレシピ",
+        "cooking_time_minutes": "20",
+        "cuisine_type": "和食",
+        "dish_category": "主菜",
+        "yield_type": "servings",
+        "base_servings": "2",
+        "fixed_yield_text": "",
+        "is_favorite": "true",
+        "ingredient_0_name": ingredient_name,
+        "ingredient_0_id": ingredient_id,
+        "ingredient_0_category_select": (
+            category
+        ),
+        "ingredient_0_category_other": "",
+        "ingredient_0_quantity_input": (
+            quantity
+        ),
+        "ingredient_0_unit": unit,
+        "ingredient_0_notes": "テスト用",
+        "step_0_description": (
+            "材料を準備する。"
+        ),
+        "step_1_description": (
+            "材料を調理する。"
+        ),
+    }
 
 
 def test_recipe_list_displays_active_recipes(
@@ -325,4 +362,196 @@ def test_recipe_list_links_to_create_page(
     assert (
         'href="/recipes/new"'
         in response.text
+    )
+
+
+def test_recipe_can_be_registered_with_existing_ingredient(
+    client: TestClient,
+    db_session: Session,
+):
+    ingredient = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(ingredient)
+    db_session.commit()
+
+    response = client.post(
+        "/recipes",
+        data=_build_recipe_registration_form(
+            ingredient_name="玉ねぎ",
+            ingredient_id=str(ingredient.id),
+            quantity="1.5",
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+    recipe = (
+        db_session.query(Recipe)
+        .filter(
+            Recipe.name
+            == "登録テストレシピ"
+        )
+        .one()
+    )
+
+    assert response.headers[
+        "location"
+    ].startswith(
+        f"/recipes/{recipe.id}?"
+    )
+
+    assert recipe.is_favorite is True
+    assert len(recipe.ingredients) == 1
+    assert len(recipe.steps) == 2
+
+    recipe_ingredient = (
+        recipe.ingredients[0]
+    )
+
+    assert (
+        recipe_ingredient.ingredient_id
+        == ingredient.id
+    )
+    assert (
+        recipe_ingredient.quantity
+        == 1.5
+    )
+    assert (
+        recipe_ingredient.quantity_text
+        is None
+    )
+    assert (
+        recipe_ingredient
+        .is_inventory_consumed
+        is True
+    )
+
+
+def test_recipe_registration_creates_new_ingredient(
+    client: TestClient,
+    db_session: Session,
+):
+    response = client.post(
+        "/recipes",
+        data=_build_recipe_registration_form(
+            ingredient_name="クミン",
+            category="調味料",
+            quantity="少々",
+            unit="g",
+        ),
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+    ingredient = (
+        db_session.query(Ingredient)
+        .filter(
+            Ingredient.name == "クミン"
+        )
+        .one()
+    )
+
+    assert ingredient.category == "調味料"
+    assert ingredient.default_unit == "g"
+
+    assert (
+        db_session.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == ingredient.id
+        )
+        .count()
+        == 0
+    )
+
+    recipe = (
+        db_session.query(Recipe)
+        .filter(
+            Recipe.name
+            == "登録テストレシピ"
+        )
+        .one()
+    )
+
+    recipe_ingredient = (
+        recipe.ingredients[0]
+    )
+
+    assert (
+        recipe_ingredient.quantity
+        is None
+    )
+    assert (
+        recipe_ingredient.quantity_text
+        == "少々"
+    )
+    assert (
+        recipe_ingredient.is_seasoning
+        is True
+    )
+    assert (
+        recipe_ingredient
+        .is_inventory_consumed
+        is False
+    )
+
+
+def test_recipe_registration_error_preserves_inputs(
+    client: TestClient,
+    db_session: Session,
+):
+    ingredient = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(ingredient)
+    db_session.commit()
+
+    form = _build_recipe_registration_form(
+        ingredient_name="玉ねぎ",
+        ingredient_id=str(ingredient.id),
+    )
+
+    form["cooking_time_minutes"] = "abc"
+
+    form.update({
+        "ingredient_1_name": "塩",
+        "ingredient_1_id": "",
+        "ingredient_1_category_select": (
+            "調味料"
+        ),
+        "ingredient_1_category_other": "",
+        "ingredient_1_quantity_input": (
+            "少々"
+        ),
+        "ingredient_1_unit": "g",
+        "ingredient_1_notes": "",
+    })
+
+    response = client.post(
+        "/recipes",
+        data=form,
+    )
+
+    assert response.status_code == 400
+    assert "所要時間は整数" in response.text
+    assert (
+        'value="登録テストレシピ"'
+        in response.text
+    )
+    assert 'value="abc"' in response.text
+    assert 'value="玉ねぎ"' in response.text
+    assert 'value="塩"' in response.text
+    assert "材料を準備する。" in response.text
+    assert "材料を調理する。" in response.text
+
+    assert (
+        db_session.query(Recipe).count()
+        == 0
     )
