@@ -1344,3 +1344,31 @@ select {
 .custom-option-field input {
     width: 100%;
 }
+
+#recipe-ingredient-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.recipe-repeating-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.recipe-repeating-row-header h4 {
+    margin: 0;
+}
+
+.recipe-repeating-row-header
+.delete-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#add-ingredient-row {
+    margin: 0;
+}

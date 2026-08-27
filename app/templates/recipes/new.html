@@ -9,7 +9,6 @@
     <div class="recipe-form-header">
         <div>
             <h2>レシピ登録</h2>
-
             <p>
                 レシピの基本情報、材料、
                 調理手順を入力します。
@@ -36,7 +35,6 @@
                 <div class="form-group">
                     <label for="name">
                         レシピ名
-
                         <span class="required-label">
                             必須
                         </span>
@@ -54,7 +52,6 @@
                 <div class="form-group">
                     <label for="cooking-time-minutes">
                         所要時間（分）
-
                         <span class="required-label">
                             必須
                         </span>
@@ -72,7 +69,6 @@
                 <div class="form-group">
                     <label for="cuisine-type">
                         料理系統
-
                         <span class="required-label">
                             必須
                         </span>
@@ -98,7 +94,6 @@
                 <div class="form-group">
                     <label for="dish-category">
                         区分
-
                         <span class="required-label">
                             必須
                         </span>
@@ -125,7 +120,6 @@
             <fieldset class="recipe-yield-fields">
                 <legend>
                     基準量
-
                     <span class="required-label">
                         必須
                     </span>
@@ -193,170 +187,190 @@
         <section class="recipe-form-section">
             <div class="recipe-form-section-header">
                 <h3>材料</h3>
+
+                <button
+                    type="button"
+                    id="add-ingredient-row"
+                    class="secondary-button"
+                >
+                    材料を追加
+                </button>
             </div>
 
-            <div
-                class="recipe-ingredient-row"
-                data-ingredient-row
-            >
-                <div class="recipe-ingredient-main-fields">
-                    <div class="form-group">
-                        <label for="ingredient-name-0">
-                            食材
-
-                            <span class="required-label">
-                                必須
-                            </span>
-                        </label>
-
-                        <input
-                            type="text"
-                            id="ingredient-name-0"
-                            name="ingredient_0_name"
-                            list="ingredient-options-0"
-                            placeholder="候補から選択または自由入力"
-                            autocomplete="off"
-                            required
-                            data-ingredient-name
-                        >
-
-                        <input
-                            type="hidden"
-                            name="ingredient_0_id"
-                            data-ingredient-id
-                        >
-
-                        <datalist id="ingredient-options-0">
-                            {% for ingredient in ingredients %}
-                                <option
-                                    value="{{ ingredient.name }}"
-                                    data-id="{{ ingredient.id }}"
-                                    data-unit="{{ ingredient.default_unit }}"
-                                ></option>
-                            {% endfor %}
-                        </datalist>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="quantity-input-0">
-                            数量
-
-                            <span class="required-label">
-                                必須
-                            </span>
-                        </label>
-
-                        <input
-                            type="text"
-                            id="quantity-input-0"
-                            name="ingredient_0_quantity_input"
-                            maxlength="50"
-                            placeholder="例：2、0.5、少々、適量"
-                            required
-                            data-quantity-input
-                        >
-                    </div>
-
-                    <div class="form-group">
-                        <label for="unit-0">
-                            単位
-
-                            <span class="required-label">
-                                必須
-                            </span>
-                        </label>
-
-                        <input
-                            type="text"
-                            id="unit-0"
-                            name="ingredient_0_unit"
-                            list="unit-options-0"
-                            maxlength="30"
-                            placeholder="候補から選択または自由入力"
-                            autocomplete="off"
-                            required
-                            data-unit-input
-                        >
-
-                        <datalist id="unit-options-0">
-                            {% for unit in unit_options %}
-                                <option value="{{ unit }}"></option>
-                            {% endfor %}
-                        </datalist>
-                    </div>
-
-                    <div class="form-group">
-                        <label for="notes-0">
-                            備考
-                        </label>
-
-                        <input
-                            type="text"
-                            id="notes-0"
-                            name="ingredient_0_notes"
-                            maxlength="255"
-                            placeholder="例：薄切り"
-                        >
-                    </div>
-                </div>
-
+            <div id="recipe-ingredient-rows">
                 <div
-                    class="new-recipe-ingredient-fields"
-                    hidden
-                    data-new-ingredient-fields
+                    class="recipe-ingredient-row"
+                    data-ingredient-row
                 >
-                    <p class="new-ingredient-guidance">
-                        在庫一覧にない食材です。
-                        新しい食材として登録するため、
-                        カテゴリを指定してください。
-                    </p>
+                    <div class="recipe-repeating-row-header">
+                        <h4 data-ingredient-row-title>
+                            材料1
+                        </h4>
 
-                    <div class="form-group">
-                        <label
-                            for="ingredient-category-select-0"
+                        <button
+                            type="button"
+                            class="delete-button"
+                            data-delete-ingredient-row
                         >
-                            新しい食材のカテゴリ
+                            この材料を削除
+                        </button>
+                    </div>
 
-                            <span class="required-label">
-                                必須
-                            </span>
-                        </label>
+                    <div class="recipe-ingredient-main-fields">
+                        <div class="form-group">
+                            <label for="ingredient-name-0">
+                                食材
+                                <span class="required-label">
+                                    必須
+                                </span>
+                            </label>
 
-                        <div class="option-field">
-                            <select
-                                id="ingredient-category-select-0"
-                                name="ingredient_0_category_select"
-                                disabled
-                                data-category-select
+                            <input
+                                type="text"
+                                id="ingredient-name-0"
+                                name="ingredient_0_name"
+                                list="ingredient-options-0"
+                                placeholder="候補から選択または自由入力"
+                                autocomplete="off"
+                                required
+                                data-ingredient-name
                             >
-                                <option value="">
-                                    選択してください
-                                </option>
 
-                                {% for category in category_options %}
-                                    <option value="{{ category }}">
-                                        {{ category }}
-                                    </option>
+                            <input
+                                type="hidden"
+                                name="ingredient_0_id"
+                                data-ingredient-id
+                            >
+
+                            <datalist id="ingredient-options-0">
+                                {% for ingredient in ingredients %}
+                                    <option
+                                        value="{{ ingredient.name }}"
+                                        data-id="{{ ingredient.id }}"
+                                        data-unit="{{ ingredient.default_unit }}"
+                                    ></option>
                                 {% endfor %}
+                            </datalist>
+                        </div>
 
-                                <option value="{{ other_option }}">
-                                    {{ other_option }}
-                                </option>
-                            </select>
+                        <div class="form-group">
+                            <label for="quantity-input-0">
+                                数量
+                                <span class="required-label">
+                                    必須
+                                </span>
+                            </label>
 
-                            <div
-                                class="custom-option-field"
-                                hidden
-                                data-category-custom-field
+                            <input
+                                type="text"
+                                id="quantity-input-0"
+                                name="ingredient_0_quantity_input"
+                                maxlength="50"
+                                placeholder="例：2、0.5、少々、適量"
+                                required
+                                data-quantity-input
                             >
-                                <input
-                                    type="text"
-                                    name="ingredient_0_category_other"
-                                    maxlength="50"
-                                    placeholder="その他"
+                        </div>
+
+                        <div class="form-group">
+                            <label for="unit-0">
+                                単位
+                                <span class="required-label">
+                                    必須
+                                </span>
+                            </label>
+
+                            <input
+                                type="text"
+                                id="unit-0"
+                                name="ingredient_0_unit"
+                                list="unit-options-0"
+                                maxlength="30"
+                                placeholder="候補から選択または自由入力"
+                                autocomplete="off"
+                                required
+                                data-unit-input
+                            >
+
+                            <datalist id="unit-options-0">
+                                {% for unit in unit_options %}
+                                    <option value="{{ unit }}"></option>
+                                {% endfor %}
+                            </datalist>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="notes-0">
+                                備考
+                            </label>
+
+                            <input
+                                type="text"
+                                id="notes-0"
+                                name="ingredient_0_notes"
+                                maxlength="255"
+                                placeholder="例：薄切り"
+                            >
+                        </div>
+                    </div>
+
+                    <div
+                        class="new-recipe-ingredient-fields"
+                        hidden
+                        data-new-ingredient-fields
+                    >
+                        <p class="new-ingredient-guidance">
+                            在庫一覧にない食材です。
+                            新しい食材として登録するため、
+                            カテゴリを指定してください。
+                        </p>
+
+                        <div class="form-group">
+                            <label
+                                for="ingredient-category-select-0"
+                            >
+                                新しい食材のカテゴリ
+                                <span class="required-label">
+                                    必須
+                                </span>
+                            </label>
+
+                            <div class="option-field">
+                                <select
+                                    id="ingredient-category-select-0"
+                                    name="ingredient_0_category_select"
                                     disabled
-                                    data-category-custom-input
+                                    data-category-select
                                 >
+                                    <option value="">
+                                        選択してください
+                                    </option>
+
+                                    {% for category in category_options %}
+                                        <option value="{{ category }}">
+                                            {{ category }}
+                                        </option>
+                                    {% endfor %}
+
+                                    <option value="{{ other_option }}">
+                                        {{ other_option }}
+                                    </option>
+                                </select>
+
+                                <div
+                                    class="custom-option-field"
+                                    hidden
+                                    data-category-custom-field
+                                >
+                                    <input
+                                        type="text"
+                                        name="ingredient_0_category_other"
+                                        maxlength="50"
+                                        placeholder="その他"
+                                        disabled
+                                        data-category-custom-input
+                                    >
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -368,10 +382,6 @@
                 または「少々」「適量」などを入力できます。
                 数値以外の数量と調味料は、
                 在庫減算の対象外になります。
-            </p>
-
-            <p class="recipe-form-help">
-                材料行の追加・削除は次の作業で実装します。
             </p>
         </section>
 
@@ -388,7 +398,6 @@
                 <div class="form-group">
                     <label for="step-0">
                         手順
-
                         <span class="required-label">
                             必須
                         </span>
@@ -428,6 +437,6 @@
     src="{{ url_for(
         'static',
         path='js/recipe_form.js'
-    ) }}?v=4"
+    ) }}?v=5"
 ></script>
 {% endblock %}

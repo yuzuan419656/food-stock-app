@@ -110,6 +110,11 @@ document.addEventListener(
                     )
                 );
 
+            const unitInput =
+                row.querySelector(
+                    "[data-unit-input]"
+                );
+
             const newIngredientFields =
                 row.querySelector(
                     "[data-new-ingredient-fields]"
@@ -128,11 +133,6 @@ document.addEventListener(
             const categoryCustomInput =
                 row.querySelector(
                     "[data-category-custom-input]"
-                );
-
-            const unitInput =
-                row.querySelector(
-                    "[data-unit-input]"
                 );
 
             const categoryController =
@@ -218,10 +218,278 @@ document.addEventListener(
             hideNewIngredientFields();
         }
 
-        setupYieldFields();
+        function updateIndexedAttribute(
+            element,
+            attributeName,
+            index
+        ) {
+            const currentValue =
+                element.getAttribute(
+                    attributeName
+                );
 
-        form.querySelectorAll(
-            "[data-ingredient-row]"
-        ).forEach(setupIngredientRow);
+            if (!currentValue) {
+                return;
+            }
+
+            let updatedValue = currentValue;
+
+            if (attributeName === "name") {
+                updatedValue =
+                    currentValue.replace(
+                        /ingredient_\d+_/g,
+                        `ingredient_${index}_`
+                    );
+            } else {
+                updatedValue =
+                    currentValue.replace(
+                        /-\d+$/g,
+                        `-${index}`
+                    );
+            }
+
+            element.setAttribute(
+                attributeName,
+                updatedValue
+            );
+        }
+
+        function renumberIngredientRows(
+            container
+        ) {
+            const rows =
+                container.querySelectorAll(
+                    "[data-ingredient-row]"
+                );
+
+            rows.forEach(
+                (row, index) => {
+                    const title =
+                        row.querySelector(
+                            "[data-ingredient-row-title]"
+                        );
+
+                    title.textContent =
+                        `材料${index + 1}`;
+
+                    row.querySelectorAll(
+                        "[name]"
+                    ).forEach(
+                        (element) => {
+                            updateIndexedAttribute(
+                                element,
+                                "name",
+                                index
+                            );
+                        }
+                    );
+
+                    row.querySelectorAll(
+                        "[id]"
+                    ).forEach(
+                        (element) => {
+                            updateIndexedAttribute(
+                                element,
+                                "id",
+                                index
+                            );
+                        }
+                    );
+
+                    row.querySelectorAll(
+                        "[for]"
+                    ).forEach(
+                        (element) => {
+                            updateIndexedAttribute(
+                                element,
+                                "for",
+                                index
+                            );
+                        }
+                    );
+
+                    row.querySelectorAll(
+                        "[list]"
+                    ).forEach(
+                        (element) => {
+                            updateIndexedAttribute(
+                                element,
+                                "list",
+                                index
+                            );
+                        }
+                    );
+                }
+            );
+        }
+
+        function resetIngredientRow(row) {
+            row.querySelectorAll(
+                'input[type="text"],'
+                + 'input[type="hidden"]'
+            ).forEach(
+                (input) => {
+                    input.value = "";
+                }
+            );
+
+            row.querySelectorAll(
+                "select"
+            ).forEach(
+                (select) => {
+                    select.selectedIndex = 0;
+                }
+            );
+
+            const newIngredientFields =
+                row.querySelector(
+                    "[data-new-ingredient-fields]"
+                );
+
+            const categorySelect =
+                row.querySelector(
+                    "[data-category-select]"
+                );
+
+            const categoryCustomField =
+                row.querySelector(
+                    "[data-category-custom-field]"
+                );
+
+            const categoryCustomInput =
+                row.querySelector(
+                    "[data-category-custom-input]"
+                );
+
+            newIngredientFields.hidden = true;
+
+            categorySelect.disabled = true;
+            categorySelect.required = false;
+
+            categoryCustomField.hidden = true;
+
+            categoryCustomInput.disabled = true;
+            categoryCustomInput.required = false;
+        }
+
+        function updateIngredientDeleteButtons(
+            container
+        ) {
+            const rows =
+                container.querySelectorAll(
+                    "[data-ingredient-row]"
+                );
+
+            rows.forEach(
+                (row) => {
+                    const deleteButton =
+                        row.querySelector(
+                            "[data-delete-ingredient-row]"
+                        );
+
+                    deleteButton.disabled = (
+                        rows.length === 1
+                    );
+                }
+            );
+        }
+
+        function setupIngredientRepeater() {
+            const container =
+                document.getElementById(
+                    "recipe-ingredient-rows"
+                );
+
+            const addButton =
+                document.getElementById(
+                    "add-ingredient-row"
+                );
+
+            container.querySelectorAll(
+                "[data-ingredient-row]"
+            ).forEach(setupIngredientRow);
+
+            addButton.addEventListener(
+                "click",
+                () => {
+                    const sourceRow =
+                        container.querySelector(
+                            "[data-ingredient-row]"
+                        );
+
+                    const newRow =
+                        sourceRow.cloneNode(true);
+
+                    resetIngredientRow(newRow);
+                    container.appendChild(newRow);
+
+                    renumberIngredientRows(
+                        container
+                    );
+
+                    setupIngredientRow(newRow);
+
+                    updateIngredientDeleteButtons(
+                        container
+                    );
+
+                    const newIngredientName =
+                        newRow.querySelector(
+                            "[data-ingredient-name]"
+                        );
+
+                    newIngredientName.focus();
+                }
+            );
+
+            container.addEventListener(
+                "click",
+                (event) => {
+                    const deleteButton =
+                        event.target.closest(
+                            "[data-delete-ingredient-row]"
+                        );
+
+                    if (!deleteButton) {
+                        return;
+                    }
+
+                    const rows =
+                        container.querySelectorAll(
+                            "[data-ingredient-row]"
+                        );
+
+                    if (rows.length === 1) {
+                        return;
+                    }
+
+                    const row =
+                        deleteButton.closest(
+                            "[data-ingredient-row]"
+                        );
+
+                    row.remove();
+
+                    renumberIngredientRows(
+                        container
+                    );
+
+                    updateIngredientDeleteButtons(
+                        container
+                    );
+                }
+            );
+
+            renumberIngredientRows(
+                container
+            );
+
+            updateIngredientDeleteButtons(
+                container
+            );
+        }
+
+        setupYieldFields();
+        setupIngredientRepeater();
     }
 );

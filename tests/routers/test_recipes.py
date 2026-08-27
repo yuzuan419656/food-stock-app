@@ -286,6 +286,18 @@ def test_recipe_create_page_displays_form_options(
         'name="ingredient_0_quantity_input"'
         in response.text
     )
+    assert (
+        'id="add-ingredient-row"'
+        in response.text
+    )
+    assert (
+        'id="recipe-ingredient-rows"'
+        in response.text
+    )
+    assert (
+        "data-delete-ingredient-row"
+        in response.text
+    )
 
 
 def test_recipe_list_links_to_create_page(
