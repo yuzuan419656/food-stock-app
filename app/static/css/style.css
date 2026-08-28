@@ -1396,3 +1396,19 @@ select {
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+.recipe-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.recipe-row-actions button {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.recipe-step-row .recipe-row-actions {
+    align-self: end;
+}

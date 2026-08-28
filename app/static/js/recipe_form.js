@@ -221,7 +221,7 @@ document.addEventListener(
                 showNewIngredientFields();
             } else {
                 hideNewIngredientFields();
-}
+            }
         }
 
         function updateIndexedAttribute(
@@ -378,20 +378,39 @@ document.addEventListener(
             categoryCustomInput.required = false;
         }
 
-        function updateIngredientDeleteButtons(
+        function updateIngredientActionButtons(
             container
         ) {
-            const rows =
+            const rows = Array.from(
                 container.querySelectorAll(
                     "[data-ingredient-row]"
-                );
+                )
+            );
 
             rows.forEach(
-                (row) => {
+                (row, index) => {
+                    const moveUpButton =
+                        row.querySelector(
+                            "[data-move-ingredient-up]"
+                        );
+
+                    const moveDownButton =
+                        row.querySelector(
+                            "[data-move-ingredient-down]"
+                        );
+
                     const deleteButton =
                         row.querySelector(
                             "[data-delete-ingredient-row]"
                         );
+
+                    moveUpButton.disabled = (
+                        index === 0
+                    );
+
+                    moveDownButton.disabled = (
+                        index === rows.length - 1
+                    );
 
                     deleteButton.disabled = (
                         rows.length === 1
@@ -435,7 +454,7 @@ document.addEventListener(
 
                     setupIngredientRow(newRow);
 
-                    updateIngredientDeleteButtons(
+                    updateIngredientActionButtons(
                         container
                     );
 
@@ -451,36 +470,74 @@ document.addEventListener(
             container.addEventListener(
                 "click",
                 (event) => {
+                    const moveUpButton =
+                        event.target.closest(
+                            "[data-move-ingredient-up]"
+                        );
+
+                    const moveDownButton =
+                        event.target.closest(
+                            "[data-move-ingredient-down]"
+                        );
+
                     const deleteButton =
                         event.target.closest(
                             "[data-delete-ingredient-row]"
                         );
 
-                    if (!deleteButton) {
-                        return;
-                    }
+                    const actionButton = (
+                        moveUpButton
+                        || moveDownButton
+                        || deleteButton
+                    );
 
-                    const rows =
-                        container.querySelectorAll(
-                            "[data-ingredient-row]"
-                        );
-
-                    if (rows.length === 1) {
+                    if (!actionButton) {
                         return;
                     }
 
                     const row =
-                        deleteButton.closest(
+                        actionButton.closest(
                             "[data-ingredient-row]"
                         );
 
-                    row.remove();
+                    if (moveUpButton) {
+                        const previousRow =
+                            row.previousElementSibling;
+
+                        if (previousRow) {
+                            container.insertBefore(
+                                row,
+                                previousRow
+                            );
+                        }
+                    } else if (moveDownButton) {
+                        const nextRow =
+                            row.nextElementSibling;
+
+                        if (nextRow) {
+                            container.insertBefore(
+                                nextRow,
+                                row
+                            );
+                        }
+                    } else {
+                        const rows =
+                            container.querySelectorAll(
+                                "[data-ingredient-row]"
+                            );
+
+                        if (rows.length === 1) {
+                            return;
+                        }
+
+                        row.remove();
+                    }
 
                     renumberIngredientRows(
                         container
                     );
 
-                    updateIngredientDeleteButtons(
+                    updateIngredientActionButtons(
                         container
                     );
                 }
@@ -490,7 +547,7 @@ document.addEventListener(
                 container
             );
 
-            updateIngredientDeleteButtons(
+            updateIngredientActionButtons(
                 container
             );
         }
@@ -598,20 +655,39 @@ document.addEventListener(
         }
 
 
-        function updateStepDeleteButtons(
+        function updateStepActionButtons(
             container
         ) {
-            const rows =
+            const rows = Array.from(
                 container.querySelectorAll(
                     "[data-step-row]"
-                );
+                )
+            );
 
             rows.forEach(
-                (row) => {
+                (row, index) => {
+                    const moveUpButton =
+                        row.querySelector(
+                            "[data-move-step-up]"
+                        );
+
+                    const moveDownButton =
+                        row.querySelector(
+                            "[data-move-step-down]"
+                        );
+
                     const deleteButton =
                         row.querySelector(
                             "[data-delete-step-row]"
                         );
+
+                    moveUpButton.disabled = (
+                        index === 0
+                    );
+
+                    moveDownButton.disabled = (
+                        index === rows.length - 1
+                    );
 
                     deleteButton.disabled = (
                         rows.length === 1
@@ -650,7 +726,7 @@ document.addEventListener(
                         container
                     );
 
-                    updateStepDeleteButtons(
+                    updateStepActionButtons(
                         container
                     );
 
@@ -666,36 +742,74 @@ document.addEventListener(
             container.addEventListener(
                 "click",
                 (event) => {
+                    const moveUpButton =
+                        event.target.closest(
+                            "[data-move-step-up]"
+                        );
+
+                    const moveDownButton =
+                        event.target.closest(
+                            "[data-move-step-down]"
+                        );
+
                     const deleteButton =
                         event.target.closest(
                             "[data-delete-step-row]"
                         );
 
-                    if (!deleteButton) {
-                        return;
-                    }
+                    const actionButton = (
+                        moveUpButton
+                        || moveDownButton
+                        || deleteButton
+                    );
 
-                    const rows =
-                        container.querySelectorAll(
-                            "[data-step-row]"
-                        );
-
-                    if (rows.length === 1) {
+                    if (!actionButton) {
                         return;
                     }
 
                     const row =
-                        deleteButton.closest(
+                        actionButton.closest(
                             "[data-step-row]"
                         );
 
-                    row.remove();
+                    if (moveUpButton) {
+                        const previousRow =
+                            row.previousElementSibling;
+
+                        if (previousRow) {
+                            container.insertBefore(
+                                row,
+                                previousRow
+                            );
+                        }
+                    } else if (moveDownButton) {
+                        const nextRow =
+                            row.nextElementSibling;
+
+                        if (nextRow) {
+                            container.insertBefore(
+                                nextRow,
+                                row
+                            );
+                        }
+                    } else {
+                        const rows =
+                            container.querySelectorAll(
+                                "[data-step-row]"
+                            );
+
+                        if (rows.length === 1) {
+                            return;
+                        }
+
+                        row.remove();
+                    }
 
                     renumberStepRows(
                         container
                     );
 
-                    updateStepDeleteButtons(
+                    updateStepActionButtons(
                         container
                     );
                 }
@@ -703,7 +817,7 @@ document.addEventListener(
 
             renumberStepRows(container);
 
-            updateStepDeleteButtons(
+            updateStepActionButtons(
                 container
             );
         }

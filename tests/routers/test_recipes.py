@@ -351,6 +351,22 @@ def test_recipe_create_page_displays_form_options(
         "data-step-description"
         in response.text
     )
+    assert (
+        "data-move-ingredient-up"
+        in response.text
+    )
+    assert (
+        "data-move-ingredient-down"
+        in response.text
+    )
+    assert (
+        "data-move-step-up"
+        in response.text
+    )
+    assert (
+        "data-move-step-down"
+        in response.text
+    )
 
 
 def test_recipe_list_links_to_create_page(

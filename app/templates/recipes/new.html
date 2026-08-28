@@ -246,13 +246,40 @@
                                 材料{{ index + 1 }}
                             </h4>
 
-                            <button
-                                type="button"
-                                class="delete-button"
-                                data-delete-ingredient-row
-                            >
-                                この材料を削除
-                            </button>
+                            <div class="recipe-row-actions">
+                                <button
+                                    type="button"
+                                    class="secondary-button"
+                                    data-move-ingredient-up
+                                    {% if loop.first %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    上へ
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="secondary-button"
+                                    data-move-ingredient-down
+                                    {% if loop.last %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    下へ
+                                </button>
+
+                                <button
+                                    type="button"
+                                    class="delete-button"
+                                    data-delete-ingredient-row
+                                    {% if form_data.ingredients | length == 1 %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    この材料を削除
+                                </button>
+                            </div>
                         </div>
 
                         <div class="recipe-ingredient-main-fields">
@@ -506,13 +533,40 @@
                             >{{ step.description }}</textarea>
                         </div>
 
-                        <button
-                            type="button"
-                            class="delete-button"
-                            data-delete-step-row
-                        >
-                            この手順を削除
-                        </button>
+                        <div class="recipe-row-actions">
+                            <button
+                                type="button"
+                                class="secondary-button"
+                                data-move-step-up
+                                {% if loop.first %}
+                                    disabled
+                                {% endif %}
+                            >
+                                上へ
+                            </button>
+
+                            <button
+                                type="button"
+                                class="secondary-button"
+                                data-move-step-down
+                                {% if loop.last %}
+                                    disabled
+                                {% endif %}
+                            >
+                                下へ
+                            </button>
+
+                            <button
+                                type="button"
+                                class="delete-button"
+                                data-delete-step-row
+                                {% if form_data.steps | length == 1 %}
+                                    disabled
+                                {% endif %}
+                            >
+                                この手順を削除
+                            </button>
+                        </div>
                     </div>
                 {% endfor %}
             </div>
@@ -540,6 +594,6 @@
     src="{{ url_for(
         'static',
         path='js/recipe_form.js'
-    ) }}?v=7"
+    ) }}?v=8"
 ></script>
 {% endblock %}
