@@ -12,6 +12,7 @@ from app.services.recipe_form import (
 from app.services.recipe_registration import (
     RecipeRegistrationError,
     register_recipe,
+    update_registered_recipe,
 )
 
 
@@ -240,4 +241,274 @@ def test_register_recipe_rolls_back_new_ingredient(
     assert (
         db_session.query(Recipe).count()
         == 0
+    )
+
+
+def test_update_registered_recipe(
+    db_session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    potato = Ingredient(
+        name="じゃがいも",
+        category="野菜",
+        default_unit="個",
+    )
+
+    db_session.add_all([
+        onion,
+        potato,
+    ])
+    db_session.commit()
+
+    original_form = parse_recipe_form(
+        _build_form(
+            ingredient_name="玉ねぎ",
+            ingredient_id=str(onion.id),
+        )
+    )
+
+    recipe = register_recipe(
+        db=db_session,
+        parsed_form=original_form,
+    )
+
+    update_form = _build_form(
+        ingredient_name="じゃがいも",
+        ingredient_id=str(potato.id),
+        quantity="2.5",
+    )
+
+    update_form.update({
+        "name": "更新後レシピ",
+        "cooking_time_minutes": "30",
+        "dish_category": "副菜",
+        "is_favorite": "true",
+        "step_0_description": (
+            "じゃがいもを切る。"
+        ),
+        "step_1_description": (
+            "鍋で煮る。"
+        ),
+    })
+
+    parsed_update_form = parse_recipe_form(
+        update_form
+    )
+
+    updated_recipe = update_registered_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        parsed_form=parsed_update_form,
+    )
+
+    assert updated_recipe is not None
+    assert (
+        updated_recipe.name
+        == "更新後レシピ"
+    )
+    assert (
+        updated_recipe.cooking_time_minutes
+        == 30
+    )
+    assert (
+        updated_recipe.dish_category
+        == "副菜"
+    )
+    assert updated_recipe.is_favorite is True
+
+    assert len(updated_recipe.ingredients) == 1
+    assert (
+        updated_recipe.ingredients[0]
+        .ingredient_id
+        == potato.id
+    )
+    assert (
+        updated_recipe.ingredients[0]
+        .quantity
+        == 2.5
+    )
+
+    assert [
+        step.description
+        for step in updated_recipe.steps
+    ] == [
+        "じゃがいもを切る。",
+        "鍋で煮る。",
+    ]
+
+
+def test_update_registered_recipe_creates_new_ingredient(
+    db_session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(onion)
+    db_session.commit()
+
+    recipe = register_recipe(
+        db=db_session,
+        parsed_form=parse_recipe_form(
+            _build_form(
+                ingredient_name="玉ねぎ",
+                ingredient_id=str(onion.id),
+            )
+        ),
+    )
+
+    update_form = _build_form(
+        ingredient_name="クミン",
+        category="調味料",
+        quantity="少々",
+        unit="g",
+    )
+    update_form["name"] = "クミン料理"
+
+    updated_recipe = update_registered_recipe(
+        db=db_session,
+        recipe_id=recipe.id,
+        parsed_form=parse_recipe_form(
+            update_form
+        ),
+    )
+
+    assert updated_recipe is not None
+
+    cumin = (
+        db_session.query(Ingredient)
+        .filter(
+            Ingredient.name == "クミン"
+        )
+        .one()
+    )
+
+    assert cumin.category == "調味料"
+    assert cumin.default_unit == "g"
+
+    assert (
+        db_session.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == cumin.id
+        )
+        .count()
+        == 0
+    )
+
+    recipe_ingredient = (
+        updated_recipe.ingredients[0]
+    )
+
+    assert (
+        recipe_ingredient.ingredient_id
+        == cumin.id
+    )
+    assert (
+        recipe_ingredient.quantity_text
+        == "少々"
+    )
+    assert (
+        recipe_ingredient.is_seasoning
+        is True
+    )
+    assert (
+        recipe_ingredient
+        .is_inventory_consumed
+        is False
+    )
+
+
+def test_update_registered_recipe_returns_none_for_missing_recipe(
+    db_session,
+):
+    parsed_form = parse_recipe_form(
+        _build_form(
+            ingredient_name="新しい食材",
+        )
+    )
+
+    updated_recipe = update_registered_recipe(
+        db=db_session,
+        recipe_id=9999,
+        parsed_form=parsed_form,
+    )
+
+    assert updated_recipe is None
+
+    assert (
+        db_session.query(Ingredient)
+        .filter(
+            Ingredient.name == "新しい食材"
+        )
+        .count()
+        == 0
+    )
+
+
+def test_update_registered_recipe_rolls_back_new_ingredient(
+    db_session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(onion)
+    db_session.commit()
+
+    recipe = register_recipe(
+        db=db_session,
+        parsed_form=parse_recipe_form(
+            _build_form(
+                ingredient_name="玉ねぎ",
+                ingredient_id=str(onion.id),
+            )
+        ),
+    )
+
+    invalid_update_form = replace(
+        parse_recipe_form(
+            _build_form(
+                ingredient_name="新しい食材",
+            )
+        ),
+        name=" ",
+    )
+
+    with pytest.raises(IntegrityError):
+        update_registered_recipe(
+            db=db_session,
+            recipe_id=recipe.id,
+            parsed_form=invalid_update_form,
+        )
+
+    assert (
+        db_session.query(Ingredient)
+        .filter(
+            Ingredient.name == "新しい食材"
+        )
+        .count()
+        == 0
+    )
+
+    unchanged_recipe = (
+        db_session.query(Recipe)
+        .filter(
+            Recipe.id == recipe.id
+        )
+        .one()
+    )
+
+    assert unchanged_recipe.name == "登録テスト"
+    assert len(unchanged_recipe.ingredients) == 1
+    assert (
+        unchanged_recipe.ingredients[0]
+        .ingredient_id
+        == onion.id
     )
