@@ -1080,3 +1080,136 @@ def test_recipe_favorite_update_returns_404_when_missing(
     )
 
     assert response.status_code == 404
+
+
+def test_recipe_delete_confirmation_is_displayed(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(
+        name="削除対象レシピ",
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    recipe_id = recipe.id
+
+    response = client.get(
+        f"/recipes/{recipe_id}/delete"
+    )
+
+    assert response.status_code == 200
+    assert "レシピ削除確認" in response.text
+    assert "削除対象レシピ" in response.text
+    assert (
+        f'action="/recipes/{recipe_id}/delete"'
+        in response.text
+    )
+    assert "レシピを削除する" in response.text
+
+
+def test_recipe_can_be_logically_deleted(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(
+        name="削除対象レシピ",
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    recipe_id = recipe.id
+
+    response = client.post(
+        f"/recipes/{recipe_id}/delete",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers[
+        "location"
+    ].startswith("/recipes?")
+
+    db_session.refresh(recipe)
+
+    assert recipe.is_active is False
+    assert recipe.deleted_at is not None
+
+    detail_response = client.get(
+        f"/recipes/{recipe_id}"
+    )
+
+    assert detail_response.status_code == 404
+
+    list_response = client.get("/recipes")
+
+    assert "削除対象レシピ" not in (
+        list_response.text
+    )
+
+
+def test_recipe_delete_redirect_displays_message(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(
+        name="削除対象レシピ",
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    recipe_id = recipe.id
+
+    response = client.post(
+        f"/recipes/{recipe_id}/delete",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "レシピを削除しました。" in (
+        response.text
+    )
+
+
+def test_recipe_delete_returns_404_when_unavailable(
+    client: TestClient,
+    db_session: Session,
+):
+    inactive_recipe = _create_recipe(
+        name="削除済みレシピ",
+        is_active=False,
+    )
+    db_session.add(inactive_recipe)
+    db_session.commit()
+
+    inactive_recipe_id = inactive_recipe.id
+
+    get_inactive_response = client.get(
+        f"/recipes/{inactive_recipe_id}/delete"
+    )
+    post_inactive_response = client.post(
+        f"/recipes/{inactive_recipe_id}/delete"
+    )
+    get_missing_response = client.get(
+        "/recipes/9999/delete"
+    )
+    post_missing_response = client.post(
+        "/recipes/9999/delete"
+    )
+
+    assert (
+        get_inactive_response.status_code
+        == 404
+    )
+    assert (
+        post_inactive_response.status_code
+        == 404
+    )
+    assert (
+        get_missing_response.status_code
+        == 404
+    )
+    assert (
+        post_missing_response.status_code
+        == 404
+    )

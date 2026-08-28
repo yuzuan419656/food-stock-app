@@ -1443,3 +1443,45 @@ select {
     outline: 2px solid #005fcc;
     outline-offset: 2px;
 }
+
+.recipe-delete-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px 14px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.recipe-delete-link:link,
+.recipe-delete-link:visited {
+    color: #fff;
+    text-decoration: none;
+}
+
+.recipe-delete-link:hover {
+    color: #fff;
+    text-decoration: none;
+}
+
+.recipe-delete-confirmation {
+    max-width: 760px;
+}
+
+.recipe-delete-confirmation h2 {
+    margin-top: 0;
+}
+
+.recipe-delete-summary {
+    margin: 24px 0;
+}
+
+.recipe-delete-summary th {
+    width: 180px;
+}
+
+.recipe-delete-form {
+    margin-top: 24px;
+}

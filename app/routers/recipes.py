@@ -45,6 +45,7 @@ from app.services.recipe_form import (
     parse_recipe_form,
 )
 from app.crud.recipe import (
+    delete_recipe,
     get_recipe_by_id,
     get_recipes,
     update_recipe_favorite,
@@ -387,6 +388,60 @@ async def create_recipe_from_form(
             f"/recipes/{recipe.id}"
             f"?{parameters}"
         ),
+        status_code=303,
+    )
+
+
+@router.get("/{recipe_id}/delete")
+def show_recipe_delete_confirmation(
+    recipe_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """レシピ削除確認画面を表示する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/delete.html",
+        context={
+            "recipe": recipe,
+        },
+    )
+
+
+@router.post("/{recipe_id}/delete")
+def delete_recipe_from_form(
+    recipe_id: int,
+    db: Session = Depends(get_db),
+):
+    """レシピを論理削除する。"""
+    deleted = delete_recipe(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    parameters = urlencode({
+        "message": "レシピを削除しました。",
+    })
+
+    return RedirectResponse(
+        url=f"/recipes?{parameters}",
         status_code=303,
     )
 
