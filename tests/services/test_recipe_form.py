@@ -1,9 +1,16 @@
 import pytest
 
+from app.crud.recipe import (
+    RecipeIngredientInput,
+    RecipeStepInput,
+    create_recipe,
+)
+from app.models.ingredient import Ingredient
 from app.services.recipe_form import (
     RecipeFormValidationError,
     build_recipe_form_data,
     parse_recipe_form,
+    build_recipe_edit_form_data,
 )
 
 
@@ -297,4 +304,94 @@ def test_build_recipe_form_data_preserves_inputs(
             "index": 1,
             "description": "鍋で煮る。",
         },
+    ]
+
+
+def test_build_recipe_edit_form_data(
+    db_session,
+):
+    ingredient = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(ingredient)
+    db_session.commit()
+
+    recipe = create_recipe(
+        db=db_session,
+        name="玉ねぎスープ",
+        cooking_time_minutes=20,
+        cuisine_type="洋食",
+        dish_category="汁物",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=ingredient.id,
+                quantity=0.5,
+                unit="個",
+                notes="薄切り",
+                display_order=1,
+            )
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="玉ねぎを切る。",
+            ),
+            RecipeStepInput(
+                step_number=2,
+                description="鍋で煮る。",
+            ),
+        ],
+        is_favorite=True,
+    )
+
+    form_data = build_recipe_edit_form_data(
+        recipe
+    )
+
+    assert form_data["name"] == (
+        "玉ねぎスープ"
+    )
+    assert (
+        form_data["cooking_time_minutes"]
+        == "20"
+    )
+    assert (
+        form_data["yield_type"]
+        == "servings"
+    )
+    assert (
+        form_data["base_servings"]
+        == "2"
+    )
+    assert form_data["is_favorite"] is True
+
+    assert len(form_data["ingredients"]) == 1
+
+    ingredient_data = (
+        form_data["ingredients"][0]
+    )
+
+    assert ingredient_data["index"] == 0
+    assert ingredient_data["name"] == "玉ねぎ"
+    assert ingredient_data["ingredient_id"] == str(
+        ingredient.id
+    )
+    assert (
+        ingredient_data["quantity_input"]
+        == "0.5"
+    )
+    assert ingredient_data["unit"] == "個"
+    assert ingredient_data["notes"] == "薄切り"
+
+    assert [
+        step["description"]
+        for step in form_data["steps"]
+    ] == [
+        "玉ねぎを切る。",
+        "鍋で煮る。",
     ]

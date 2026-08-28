@@ -4,6 +4,7 @@ from typing import Mapping
 import re
 import unicodedata
 
+from app.models.recipe import Recipe
 from app.constants.ingredient_options import (
     CATEGORY_OPTIONS,
 )
@@ -664,4 +665,98 @@ def build_recipe_form_data(
         ),
         "ingredients": ingredients,
         "steps": steps,
+    }
+
+
+def _quantity_to_form_value(
+    quantity: float | None,
+    quantity_text: str | None,
+) -> str:
+    """
+    登録済みの数量をフォーム表示用文字列へ変換する。
+
+    数値数量は不要な末尾の.0を表示せず、
+    文字数量はそのまま表示する。
+    """
+    if quantity_text is not None:
+        return quantity_text
+
+    if quantity is None:
+        return ""
+
+    return format(quantity, "g")
+
+
+def build_recipe_edit_form_data(
+    recipe: Recipe,
+) -> dict:
+    """
+    登録済みレシピを編集フォーム用データへ変換する。
+    """
+    return {
+        "name": recipe.name,
+        "cooking_time_minutes": str(
+            recipe.cooking_time_minutes
+        ),
+        "cuisine_type": recipe.cuisine_type,
+        "dish_category": (
+            recipe.dish_category
+        ),
+        "yield_type": recipe.yield_type,
+        "base_servings": (
+            str(recipe.base_servings)
+            if recipe.base_servings is not None
+            else ""
+        ),
+        "fixed_yield_text": (
+            recipe.fixed_yield_text or ""
+        ),
+        "is_favorite": recipe.is_favorite,
+        "ingredients": [
+            {
+                "index": index,
+                "name": (
+                    recipe_ingredient
+                    .ingredient.name
+                ),
+                "ingredient_id": str(
+                    recipe_ingredient
+                    .ingredient_id
+                ),
+                "quantity_input": (
+                    _quantity_to_form_value(
+                        quantity=(
+                            recipe_ingredient
+                            .quantity
+                        ),
+                        quantity_text=(
+                            recipe_ingredient
+                            .quantity_text
+                        ),
+                    )
+                ),
+                "unit": (
+                    recipe_ingredient.unit
+                    or ""
+                ),
+                "notes": (
+                    recipe_ingredient.notes
+                    or ""
+                ),
+                # 既存食材なので新規食材用の
+                # カテゴリ入力欄は使用しない。
+                "category_select": "",
+                "category_other": "",
+            }
+            for index, recipe_ingredient
+            in enumerate(recipe.ingredients)
+        ],
+        "steps": [
+            {
+                "index": index,
+                "description": step.description,
+            }
+            for index, step
+            in enumerate(recipe.steps)
+        ],
     }
