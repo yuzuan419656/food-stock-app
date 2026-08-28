@@ -32,6 +32,12 @@
         </div>
     </div>
 
+    {% if message %}
+        <p class="success-message">
+            {{ message }}
+        </p>
+    {% endif %}
+
     {% if recipes %}
         <table class="recipe-list-table">
             <thead>
@@ -51,21 +57,33 @@
                 {% for recipe in recipes %}
                     <tr>
                         <td class="recipe-favorite-column">
-                            {% if recipe.is_favorite %}
-                                <span
-                                    class="recipe-favorite-mark"
-                                    aria-label="お気に入り"
+                            <form
+                                action="/recipes/{{ recipe.id }}/favorite"
+                                method="post"
+                                class="recipe-favorite-form"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="is_favorite"
+                                    value="{% if recipe.is_favorite %}false{% else %}true{% endif %}"
                                 >
-                                    ★
-                                </span>
-                            {% else %}
-                                <span
-                                    class="recipe-not-favorite-mark"
-                                    aria-label="お気に入り未登録"
+
+                                <button
+                                    type="submit"
+                                    class="recipe-favorite-button{% if recipe.is_favorite %} active{% endif %}"
+                                    aria-pressed="{% if recipe.is_favorite %}true{% else %}false{% endif %}"
+                                    aria-label="{% if recipe.is_favorite %}お気に入りを解除{% else %}お気に入りに追加{% endif %}"
+                                    title="{% if recipe.is_favorite %}お気に入りを解除{% else %}お気に入りに追加{% endif %}"
                                 >
-                                    ―
-                                </span>
-                            {% endif %}
+                                    <span aria-hidden="true">
+                                        {% if recipe.is_favorite %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    </span>
+                                </button>
+                            </form>
                         </td>
 
                         <td class="recipe-name">

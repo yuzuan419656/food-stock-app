@@ -122,6 +122,12 @@ def test_recipe_list_displays_active_recipes(
         f'href="/recipes/{favorite_recipe.id}"'
         in response.text
     )
+    assert (
+        f'action="/recipes/{favorite_recipe.id}/favorite"'
+        in response.text
+    )
+    assert "お気に入りを解除" in response.text
+    assert "お気に入りに追加" in response.text
 
 
 def test_recipe_list_displays_empty_state(
@@ -1013,6 +1019,64 @@ def test_recipe_update_returns_404_when_missing(
         data=_build_recipe_registration_form(
             ingredient_name="玉ねぎ",
         ),
+    )
+
+    assert response.status_code == 404
+
+
+def test_recipe_favorite_can_be_toggled_from_list(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(
+        name="お気に入り確認",
+        is_favorite=False,
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    recipe_id = recipe.id
+
+    add_response = client.post(
+        f"/recipes/{recipe_id}/favorite",
+        data={
+            "is_favorite": "true",
+        },
+        follow_redirects=False,
+    )
+
+    assert add_response.status_code == 303
+    assert add_response.headers[
+        "location"
+    ].startswith("/recipes?")
+
+    db_session.refresh(recipe)
+
+    assert recipe.is_favorite is True
+
+    remove_response = client.post(
+        f"/recipes/{recipe_id}/favorite",
+        data={
+            "is_favorite": "false",
+        },
+        follow_redirects=False,
+    )
+
+    assert remove_response.status_code == 303
+
+    db_session.refresh(recipe)
+
+    assert recipe.is_favorite is False
+
+
+def test_recipe_favorite_update_returns_404_when_missing(
+    client: TestClient,
+):
+    response = client.post(
+        "/recipes/9999/favorite",
+        data={
+            "is_favorite": "true",
+        },
     )
 
     assert response.status_code == 404

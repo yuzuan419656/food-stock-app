@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from fastapi import (
     APIRouter,
     Depends,
+    Form,
     HTTPException,
     Query,
     Request,
@@ -42,6 +43,11 @@ from app.services.recipe_form import (
     build_recipe_edit_form_data,
     build_recipe_form_data,
     parse_recipe_form,
+)
+from app.crud.recipe import (
+    get_recipe_by_id,
+    get_recipes,
+    update_recipe_favorite,
 )
 
 
@@ -128,6 +134,10 @@ def render_recipe_form(
 @router.get("")
 def list_recipes(
     request: Request,
+    message: str | None = Query(
+        default=None,
+        max_length=200,
+    ),
     db: Session = Depends(get_db),
 ):
     """有効なレシピの一覧を表示する。"""
@@ -138,7 +148,46 @@ def list_recipes(
         name="recipes/list.html",
         context={
             "recipes": recipes,
+            "message": message,
         },
+    )
+
+
+@router.post("/{recipe_id}/favorite")
+def update_recipe_favorite_from_list(
+    recipe_id: int,
+    is_favorite: bool = Form(...),
+    db: Session = Depends(get_db),
+):
+    """一覧画面からお気に入り状態を更新する。"""
+    updated_recipe = update_recipe_favorite(
+        db=db,
+        recipe_id=recipe_id,
+        is_favorite=is_favorite,
+    )
+
+    if updated_recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    if is_favorite:
+        message = (
+            "お気に入りに登録しました。"
+        )
+    else:
+        message = (
+            "お気に入りを解除しました。"
+        )
+
+    parameters = urlencode({
+        "message": message,
+    })
+
+    return RedirectResponse(
+        url=f"/recipes?{parameters}",
+        status_code=303,
     )
 
 
