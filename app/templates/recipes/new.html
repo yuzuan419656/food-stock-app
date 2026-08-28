@@ -1,25 +1,25 @@
 {% extends "base.html" %}
 
 {% block title %}
-レシピ登録
+{{ page_title }}
 {% endblock %}
 
 {% block content %}
 <div class="container">
     <div class="recipe-form-header">
         <div>
-            <h2>レシピ登録</h2>
+            <h2>{{ page_title }}</h2>
+
             <p>
-                レシピの基本情報、材料、
-                調理手順を入力します。
+                {{ form_description }}
             </p>
         </div>
 
         <a
-            href="/recipes"
+            href="{{ cancel_url }}"
             class="secondary-button"
         >
-            レシピ一覧へ戻る
+            {{ back_label }}
         </a>
     </div>
 {% if error_message %}
@@ -28,7 +28,7 @@
     </p>
 {% endif %}
     <form
-        action="/recipes"
+        action="{{ form_action }}"
         method="post"
         class="recipe-form"
         autocomplete="off"
@@ -523,11 +523,11 @@
                 type="submit"
                 class="primary-button"
             >
-                レシピを登録
+                {{ submit_label }}
             </button>
 
             <a
-                href="/recipes"
+                href="{{ cancel_url }}"
                 class="secondary-button"
             >
                 キャンセル

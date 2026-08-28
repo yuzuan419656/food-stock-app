@@ -3,13 +3,14 @@
 {% block title %}
 {{ recipe.name }}
 {% endblock %}
+
+{% block content %}
 {% if message %}
     <p class="success-message">
         {{ message }}
     </p>
 {% endif %}
 
-{% block content %}
 <div class="container">
     <div class="recipe-detail-header">
         <div>
@@ -32,6 +33,13 @@
         </div>
 
         <div class="recipe-detail-header-actions">
+            <a
+                href="/recipes/{{ recipe.id }}/edit"
+                class="primary-button"
+            >
+                編集
+            </a>
+
             <a
                 href="/recipes"
                 class="secondary-button"

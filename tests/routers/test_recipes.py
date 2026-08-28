@@ -555,3 +555,448 @@ def test_recipe_registration_error_preserves_inputs(
         db_session.query(Recipe).count()
         == 0
     )
+
+
+def test_recipe_edit_page_displays_current_values(
+    client: TestClient,
+    db_session: Session,
+):
+    ingredient = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(ingredient)
+    db_session.commit()
+
+    recipe = create_recipe(
+        db=db_session,
+        name="玉ねぎスープ",
+        cooking_time_minutes=25,
+        cuisine_type="洋食",
+        dish_category="汁物",
+        yield_type="servings",
+        base_servings=3,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=ingredient.id,
+                quantity=1.5,
+                unit="個",
+                notes="薄切り",
+            )
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="玉ねぎを切る。",
+            ),
+            RecipeStepInput(
+                step_number=2,
+                description="鍋で煮る。",
+            ),
+        ],
+        is_favorite=True,
+    )
+
+    response = client.get(
+        f"/recipes/{recipe.id}/edit"
+    )
+
+    assert response.status_code == 200
+    assert "レシピ編集" in response.text
+    assert (
+        f'action="/recipes/{recipe.id}/edit"'
+        in response.text
+    )
+    assert 'value="玉ねぎスープ"' in response.text
+    assert 'value="25"' in response.text
+    assert 'value="洋食"' in response.text
+    assert 'value="汁物"' in response.text
+    assert 'value="3"' in response.text
+    assert 'value="玉ねぎ"' in response.text
+    assert 'value="1.5"' in response.text
+    assert 'value="個"' in response.text
+    assert 'value="薄切り"' in response.text
+    assert "玉ねぎを切る。" in response.text
+    assert "鍋で煮る。" in response.text
+    assert "変更を保存" in response.text
+
+
+def test_recipe_edit_page_returns_404_when_unavailable(
+    client: TestClient,
+    db_session: Session,
+):
+    inactive_recipe = _create_recipe(
+        name="削除済みレシピ",
+        is_active=False,
+    )
+    db_session.add(inactive_recipe)
+    db_session.commit()
+
+    inactive_response = client.get(
+        f"/recipes/{inactive_recipe.id}/edit"
+    )
+    missing_response = client.get(
+        "/recipes/9999/edit"
+    )
+
+    assert inactive_response.status_code == 404
+    assert missing_response.status_code == 404
+
+
+def test_recipe_can_be_updated_from_form(
+    client: TestClient,
+    db_session: Session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    potato = Ingredient(
+        name="じゃがいも",
+        category="野菜",
+        default_unit="個",
+    )
+
+    db_session.add_all([
+        onion,
+        potato,
+    ])
+    db_session.commit()
+
+    onion_id = onion.id
+    potato_id = potato.id
+
+    recipe = create_recipe(
+        db=db_session,
+        name="変更前レシピ",
+        cooking_time_minutes=10,
+        cuisine_type="和食",
+        dish_category="主菜",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=onion_id,
+                quantity=1,
+                unit="個",
+            )
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="玉ねぎを切る。",
+            )
+        ],
+    )
+
+    recipe_id = recipe.id
+
+    form = _build_recipe_registration_form(
+        ingredient_name="じゃがいも",
+        ingredient_id=str(potato_id),
+        quantity="2.5",
+        unit="個",
+    )
+
+    form.update({
+        "name": "変更後レシピ",
+        "cooking_time_minutes": "30",
+        "cuisine_type": "洋食",
+        "dish_category": "副菜",
+        "base_servings": "3",
+        "step_0_description": (
+            "じゃがいもを切る。"
+        ),
+        "step_1_description": (
+            "鍋で煮る。"
+        ),
+    })
+
+    response = client.post(
+        f"/recipes/{recipe_id}/edit",
+        data=form,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+    assert response.headers[
+        "location"
+    ].startswith(
+        f"/recipes/{recipe_id}?"
+    )
+
+    # セッション上のキャッシュを消し、
+    # 更新後の内容をDBから読み直す。
+    db_session.expunge_all()
+
+    updated_recipe = (
+        db_session.query(Recipe)
+        .filter(
+            Recipe.id == recipe_id
+        )
+        .one()
+    )
+
+    assert (
+        updated_recipe.name
+        == "変更後レシピ"
+    )
+    assert (
+        updated_recipe.cooking_time_minutes
+        == 30
+    )
+    assert (
+        updated_recipe.cuisine_type
+        == "洋食"
+    )
+    assert (
+        updated_recipe.dish_category
+        == "副菜"
+    )
+    assert updated_recipe.base_servings == 3
+
+    assert len(updated_recipe.ingredients) == 1
+
+    recipe_ingredient = (
+        updated_recipe.ingredients[0]
+    )
+
+    assert (
+        recipe_ingredient.ingredient_id
+        == potato_id
+    )
+    assert (
+        recipe_ingredient.quantity
+        == 2.5
+    )
+    assert (
+        recipe_ingredient.quantity_text
+        is None
+    )
+
+    assert [
+        step.description
+        for step in updated_recipe.steps
+    ] == [
+        "じゃがいもを切る。",
+        "鍋で煮る。",
+    ]
+
+
+def test_recipe_update_creates_new_ingredient(
+    client: TestClient,
+    db_session: Session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(onion)
+    db_session.commit()
+
+    onion_id = onion.id
+
+    recipe = create_recipe(
+        db=db_session,
+        name="変更前レシピ",
+        cooking_time_minutes=10,
+        cuisine_type="和食",
+        dish_category="主菜",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=onion_id,
+                quantity=1,
+                unit="個",
+            )
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="調理する。",
+            )
+        ],
+    )
+
+    recipe_id = recipe.id
+
+    form = _build_recipe_registration_form(
+        ingredient_name="バジル",
+        category="野菜",
+        quantity="少々",
+        unit="枚",
+    )
+
+    form["name"] = "バジル料理"
+
+    response = client.post(
+        f"/recipes/{recipe_id}/edit",
+        data=form,
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+    assert response.headers[
+        "location"
+    ].startswith(
+        f"/recipes/{recipe_id}?"
+    )
+
+    basil = (
+        db_session.query(Ingredient)
+        .filter(
+            Ingredient.name == "バジル"
+        )
+        .one()
+    )
+
+    basil_id = basil.id
+
+    assert basil.category == "野菜"
+    assert basil.default_unit == "枚"
+
+    # レシピ編集による食材登録では、
+    # 在庫ロットを自動作成しない。
+    assert (
+        db_session.query(Inventory)
+        .filter(
+            Inventory.ingredient_id
+            == basil_id
+        )
+        .count()
+        == 0
+    )
+
+    # 更新後の内容をDBから読み直す。
+    db_session.expunge_all()
+
+    updated_recipe = (
+        db_session.query(Recipe)
+        .filter(
+            Recipe.id == recipe_id
+        )
+        .one()
+    )
+
+    assert updated_recipe.name == "バジル料理"
+    assert len(updated_recipe.ingredients) == 1
+
+    recipe_ingredient = (
+        updated_recipe.ingredients[0]
+    )
+
+    assert (
+        recipe_ingredient.ingredient_id
+        == basil_id
+    )
+    assert (
+        recipe_ingredient.quantity
+        is None
+    )
+    assert (
+        recipe_ingredient.quantity_text
+        == "少々"
+    )
+    assert (
+        recipe_ingredient.is_seasoning
+        is False
+    )
+    assert (
+        recipe_ingredient
+        .is_inventory_consumed
+        is False
+    )
+
+
+def test_recipe_update_error_preserves_inputs(
+    client: TestClient,
+    db_session: Session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    db_session.add(onion)
+    db_session.commit()
+
+    recipe = create_recipe(
+        db=db_session,
+        name="変更前レシピ",
+        cooking_time_minutes=10,
+        cuisine_type="和食",
+        dish_category="主菜",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=onion.id,
+                quantity=1,
+                unit="個",
+            )
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="調理する。",
+            )
+        ],
+    )
+
+    form = _build_recipe_registration_form(
+        ingredient_name="玉ねぎ",
+        ingredient_id=str(onion.id),
+    )
+
+    form["name"] = "入力保持レシピ"
+    form["cooking_time_minutes"] = "abc"
+
+    response = client.post(
+        f"/recipes/{recipe.id}/edit",
+        data=form,
+    )
+
+    assert response.status_code == 400
+    assert "所要時間は整数" in response.text
+    assert "レシピ編集" in response.text
+    assert (
+        f'action="/recipes/{recipe.id}/edit"'
+        in response.text
+    )
+    assert (
+        'value="入力保持レシピ"'
+        in response.text
+    )
+    assert 'value="abc"' in response.text
+    assert 'value="玉ねぎ"' in response.text
+
+    db_session.refresh(recipe)
+
+    assert recipe.name == "変更前レシピ"
+    assert (
+        recipe.cooking_time_minutes
+        == 10
+    )
+
+
+def test_recipe_update_returns_404_when_missing(
+    client: TestClient,
+):
+    response = client.post(
+        "/recipes/9999/edit",
+        data=_build_recipe_registration_form(
+            ingredient_name="玉ねぎ",
+        ),
+    )
+
+    assert response.status_code == 404

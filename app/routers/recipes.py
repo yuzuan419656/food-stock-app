@@ -35,6 +35,13 @@ from app.services.recipe_form import (
 from app.services.recipe_registration import (
     RecipeRegistrationError,
     register_recipe,
+    update_registered_recipe,
+)
+from app.services.recipe_form import (
+    RecipeFormValidationError,
+    build_recipe_edit_form_data,
+    build_recipe_form_data,
+    parse_recipe_form,
 )
 
 
@@ -54,12 +61,39 @@ def render_recipe_form(
     form_data: dict,
     error_message: str | None = None,
     status_code: int = 200,
+    recipe_id: int | None = None,
 ):
-    """レシピ登録画面を表示する。"""
+    """レシピの登録・編集画面を表示する。"""
     ingredients = get_ingredients(
         db=db,
         sort="name",
     )
+
+    is_edit = recipe_id is not None
+
+    if is_edit:
+        page_title = "レシピ編集"
+        form_description = (
+            "レシピの基本情報、材料、"
+            "調理手順を編集します。"
+        )
+        form_action = (
+            f"/recipes/{recipe_id}/edit"
+        )
+        submit_label = "変更を保存"
+        cancel_url = f"/recipes/{recipe_id}"
+        back_label = "レシピ詳細へ戻る"
+
+    else:
+        page_title = "レシピ登録"
+        form_description = (
+            "レシピの基本情報、材料、"
+            "調理手順を入力します。"
+        )
+        form_action = "/recipes"
+        submit_label = "レシピを登録"
+        cancel_url = "/recipes"
+        back_label = "レシピ一覧へ戻る"
 
     return templates.TemplateResponse(
         request=request,
@@ -77,6 +111,15 @@ def render_recipe_form(
             "other_option": OTHER_OPTION,
             "form_data": form_data,
             "error_message": error_message,
+            "page_title": page_title,
+            "form_description": (
+                form_description
+            ),
+            "form_action": form_action,
+            "submit_label": submit_label,
+            "cancel_url": cancel_url,
+            "back_label": back_label,
+            "is_edit": is_edit,
         },
         status_code=status_code,
     )
@@ -109,6 +152,126 @@ def show_recipe_create_form(
         request=request,
         db=db,
         form_data=build_recipe_form_data(),
+    )
+
+
+@router.get("/{recipe_id}/edit")
+def show_recipe_edit_form(
+    recipe_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """レシピ編集画面を表示する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    return render_recipe_form(
+        request=request,
+        db=db,
+        form_data=(
+            build_recipe_edit_form_data(
+                recipe
+            )
+        ),
+        recipe_id=recipe.id,
+    )
+
+
+@router.post("/{recipe_id}/edit")
+async def update_recipe_from_form(
+    recipe_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """フォームからレシピを更新する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    submitted_form = await request.form()
+
+    submitted_values = {
+        key: str(value)
+        for key, value
+        in submitted_form.items()
+    }
+
+    form_data = build_recipe_form_data(
+        submitted_values
+    )
+
+    try:
+        parsed_form = parse_recipe_form(
+            submitted_values
+        )
+
+        updated_recipe = (
+            update_registered_recipe(
+                db=db,
+                recipe_id=recipe_id,
+                parsed_form=parsed_form,
+            )
+        )
+
+    except (
+        RecipeFormValidationError,
+        RecipeRegistrationError,
+    ) as error:
+        return render_recipe_form(
+            request=request,
+            db=db,
+            form_data=form_data,
+            error_message=str(error),
+            status_code=400,
+            recipe_id=recipe_id,
+        )
+
+    except IntegrityError:
+        db.rollback()
+
+        return render_recipe_form(
+            request=request,
+            db=db,
+            form_data=form_data,
+            error_message=(
+                "レシピの更新に失敗しました。"
+                "入力内容を確認してください。"
+            ),
+            status_code=400,
+            recipe_id=recipe_id,
+        )
+
+    if updated_recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    parameters = urlencode({
+        "message": "レシピを更新しました。",
+    })
+
+    return RedirectResponse(
+        url=(
+            f"/recipes/{updated_recipe.id}"
+            f"?{parameters}"
+        ),
+        status_code=303,
     )
 
 
