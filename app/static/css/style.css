@@ -1141,6 +1141,42 @@ a.quantity-button:visited {
     margin: 0;
 }
 
+.recipe-serving-form {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding: 16px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.recipe-serving-form label {
+    font-weight: bold;
+}
+
+.recipe-serving-form input[type="number"] {
+    box-sizing: border-box;
+    width: 88px;
+    padding: 8px 10px;
+    border: 1px solid #aaa;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    font: inherit;
+}
+
+.recipe-serving-form input[type="number"]:focus {
+    border-color: #005fcc;
+    outline: 2px solid rgba(0, 95, 204, 0.2);
+    outline-offset: 1px;
+}
+
+.recipe-serving-form .secondary-button {
+    margin: 0 0 0 4px;
+}
+
 .recipe-step-list {
     padding-left: 28px;
 }

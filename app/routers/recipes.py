@@ -41,6 +41,9 @@ from app.services.recipe_registration import (
     register_recipe,
     update_registered_recipe,
 )
+from app.services.recipe_serving import (
+    build_scaled_recipe_ingredients,
+)
 
 
 router = APIRouter(
@@ -535,13 +538,18 @@ def delete_recipe_from_form(
 def show_recipe_detail(
     recipe_id: int,
     request: Request,
+    servings: int | None = Query(
+        default=None,
+        ge=1,
+        le=100,
+    ),
     message: str | None = Query(
         default=None,
         max_length=200,
     ),
     db: Session = Depends(get_db),
 ):
-    """レシピの詳細を表示する。"""
+    """レシピ詳細を表示する。"""
     recipe = get_recipe_by_id(
         db=db,
         recipe_id=recipe_id,
@@ -553,12 +561,37 @@ def show_recipe_detail(
             detail="レシピが見つかりません。",
         )
 
+    selected_servings = None
+    display_ingredients = None
+
+    if recipe.yield_type == "servings":
+        selected_servings = (
+            servings
+            if servings is not None
+            else recipe.base_servings
+        )
+
+        display_ingredients = (
+            build_scaled_recipe_ingredients(
+                recipe=recipe,
+                target_servings=(
+                    selected_servings
+                ),
+            )
+        )
+
     return templates.TemplateResponse(
         request=request,
         name="recipes/detail.html",
         context={
             "recipe": recipe,
             "message": message,
+            "selected_servings": (
+                selected_servings
+            ),
+            "display_ingredients": (
+                display_ingredients
+            ),
         },
     )
 

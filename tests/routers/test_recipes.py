@@ -1376,3 +1376,66 @@ def test_favorite_toggle_preserves_recipe_filters(
     ] == [
         "玉ねぎ"
     ]
+
+
+def test_recipe_detail_adjusts_ingredient_quantity_by_servings(
+    client: TestClient,
+    db_session: Session,
+):
+    potato = Ingredient(
+        name="じゃがいも",
+        category="野菜",
+        default_unit="個",
+    )
+    salt = Ingredient(
+        name="塩",
+        category="調味料",
+        default_unit="g",
+    )
+
+    db_session.add_all([
+        potato,
+        salt,
+    ])
+    db_session.commit()
+
+    recipe = create_recipe(
+        db=db_session,
+        name="人数換算テスト",
+        cooking_time_minutes=20,
+        cuisine_type="和食",
+        dish_category="主菜",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=potato.id,
+                quantity=2,
+                unit="個",
+            ),
+            RecipeIngredientInput(
+                ingredient_id=salt.id,
+                quantity_text="少々",
+                is_seasoning=True,
+                is_inventory_consumed=False,
+            ),
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="調理する。",
+            ),
+        ],
+    )
+
+    response = client.get(
+        f"/recipes/{recipe.id}?servings=3"
+    )
+
+    assert response.status_code == 200
+
+    assert "3人分" in response.text
+    assert "3" in response.text
+    assert "個" in response.text
+    assert "少々" in response.text

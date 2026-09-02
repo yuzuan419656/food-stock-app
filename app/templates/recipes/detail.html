@@ -87,8 +87,52 @@
                     {% endif %}
                 </dd>
             </div>
+
+            {% if recipe.yield_type == "servings" %}
+                <div>
+                    <dt>今回作る量</dt>
+                    <dd>
+                        {{ selected_servings }}人分
+                    </dd>
+                </div>
+            {% endif %}
         </dl>
     </section>
+
+    {% if recipe.yield_type == "servings" %}
+        <section class="recipe-detail-section">
+            <h3>人数変更</h3>
+
+            <form
+                method="get"
+                action="/recipes/{{ recipe.id }}"
+                class="recipe-serving-form"
+            >
+                <label for="servings">
+                    今回作る人数
+                </label>
+
+                <input
+                    type="number"
+                    id="servings"
+                    name="servings"
+                    value="{{ selected_servings }}"
+                    min="1"
+                    max="100"
+                    required
+                >
+
+                <span>人分</span>
+
+                <button
+                    type="submit"
+                    class="secondary-button"
+                >
+                    分量を変更
+                </button>
+            </form>
+        </section>
+    {% endif %}
 
     <section class="recipe-detail-section">
         <h3>材料</h3>
@@ -104,36 +148,68 @@
             </thead>
 
             <tbody>
-                {% for item in recipe.ingredients %}
-                    <tr>
-                        <td>
-                            {{ item.ingredient.name }}
-                        </td>
+                {% if recipe.yield_type == "servings" %}
+                    {% for item in display_ingredients %}
+                        <tr>
+                            <td>
+                                {{ item.recipe_ingredient.ingredient.name }}
+                            </td>
 
-                        <td>
-                            {% if item.quantity is not none %}
-                                {{ "%g" | format(item.quantity) }}
-                                {{ item.unit }}
-                            {% else %}
-                                {{ item.quantity_text }}
-                            {% endif %}
-                        </td>
+                            <td>
+                                {{ item.display_quantity }}
 
-                        <td>
-                            {% if item.is_seasoning %}
-                                調味料
-                            {% elif not item.is_inventory_consumed %}
-                                在庫減算なし
-                            {% else %}
-                                在庫から減算
-                            {% endif %}
-                        </td>
+                                {% if item.recipe_ingredient.quantity is not none %}
+                                    {{ item.recipe_ingredient.unit }}
+                                {% endif %}
+                            </td>
 
-                        <td>
-                            {{ item.notes or "―" }}
-                        </td>
-                    </tr>
-                {% endfor %}
+                            <td>
+                                {% if item.recipe_ingredient.is_seasoning %}
+                                    調味料
+                                {% elif not item.recipe_ingredient.is_inventory_consumed %}
+                                    在庫減算なし
+                                {% else %}
+                                    在庫から減算
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ item.recipe_ingredient.notes or "―" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% else %}
+                    {% for item in recipe.ingredients %}
+                        <tr>
+                            <td>
+                                {{ item.ingredient.name }}
+                            </td>
+
+                            <td>
+                                {% if item.quantity is not none %}
+                                    {{ "%g" | format(item.quantity) }}
+                                    {{ item.unit }}
+                                {% else %}
+                                    {{ item.quantity_text }}
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {% if item.is_seasoning %}
+                                    調味料
+                                {% elif not item.is_inventory_consumed %}
+                                    在庫減算なし
+                                {% else %}
+                                    在庫から減算
+                                {% endif %}
+                            </td>
+
+                            <td>
+                                {{ item.notes or "―" }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                {% endif %}
             </tbody>
         </table>
     </section>
