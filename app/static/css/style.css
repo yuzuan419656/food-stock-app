@@ -1485,3 +1485,79 @@ select {
 .recipe-delete-form {
     margin-top: 24px;
 }
+
+.recipe-filter-panel {
+    margin: 24px 0;
+    padding: 18px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.recipe-filter-panel h3 {
+    margin-top: 0;
+}
+
+.recipe-filter-form {
+    margin: 0;
+}
+
+.recipe-filter-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.recipe-filter-grid .form-group {
+    margin-bottom: 0;
+}
+
+.recipe-filter-grid select,
+.recipe-filter-grid input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.recipe-filter-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.recipe-filter-checkbox input {
+    width: auto;
+    margin: 0;
+}
+
+.recipe-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.recipe-active-filters {
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    border-left: 4px solid #4f7cac;
+    background-color: #f3f7fb;
+}
+
+.recipe-active-filters h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.recipe-active-filters ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+@media (max-width: 800px) {
+    .recipe-filter-grid {
+        grid-template-columns: 1fr;
+    }
+}

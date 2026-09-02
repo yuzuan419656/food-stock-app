@@ -24,12 +24,15 @@ from app.constants.recipe_options import (
 )
 from app.crud.ingredient import get_ingredients
 from app.crud.recipe import (
+    delete_recipe,
     get_recipe_by_id,
     get_recipes,
+    update_recipe_favorite,
 )
 from app.database import get_db
 from app.services.recipe_form import (
     RecipeFormValidationError,
+    build_recipe_edit_form_data,
     build_recipe_form_data,
     parse_recipe_form,
 )
@@ -37,18 +40,6 @@ from app.services.recipe_registration import (
     RecipeRegistrationError,
     register_recipe,
     update_registered_recipe,
-)
-from app.services.recipe_form import (
-    RecipeFormValidationError,
-    build_recipe_edit_form_data,
-    build_recipe_form_data,
-    parse_recipe_form,
-)
-from app.crud.recipe import (
-    delete_recipe,
-    get_recipe_by_id,
-    get_recipes,
-    update_recipe_favorite,
 )
 
 
@@ -60,6 +51,73 @@ router = APIRouter(
 templates = Jinja2Templates(
     directory="app/templates"
 )
+
+
+def build_recipe_list_url(
+    message: str | None = None,
+    favorite_only: bool = False,
+    cuisine_type: str = "",
+    dish_category: str = "",
+    ingredient_keyword: str = "",
+) -> str:
+    """レシピ一覧の検索条件を含むURLを作成する。"""
+    parameters: list[
+        tuple[str, str]
+    ] = []
+
+    if message:
+        parameters.append(
+            ("message", message)
+        )
+
+    if favorite_only:
+        parameters.append(
+            ("favorite_only", "true")
+        )
+
+    cleaned_cuisine_type = (
+        cuisine_type.strip()
+    )
+
+    if cleaned_cuisine_type:
+        parameters.append(
+            (
+                "cuisine_type",
+                cleaned_cuisine_type,
+            )
+        )
+
+    cleaned_dish_category = (
+        dish_category.strip()
+    )
+
+    if cleaned_dish_category:
+        parameters.append(
+            (
+                "dish_category",
+                cleaned_dish_category,
+            )
+        )
+
+    cleaned_ingredient_keyword = (
+        ingredient_keyword.strip()
+    )
+
+    if cleaned_ingredient_keyword:
+        parameters.append(
+            (
+                "ingredient_keyword",
+                cleaned_ingredient_keyword,
+            )
+        )
+
+    if not parameters:
+        return "/recipes"
+
+    return (
+        "/recipes?"
+        + urlencode(parameters)
+    )
 
 
 def render_recipe_form(
@@ -139,10 +197,55 @@ def list_recipes(
         default=None,
         max_length=200,
     ),
+    favorite_only: bool = Query(
+        default=False,
+    ),
+    cuisine_type: str = Query(
+        default="",
+        max_length=50,
+    ),
+    dish_category: str = Query(
+        default="",
+        max_length=50,
+    ),
+    ingredient_keyword: str = Query(
+        default="",
+        max_length=100,
+    ),
     db: Session = Depends(get_db),
 ):
     """有効なレシピの一覧を表示する。"""
-    recipes = get_recipes(db=db)
+    cleaned_cuisine_type = (
+        cuisine_type.strip()
+    )
+    cleaned_dish_category = (
+        dish_category.strip()
+    )
+    cleaned_ingredient_keyword = (
+        ingredient_keyword.strip()
+    )
+
+    recipes = get_recipes(
+        db=db,
+        favorite_only=favorite_only,
+        cuisine_type=cleaned_cuisine_type,
+        dish_category=cleaned_dish_category,
+        ingredient_keyword=(
+            cleaned_ingredient_keyword
+        ),
+    )
+
+    ingredient_candidates = get_ingredients(
+        db=db,
+        sort="name",
+    )
+
+    has_filters = bool(
+        favorite_only
+        or cleaned_cuisine_type
+        or cleaned_dish_category
+        or cleaned_ingredient_keyword
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -150,45 +253,27 @@ def list_recipes(
         context={
             "recipes": recipes,
             "message": message,
+            "favorite_only": favorite_only,
+            "selected_cuisine_type": (
+                cleaned_cuisine_type
+            ),
+            "selected_dish_category": (
+                cleaned_dish_category
+            ),
+            "ingredient_keyword": (
+                cleaned_ingredient_keyword
+            ),
+            "cuisine_options": (
+                RECIPE_CUISINE_OPTIONS
+            ),
+            "dish_category_options": (
+                RECIPE_DISH_CATEGORY_OPTIONS
+            ),
+            "ingredient_candidates": (
+                ingredient_candidates
+            ),
+            "has_filters": has_filters,
         },
-    )
-
-
-@router.post("/{recipe_id}/favorite")
-def update_recipe_favorite_from_list(
-    recipe_id: int,
-    is_favorite: bool = Form(...),
-    db: Session = Depends(get_db),
-):
-    """一覧画面からお気に入り状態を更新する。"""
-    updated_recipe = update_recipe_favorite(
-        db=db,
-        recipe_id=recipe_id,
-        is_favorite=is_favorite,
-    )
-
-    if updated_recipe is None:
-        raise HTTPException(
-            status_code=404,
-            detail="レシピが見つかりません。",
-        )
-
-    if is_favorite:
-        message = (
-            "お気に入りに登録しました。"
-        )
-    else:
-        message = (
-            "お気に入りを解除しました。"
-        )
-
-    parameters = urlencode({
-        "message": message,
-    })
-
-    return RedirectResponse(
-        url=f"/recipes?{parameters}",
-        status_code=303,
     )
 
 
@@ -475,4 +560,50 @@ def show_recipe_detail(
             "recipe": recipe,
             "message": message,
         },
+    )
+
+
+@router.post("/{recipe_id}/favorite")
+def update_recipe_favorite_from_list(
+    recipe_id: int,
+    is_favorite: bool = Form(...),
+    favorite_only: bool = Form(False),
+    cuisine_type: str = Form(""),
+    dish_category: str = Form(""),
+    ingredient_keyword: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    """一覧画面からお気に入り状態を更新する。"""
+    updated_recipe = update_recipe_favorite(
+        db=db,
+        recipe_id=recipe_id,
+        is_favorite=is_favorite,
+    )
+
+    if updated_recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    if is_favorite:
+        message = (
+            "お気に入りに登録しました。"
+        )
+    else:
+        message = (
+            "お気に入りを解除しました。"
+        )
+
+    return RedirectResponse(
+        url=build_recipe_list_url(
+            message=message,
+            favorite_only=favorite_only,
+            cuisine_type=cuisine_type,
+            dish_category=dish_category,
+            ingredient_keyword=(
+                ingredient_keyword
+            ),
+        ),
+        status_code=303,
     )

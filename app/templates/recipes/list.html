@@ -38,6 +38,160 @@
         </p>
     {% endif %}
 
+    <section class="recipe-filter-panel">
+        <h3>レシピを絞り込む</h3>
+
+        <form
+            action="/recipes"
+            method="get"
+            class="recipe-filter-form"
+            autocomplete="off"
+        >
+            <div class="recipe-filter-grid">
+                <div class="form-group">
+                    <label for="recipe-cuisine-filter">
+                        料理系統
+                    </label>
+
+                    <select
+                        id="recipe-cuisine-filter"
+                        name="cuisine_type"
+                    >
+                        <option value="">
+                            すべて
+                        </option>
+
+                        {% for option in cuisine_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_cuisine_type == option %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-category-filter">
+                        区分
+                    </label>
+
+                    <select
+                        id="recipe-category-filter"
+                        name="dish_category"
+                    >
+                        <option value="">
+                            すべて
+                        </option>
+
+                        {% for option in dish_category_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_dish_category == option %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-ingredient-filter">
+                        使用材料
+                    </label>
+
+                    <input
+                        type="text"
+                        id="recipe-ingredient-filter"
+                        name="ingredient_keyword"
+                        value="{{ ingredient_keyword }}"
+                        list="recipe-ingredient-filter-options"
+                        maxlength="100"
+                        placeholder="候補から選択または入力"
+                    >
+
+                    <datalist
+                        id="recipe-ingredient-filter-options"
+                    >
+                        {% for ingredient in ingredient_candidates %}
+                            <option
+                                value="{{ ingredient.name }}"
+                            ></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+            </div>
+
+            <label class="recipe-filter-checkbox">
+                <input
+                    type="checkbox"
+                    name="favorite_only"
+                    value="true"
+                    {% if favorite_only %}
+                        checked
+                    {% endif %}
+                >
+                お気に入りのみ表示
+            </label>
+
+            <div class="recipe-filter-actions">
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    絞り込む
+                </button>
+
+                <a
+                    href="/recipes"
+                    class="secondary-button"
+                >
+                    条件をすべてクリア
+                </a>
+            </div>
+        </form>
+    </section>
+
+    {% if has_filters %}
+        <section class="recipe-active-filters">
+            <h3>適用中の条件</h3>
+
+            <ul>
+                {% if favorite_only %}
+                    <li>
+                        お気に入りのみ
+                    </li>
+                {% endif %}
+
+                {% if selected_cuisine_type %}
+                    <li>
+                        料理系統：
+                        {{ selected_cuisine_type }}
+                    </li>
+                {% endif %}
+
+                {% if selected_dish_category %}
+                    <li>
+                        区分：
+                        {{ selected_dish_category }}
+                    </li>
+                {% endif %}
+
+                {% if ingredient_keyword %}
+                    <li>
+                        使用材料：
+                        {{ ingredient_keyword }}
+                    </li>
+                {% endif %}
+            </ul>
+        </section>
+    {% endif %}
+
     {% if recipes %}
         <table class="recipe-list-table">
             <thead>
@@ -68,6 +222,30 @@
                                     value="{% if recipe.is_favorite %}false{% else %}true{% endif %}"
                                 >
 
+                                <input
+                                    type="hidden"
+                                    name="favorite_only"
+                                    value="{% if favorite_only %}true{% else %}false{% endif %}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="cuisine_type"
+                                    value="{{ selected_cuisine_type }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="dish_category"
+                                    value="{{ selected_dish_category }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="ingredient_keyword"
+                                    value="{{ ingredient_keyword }}"
+                                >
+
                                 <button
                                     type="submit"
                                     class="recipe-favorite-button{% if recipe.is_favorite %} active{% endif %}"
@@ -87,7 +265,9 @@
                         </td>
 
                         <td class="recipe-name">
-                            <a href="/recipes/{{ recipe.id }}">
+                            <a
+                                href="/recipes/{{ recipe.id }}"
+                            >
                                 {{ recipe.name }}
                             </a>
                         </td>
@@ -117,9 +297,29 @@
         </table>
     {% else %}
         <div class="empty-state">
-            <p>
-                登録されているレシピはありません。
-            </p>
+            {% if has_filters %}
+                <p>
+                    条件に一致するレシピはありません。
+                </p>
+
+                <a
+                    href="/recipes"
+                    class="secondary-button"
+                >
+                    条件をすべてクリア
+                </a>
+            {% else %}
+                <p>
+                    登録されているレシピはありません。
+                </p>
+
+                <a
+                    href="/recipes/new"
+                    class="primary-button"
+                >
+                    新しいレシピを登録
+                </a>
+            {% endif %}
         </div>
     {% endif %}
 </div>

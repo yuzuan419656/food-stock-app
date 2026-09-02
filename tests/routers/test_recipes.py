@@ -11,7 +11,13 @@ from app.crud.recipe import (
     create_recipe,
 )
 from app.models.ingredient import Ingredient
-
+from app.models.recipe_ingredient import (
+    RecipeIngredient,
+)
+from urllib.parse import (
+    parse_qs,
+    urlparse,
+)
 
 def _create_recipe(
     name: str,
@@ -1213,3 +1219,160 @@ def test_recipe_delete_returns_404_when_unavailable(
         post_missing_response.status_code
         == 404
     )
+
+
+def test_recipe_list_can_be_filtered(
+    client: TestClient,
+    db_session: Session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+
+    matching_recipe = _create_recipe(
+        name="条件一致レシピ",
+        is_favorite=True,
+    )
+    matching_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+        )
+    ]
+
+    not_favorite_recipe = _create_recipe(
+        name="お気に入りではないレシピ",
+    )
+    not_favorite_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+        )
+    ]
+
+    western_recipe = _create_recipe(
+        name="洋食レシピ",
+        is_favorite=True,
+    )
+    western_recipe.cuisine_type = "洋食"
+    western_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+        )
+    ]
+
+    db_session.add_all([
+        matching_recipe,
+        not_favorite_recipe,
+        western_recipe,
+    ])
+    db_session.commit()
+
+    response = client.get(
+        "/recipes",
+        params={
+            "favorite_only": "true",
+            "cuisine_type": "和食",
+            "dish_category": "主菜",
+            "ingredient_keyword": "玉ねぎ",
+        },
+    )
+
+    assert response.status_code == 200
+    assert "条件一致レシピ" in response.text
+    assert (
+        "お気に入りではないレシピ"
+        not in response.text
+    )
+    assert "洋食レシピ" not in response.text
+
+    assert "適用中の条件" in response.text
+    assert "お気に入りのみ" in response.text
+    assert "料理系統：" in response.text
+    assert "使用材料：" in response.text
+
+
+def test_recipe_list_displays_no_filter_results(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(
+        name="登録済みレシピ",
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    response = client.get(
+        "/recipes",
+        params={
+            "ingredient_keyword": (
+                "存在しない食材"
+            ),
+        },
+    )
+
+    assert response.status_code == 200
+    assert (
+        "条件に一致するレシピはありません。"
+        in response.text
+    )
+    assert (
+        "登録されているレシピはありません。"
+        not in response.text
+    )
+
+
+def test_favorite_toggle_preserves_recipe_filters(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(
+        name="お気に入り確認",
+    )
+    db_session.add(recipe)
+    db_session.commit()
+
+    recipe_id = recipe.id
+
+    response = client.post(
+        f"/recipes/{recipe_id}/favorite",
+        data={
+            "is_favorite": "true",
+            "favorite_only": "true",
+            "cuisine_type": "和食",
+            "dish_category": "主菜",
+            "ingredient_keyword": "玉ねぎ",
+        },
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+
+    parsed_url = urlparse(
+        response.headers["location"]
+    )
+    parameters = parse_qs(
+        parsed_url.query
+    )
+
+    assert parsed_url.path == "/recipes"
+    assert parameters["favorite_only"] == [
+        "true"
+    ]
+    assert parameters["cuisine_type"] == [
+        "和食"
+    ]
+    assert parameters["dish_category"] == [
+        "主菜"
+    ]
+    assert parameters[
+        "ingredient_keyword"
+    ] == [
+        "玉ねぎ"
+    ]
