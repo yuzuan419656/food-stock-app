@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 from datetime import datetime
 
+from sqlalchemy import or_
 from sqlalchemy.orm import (
     Session,
     selectinload,
@@ -12,6 +13,9 @@ from app.models.recipe_ingredient import (
     RecipeIngredient,
 )
 from app.models.recipe_step import RecipeStep
+from app.utils.ingredient_name import (
+    create_search_keywords,
+)
 
 
 @dataclass(frozen=True)
@@ -39,11 +43,16 @@ class RecipeStepInput:
 def get_recipes(
     db: Session,
     include_inactive: bool = False,
+    favorite_only: bool = False,
+    cuisine_type: str = "",
+    dish_category: str = "",
+    ingredient_keyword: str = "",
 ) -> list[Recipe]:
     """
     レシピ一覧を材料・食材・手順と一緒に取得する。
 
     通常は有効なレシピだけを取得する。
+    指定された条件はANDで適用する。
     """
     query = (
         db.query(Recipe)
@@ -62,6 +71,55 @@ def get_recipes(
     if not include_inactive:
         query = query.filter(
             Recipe.is_active.is_(True)
+        )
+
+    if favorite_only:
+        query = query.filter(
+            Recipe.is_favorite.is_(True)
+        )
+
+    normalized_cuisine_type = (
+        cuisine_type.strip()
+    )
+
+    if normalized_cuisine_type:
+        query = query.filter(
+            Recipe.cuisine_type
+            == normalized_cuisine_type
+        )
+
+    normalized_dish_category = (
+        dish_category.strip()
+    )
+
+    if normalized_dish_category:
+        query = query.filter(
+            Recipe.dish_category
+            == normalized_dish_category
+        )
+
+    ingredient_keywords = (
+        create_search_keywords(
+            ingredient_keyword
+        )
+    )
+
+    if ingredient_keywords:
+        query = query.filter(
+            Recipe.ingredients.any(
+                RecipeIngredient
+                .ingredient.has(
+                    or_(
+                        *[
+                            Ingredient.name.contains(
+                                keyword
+                            )
+                            for keyword
+                            in ingredient_keywords
+                        ]
+                    )
+                )
+            )
         )
 
     return (

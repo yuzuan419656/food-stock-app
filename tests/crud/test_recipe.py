@@ -1141,3 +1141,219 @@ def test_update_recipe_favorite(
         )
         is None
     )
+
+
+def test_get_recipes_filters_favorites(
+    db_session,
+):
+    favorite_recipe = _create_recipe(
+        name="お気に入りレシピ",
+    )
+    favorite_recipe.is_favorite = True
+
+    normal_recipe = _create_recipe(
+        name="通常レシピ",
+    )
+
+    db_session.add_all([
+        favorite_recipe,
+        normal_recipe,
+    ])
+    db_session.commit()
+
+    recipes = get_recipes(
+        db=db_session,
+        favorite_only=True,
+    )
+
+    assert [
+        recipe.name
+        for recipe in recipes
+    ] == [
+        "お気に入りレシピ",
+    ]
+
+
+def test_get_recipes_filters_cuisine_and_category(
+    db_session,
+):
+    japanese_main = _create_recipe(
+        name="和食の主菜",
+    )
+
+    japanese_side = _create_recipe(
+        name="和食の副菜",
+    )
+    japanese_side.dish_category = "副菜"
+
+    western_main = _create_recipe(
+        name="洋食の主菜",
+    )
+    western_main.cuisine_type = "洋食"
+
+    db_session.add_all([
+        japanese_main,
+        japanese_side,
+        western_main,
+    ])
+    db_session.commit()
+
+    recipes = get_recipes(
+        db=db_session,
+        cuisine_type=" 和食 ",
+        dish_category=" 主菜 ",
+    )
+
+    assert [
+        recipe.name
+        for recipe in recipes
+    ] == [
+        "和食の主菜",
+    ]
+
+
+def test_get_recipes_filters_by_ingredient_name(
+    db_session,
+):
+    onion = Ingredient(
+        name="タマネギ",
+        category="野菜",
+        default_unit="個",
+    )
+    potato = Ingredient(
+        name="じゃがいも",
+        category="野菜",
+        default_unit="個",
+    )
+
+    onion_recipe = _create_recipe(
+        name="オニオンスープ",
+    )
+    onion_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+            display_order=1,
+        )
+    ]
+
+    potato_recipe = _create_recipe(
+        name="ポテトサラダ",
+    )
+    potato_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=potato,
+            quantity=2,
+            unit="個",
+            display_order=1,
+        )
+    ]
+
+    db_session.add_all([
+        onion_recipe,
+        potato_recipe,
+    ])
+    db_session.commit()
+
+    recipes = get_recipes(
+        db=db_session,
+        ingredient_keyword="たま",
+    )
+
+    assert [
+        recipe.name
+        for recipe in recipes
+    ] == [
+        "オニオンスープ",
+    ]
+
+
+def test_get_recipes_combines_filter_conditions(
+    db_session,
+):
+    onion = Ingredient(
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+    )
+    potato = Ingredient(
+        name="じゃがいも",
+        category="野菜",
+        default_unit="個",
+    )
+
+    matching_recipe = _create_recipe(
+        name="条件一致レシピ",
+    )
+    matching_recipe.is_favorite = True
+    matching_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+            display_order=1,
+        )
+    ]
+
+    not_favorite_recipe = _create_recipe(
+        name="お気に入りではないレシピ",
+    )
+    not_favorite_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+            display_order=1,
+        )
+    ]
+
+    wrong_ingredient_recipe = _create_recipe(
+        name="材料が異なるレシピ",
+    )
+    wrong_ingredient_recipe.is_favorite = True
+    wrong_ingredient_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=potato,
+            quantity=1,
+            unit="個",
+            display_order=1,
+        )
+    ]
+
+    wrong_category_recipe = _create_recipe(
+        name="区分が異なるレシピ",
+    )
+    wrong_category_recipe.is_favorite = True
+    wrong_category_recipe.dish_category = "副菜"
+    wrong_category_recipe.ingredients = [
+        RecipeIngredient(
+            ingredient=onion,
+            quantity=1,
+            unit="個",
+            display_order=1,
+        )
+    ]
+
+    db_session.add_all([
+        matching_recipe,
+        not_favorite_recipe,
+        wrong_ingredient_recipe,
+        wrong_category_recipe,
+    ])
+    db_session.commit()
+
+    recipes = get_recipes(
+        db=db_session,
+        favorite_only=True,
+        cuisine_type="和食",
+        dish_category="主菜",
+        ingredient_keyword="玉ねぎ",
+    )
+
+    assert [
+        recipe.name
+        for recipe in recipes
+    ] == [
+        "条件一致レシピ",
+    ]
