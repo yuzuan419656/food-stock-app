@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}
+レシピ一覧
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-list-header">
+        <div>
+            <h2>レシピ一覧</h2>
+
+            <p>
+                登録されているレシピを確認できます。
+            </p>
+        </div>
+
+        <div class="recipe-list-header-actions">
+            <a
+                href="/recipes/new"
+                class="primary-button"
+            >
+                新しいレシピを登録
+            </a>
+
+            <a
+                href="/"
+                class="secondary-button"
+            >
+                在庫一覧へ戻る
+            </a>
+        </div>
+    </div>
+
+    {% if message %}
+        <p class="success-message">
+            {{ message }}
+        </p>
+    {% endif %}
+
+    <section class="recipe-filter-panel">
+        <h3>レシピを絞り込む</h3>
+
+        <form
+            action="/recipes"
+            method="get"
+            class="recipe-filter-form"
+            autocomplete="off"
+        >
+            <div class="recipe-filter-grid">
+                <div class="form-group">
+                    <label for="recipe-cuisine-filter">
+                        料理系統
+                    </label>
+
+                    <select
+                        id="recipe-cuisine-filter"
+                        name="cuisine_type"
+                    >
+                        <option value="">
+                            すべて
+                        </option>
+
+                        {% for option in cuisine_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_cuisine_type == option %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-category-filter">
+                        区分
+                    </label>
+
+                    <select
+                        id="recipe-category-filter"
+                        name="dish_category"
+                    >
+                        <option value="">
+                            すべて
+                        </option>
+
+                        {% for option in dish_category_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_dish_category == option %}
+                                    selected
+                                {% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recipe-ingredient-filter">
+                        使用材料
+                    </label>
+
+                    <input
+                        type="text"
+                        id="recipe-ingredient-filter"
+                        name="ingredient_keyword"
+                        value="{{ ingredient_keyword }}"
+                        list="recipe-ingredient-filter-options"
+                        maxlength="100"
+                        placeholder="候補から選択または入力"
+                    >
+
+                    <datalist
+                        id="recipe-ingredient-filter-options"
+                    >
+                        {% for ingredient in ingredient_candidates %}
+                            <option
+                                value="{{ ingredient.name }}"
+                            ></option>
+                        {% endfor %}
+                    </datalist>
+                </div>
+            </div>
+
+            <label class="recipe-filter-checkbox">
+                <input
+                    type="checkbox"
+                    name="favorite_only"
+                    value="true"
+                    {% if favorite_only %}
+                        checked
+                    {% endif %}
+                >
+                お気に入りのみ表示
+            </label>
+
+            <div class="recipe-filter-actions">
+                <button
+                    type="submit"
+                    class="primary-button"
+                >
+                    絞り込む
+                </button>
+
+                <a
+                    href="/recipes"
+                    class="secondary-button"
+                >
+                    条件をすべてクリア
+                </a>
+            </div>
+        </form>
+    </section>
+
+    {% if has_filters %}
+        <section class="recipe-active-filters">
+            <h3>適用中の条件</h3>
+
+            <ul>
+                {% if favorite_only %}
+                    <li>
+                        お気に入りのみ
+                    </li>
+                {% endif %}
+
+                {% if selected_cuisine_type %}
+                    <li>
+                        料理系統：
+                        {{ selected_cuisine_type }}
+                    </li>
+                {% endif %}
+
+                {% if selected_dish_category %}
+                    <li>
+                        区分：
+                        {{ selected_dish_category }}
+                    </li>
+                {% endif %}
+
+                {% if ingredient_keyword %}
+                    <li>
+                        使用材料：
+                        {{ ingredient_keyword }}
+                    </li>
+                {% endif %}
+            </ul>
+        </section>
+    {% endif %}
+
+    {% if recipes %}
+        <table class="recipe-list-table">
+            <thead>
+                <tr>
+                    <th class="recipe-favorite-column">
+                        お気に入り
+                    </th>
+                    <th>レシピ名</th>
+                    <th>料理系統</th>
+                    <th>区分</th>
+                    <th>所要時間</th>
+                    <th>基準量</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for recipe in recipes %}
+                    <tr>
+                        <td class="recipe-favorite-column">
+                            <form
+                                action="/recipes/{{ recipe.id }}/favorite"
+                                method="post"
+                                class="recipe-favorite-form"
+                            >
+                                <input
+                                    type="hidden"
+                                    name="is_favorite"
+                                    value="{% if recipe.is_favorite %}false{% else %}true{% endif %}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="favorite_only"
+                                    value="{% if favorite_only %}true{% else %}false{% endif %}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="cuisine_type"
+                                    value="{{ selected_cuisine_type }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="dish_category"
+                                    value="{{ selected_dish_category }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="ingredient_keyword"
+                                    value="{{ ingredient_keyword }}"
+                                >
+
+                                <button
+                                    type="submit"
+                                    class="recipe-favorite-button{% if recipe.is_favorite %} active{% endif %}"
+                                    aria-pressed="{% if recipe.is_favorite %}true{% else %}false{% endif %}"
+                                    aria-label="{% if recipe.is_favorite %}お気に入りを解除{% else %}お気に入りに追加{% endif %}"
+                                    title="{% if recipe.is_favorite %}お気に入りを解除{% else %}お気に入りに追加{% endif %}"
+                                >
+                                    <span aria-hidden="true">
+                                        {% if recipe.is_favorite %}
+                                            ★
+                                        {% else %}
+                                            ☆
+                                        {% endif %}
+                                    </span>
+                                </button>
+                            </form>
+                        </td>
+
+                        <td class="recipe-name">
+                            <a
+                                href="/recipes/{{ recipe.id }}"
+                            >
+                                {{ recipe.name }}
+                            </a>
+                        </td>
+
+                        <td>
+                            {{ recipe.cuisine_type }}
+                        </td>
+
+                        <td>
+                            {{ recipe.dish_category }}
+                        </td>
+
+                        <td>
+                            {{ recipe.cooking_time_minutes }}分
+                        </td>
+
+                        <td>
+                            {% if recipe.yield_type == "servings" %}
+                                {{ recipe.base_servings }}人分
+                            {% else %}
+                                {{ recipe.fixed_yield_text }}
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <div class="empty-state">
+            {% if has_filters %}
+                <p>
+                    条件に一致するレシピはありません。
+                </p>
+
+                <a
+                    href="/recipes"
+                    class="secondary-button"
+                >
+                    条件をすべてクリア
+                </a>
+            {% else %}
+                <p>
+                    登録されているレシピはありません。
+                </p>
+
+                <a
+                    href="/recipes/new"
+                    class="primary-button"
+                >
+                    新しいレシピを登録
+                </a>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

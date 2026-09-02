@@ -2,7 +2,11 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>食材在庫管理アプリ</title>
+    <title>
+        {% block title %}
+            食材在庫管理アプリ
+        {% endblock %}
+    </title>
     <link
         rel="stylesheet"
         href="{{ url_for('static', path='css/style.css') }}"
@@ -11,6 +15,23 @@
 <body>
     <header>
         <h1>食材在庫管理アプリ</h1>
+
+        <nav
+            class="main-navigation"
+            aria-label="メインメニュー"
+        >
+            <a href="/">
+                在庫一覧
+            </a>
+
+            <a href="/recipes">
+                レシピ一覧
+            </a>
+
+            <a href="/shopping-list">
+                買うものリスト
+            </a>
+        </nav>
     </header>
 
     <main>

@@ -1007,3 +1007,557 @@ a.quantity-button:visited {
         flex-direction: column;
     }
 }
+
+/* レシピ一覧 */
+
+.recipe-list-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.recipe-list-header h2 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.recipe-list-header p {
+    margin: 0;
+    color: #666;
+}
+
+.recipe-list-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.recipe-list-table {
+    margin-top: 16px;
+}
+
+.recipe-name {
+    font-weight: bold;
+}
+
+.recipe-favorite-column {
+    width: 90px;
+    text-align: center;
+}
+
+.recipe-favorite-mark {
+    color: #f5a623;
+    font-size: 20px;
+}
+
+/* 共通ナビゲーション */
+
+.main-navigation {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.main-navigation a {
+    display: inline-block;
+    margin: 0;
+    padding: 8px 14px;
+    border: 1px solid #999;
+    border-radius: 4px;
+    background-color: #fff;
+    color: #333;
+    text-decoration: none;
+}
+
+.main-navigation a:hover {
+    background-color: #f0f0f0;
+}
+
+.main-navigation a:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+}
+
+/* レシピ詳細 */
+
+.recipe-detail-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.recipe-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recipe-title-row h2 {
+    margin: 0;
+}
+
+.recipe-detail-header p {
+    margin-bottom: 0;
+    color: #666;
+}
+
+.recipe-detail-header-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.recipe-summary,
+.recipe-detail-section {
+    margin-top: 28px;
+}
+
+.recipe-summary-list {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(160px, 1fr));
+    gap: 12px;
+}
+
+.recipe-summary-list div {
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fafafa;
+}
+
+.recipe-summary-list dt {
+    margin-bottom: 6px;
+    color: #666;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.recipe-summary-list dd {
+    margin: 0;
+}
+
+.recipe-step-list {
+    padding-left: 28px;
+}
+
+.recipe-step-list li {
+    margin-bottom: 12px;
+    padding-left: 4px;
+    line-height: 1.6;
+}
+
+/* レシピ登録フォーム */
+
+.recipe-form-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 24px;
+    margin-bottom: 24px;
+}
+
+.recipe-form-header h2 {
+    margin-top: 0;
+    margin-bottom: 8px;
+}
+
+.recipe-form-header p {
+    margin: 0;
+    color: #666;
+}
+
+.recipe-form {
+    max-width: 1100px;
+}
+
+.recipe-form-section {
+    margin-bottom: 28px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.recipe-form-section h3 {
+    margin-top: 0;
+}
+
+.recipe-form-section-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.recipe-form-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+}
+
+.recipe-form .form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.recipe-form input[type="text"],
+.recipe-form input[type="number"],
+.recipe-form select,
+.recipe-form textarea {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 8px;
+}
+
+.recipe-yield-fields {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 16px;
+    margin-top: 16px;
+    padding: 16px;
+}
+
+.recipe-yield-fields .form-group {
+    min-width: 180px;
+}
+
+.required-label {
+    color: #c62828;
+    font-size: 12px;
+}
+
+.recipe-checkbox-label {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin: 8px 16px 8px 0;
+}
+
+.recipe-ingredient-row {
+    padding: 14px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.recipe-ingredient-main-fields {
+    display: grid;
+    grid-template-columns:
+        minmax(220px, 1.4fr)
+        minmax(160px, 0.8fr)
+        minmax(170px, 0.8fr)
+        minmax(220px, 1.2fr);
+    align-items: end;
+    gap: 14px;
+    width: 100%;
+    min-width: 0;
+}
+
+.new-recipe-ingredient-fields {
+    max-width: 520px;
+    margin-top: 16px;
+    padding: 14px;
+    border: 1px solid #e0c36e;
+    border-radius: 4px;
+    background-color: #fff8dc;
+}
+
+.new-ingredient-guidance {
+    margin-top: 0;
+    color: #665200;
+}
+
+.recipe-step-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background-color: #fff;
+}
+
+.recipe-step-row .form-group {
+    flex: 1;
+}
+
+.recipe-step-number {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: #555;
+    color: #fff;
+    font-weight: bold;
+}
+
+.recipe-form-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.recipe-form-help {
+    color: #666;
+    font-size: 13px;
+}
+
+.recipe-ingredient-main-fields
+.recipe-checkbox-label {
+    font-size: 13px;
+}
+
+.recipe-ingredient-main-fields
+input,
+.recipe-ingredient-main-fields
+select {
+    min-width: 0;
+    padding: 7px 6px;
+}
+
+.recipe-ingredient-main-fields
+.option-field {
+    min-width: 0;
+}
+
+.recipe-ingredient-main-fields
+.custom-option-field {
+    min-width: 0;
+    margin-top: 6px;
+}
+
+.recipe-ingredient-main-fields
+.custom-option-field input {
+    width: 100%;
+}
+
+#recipe-ingredient-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.recipe-repeating-row-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    margin-bottom: 14px;
+}
+
+.recipe-repeating-row-header h4 {
+    margin: 0;
+}
+
+.recipe-repeating-row-header
+.delete-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#add-ingredient-row {
+    margin: 0;
+}
+
+/* レシピ手順の複数行入力 */
+
+#recipe-step-rows {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+#add-step-row {
+    margin: 0;
+}
+
+.recipe-step-row
+.delete-button {
+    flex-shrink: 0;
+    align-self: center;
+}
+
+.recipe-step-row
+.delete-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.recipe-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+}
+
+.recipe-row-actions button {
+    margin: 0;
+    white-space: nowrap;
+}
+
+.recipe-step-row .recipe-row-actions {
+    align-self: end;
+}
+
+.recipe-favorite-form {
+    margin: 0;
+}
+
+.recipe-favorite-button {
+    margin: 0;
+    padding: 4px 8px;
+    border: none;
+    background: transparent;
+    color: #999;
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+.recipe-favorite-button:hover {
+    background: transparent;
+    color: #666;
+}
+
+.recipe-favorite-button.active {
+    background: transparent;
+    color: #f5a623;
+}
+
+.recipe-favorite-button.active:hover {
+    color: #d98c00;
+}
+
+.recipe-favorite-button:focus-visible {
+    border-radius: 4px;
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+}
+
+.recipe-delete-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 8px 14px;
+    color: #fff;
+    text-decoration: none;
+}
+
+.recipe-delete-link:link,
+.recipe-delete-link:visited {
+    color: #fff;
+    text-decoration: none;
+}
+
+.recipe-delete-link:hover {
+    color: #fff;
+    text-decoration: none;
+}
+
+.recipe-delete-confirmation {
+    max-width: 760px;
+}
+
+.recipe-delete-confirmation h2 {
+    margin-top: 0;
+}
+
+.recipe-delete-summary {
+    margin: 24px 0;
+}
+
+.recipe-delete-summary th {
+    width: 180px;
+}
+
+.recipe-delete-form {
+    margin-top: 24px;
+}
+
+.recipe-filter-panel {
+    margin: 24px 0;
+    padding: 18px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.recipe-filter-panel h3 {
+    margin-top: 0;
+}
+
+.recipe-filter-form {
+    margin: 0;
+}
+
+.recipe-filter-grid {
+    display: grid;
+    grid-template-columns:
+        repeat(3, minmax(180px, 1fr));
+    gap: 16px;
+}
+
+.recipe-filter-grid .form-group {
+    margin-bottom: 0;
+}
+
+.recipe-filter-grid select,
+.recipe-filter-grid input {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.recipe-filter-checkbox {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.recipe-filter-checkbox input {
+    width: auto;
+    margin: 0;
+}
+
+.recipe-filter-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 16px;
+}
+
+.recipe-active-filters {
+    margin-bottom: 20px;
+    padding: 14px 18px;
+    border-left: 4px solid #4f7cac;
+    background-color: #f3f7fb;
+}
+
+.recipe-active-filters h3 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    font-size: 16px;
+}
+
+.recipe-active-filters ul {
+    margin: 0;
+    padding-left: 20px;
+}
+
+@media (max-width: 800px) {
+    .recipe-filter-grid {
+        grid-template-columns: 1fr;
+    }
+}

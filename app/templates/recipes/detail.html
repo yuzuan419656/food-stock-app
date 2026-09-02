@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block title %}
+{{ recipe.name }}
+{% endblock %}
+
+{% block content %}
+{% if message %}
+    <p class="success-message">
+        {{ message }}
+    </p>
+{% endif %}
+
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <div class="recipe-title-row">
+                <h2>{{ recipe.name }}</h2>
+
+                {% if recipe.is_favorite %}
+                    <span
+                        class="recipe-favorite-mark"
+                        aria-label="お気に入り"
+                    >
+                        ★
+                    </span>
+                {% endif %}
+            </div>
+
+            <p>
+                レシピの材料と調理手順を確認できます。
+            </p>
+        </div>
+
+        <div class="recipe-detail-header-actions">
+            <a
+                href="/recipes/{{ recipe.id }}/edit"
+                class="primary-button"
+            >
+                編集
+            </a>
+
+            <a
+                href="/recipes/{{ recipe.id }}/delete"
+                class="danger-button recipe-delete-link"
+            >
+                削除
+            </a>
+
+            <a
+                href="/recipes"
+                class="secondary-button"
+            >
+                レシピ一覧へ戻る
+            </a>
+        </div>
+    </div>
+
+    <section class="recipe-summary">
+        <h3>基本情報</h3>
+
+        <dl class="recipe-summary-list">
+            <div>
+                <dt>料理系統</dt>
+                <dd>{{ recipe.cuisine_type }}</dd>
+            </div>
+
+            <div>
+                <dt>区分</dt>
+                <dd>{{ recipe.dish_category }}</dd>
+            </div>
+
+            <div>
+                <dt>所要時間</dt>
+                <dd>
+                    {{ recipe.cooking_time_minutes }}分
+                </dd>
+            </div>
+
+            <div>
+                <dt>基準量</dt>
+                <dd>
+                    {% if recipe.yield_type == "servings" %}
+                        {{ recipe.base_servings }}人分
+                    {% else %}
+                        {{ recipe.fixed_yield_text }}
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="recipe-detail-section">
+        <h3>材料</h3>
+
+        <table class="recipe-ingredient-table">
+            <thead>
+                <tr>
+                    <th>材料名</th>
+                    <th>数量</th>
+                    <th>区分</th>
+                    <th>備考</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for item in recipe.ingredients %}
+                    <tr>
+                        <td>
+                            {{ item.ingredient.name }}
+                        </td>
+
+                        <td>
+                            {% if item.quantity is not none %}
+                                {{ "%g" | format(item.quantity) }}
+                                {{ item.unit }}
+                            {% else %}
+                                {{ item.quantity_text }}
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {% if item.is_seasoning %}
+                                調味料
+                            {% elif not item.is_inventory_consumed %}
+                                在庫減算なし
+                            {% else %}
+                                在庫から減算
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ item.notes or "―" }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </section>
+
+    <section class="recipe-detail-section">
+        <h3>調理手順</h3>
+
+        <ol class="recipe-step-list">
+            {% for step in recipe.steps %}
+                <li>
+                    {{ step.description }}
+                </li>
+            {% endfor %}
+        </ol>
+    </section>
+</div>
+{% endblock %}
