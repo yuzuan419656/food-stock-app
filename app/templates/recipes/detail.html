@@ -215,6 +215,68 @@
     </section>
 
     <section class="recipe-detail-section">
+        <h3>在庫状況</h3>
+
+        <div class="recipe-inventory-list">
+            {% for item in inventory_statuses %}
+                <article class="recipe-inventory-item recipe-inventory-{{ item.status }}">
+                    <h4>{{ item.recipe_ingredient.ingredient.name }}</h4>
+
+                    <dl>
+                        <div>
+                            <dt>必要量</dt>
+                            <dd>
+                                {{ item.display_required_quantity }}{% if item.recipe_ingredient.quantity is not none %}{{ item.recipe_ingredient.unit }}{% endif %}
+                            </dd>
+                        </div>
+
+                        {% if item.is_automatically_checkable %}
+                            <div>
+                                <dt>在庫</dt>
+                                <dd>{{ item.display_inventory_quantity }}{{ item.recipe_ingredient.unit }}</dd>
+                            </div>
+
+                            {% if item.status == "shortage" %}
+                                <div>
+                                    <dt>不足</dt>
+                                    <dd>{{ item.display_shortage_quantity }}{{ item.recipe_ingredient.unit }}</dd>
+                                </div>
+                            {% endif %}
+
+                            <div>
+                                <dt>単位</dt>
+                                <dd>一致</dd>
+                            </div>
+                        {% elif item.status == "unit_mismatch" %}
+                            <div>
+                                <dt>単位</dt>
+                                <dd>
+                                    不一致（レシピ：{{ item.recipe_ingredient.unit }}／在庫：{{ item.recipe_ingredient.ingredient.default_unit or "未設定" }}）
+                                </dd>
+                            </div>
+                        {% endif %}
+
+                        <div>
+                            <dt>状態</dt>
+                            <dd>
+                                {% if item.status == "sufficient" %}
+                                    在庫あり
+                                {% elif item.status == "shortage" %}
+                                    不足
+                                {% elif item.status == "unit_mismatch" %}
+                                    自動判定不可
+                                {% else %}
+                                    在庫判定対象外
+                                {% endif %}
+                            </dd>
+                        </div>
+                    </dl>
+                </article>
+            {% endfor %}
+        </div>
+    </section>
+
+    <section class="recipe-detail-section">
         <h3>調理手順</h3>
 
         <ol class="recipe-step-list">

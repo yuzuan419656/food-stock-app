@@ -44,6 +44,9 @@ from app.services.recipe_registration import (
 from app.services.recipe_serving import (
     build_scaled_recipe_ingredients,
 )
+from app.services.recipe_inventory import (
+    build_recipe_inventory_statuses,
+)
 
 
 router = APIRouter(
@@ -580,6 +583,13 @@ def show_recipe_detail(
             )
         )
 
+    inventory_statuses = (
+        build_recipe_inventory_statuses(
+            recipe=recipe,
+            target_servings=selected_servings,
+        )
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="recipes/detail.html",
@@ -591,6 +601,9 @@ def show_recipe_detail(
             ),
             "display_ingredients": (
                 display_ingredients
+            ),
+            "inventory_statuses": (
+                inventory_statuses
             ),
         },
     )
