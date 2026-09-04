@@ -26,6 +26,7 @@ from app.crud.ingredient import get_ingredients
 from app.crud.cooking_history import (
     get_cooking_histories,
     get_cooking_history_by_id,
+    get_latest_undoable_cooking_history,
 )
 from app.crud.recipe import (
     delete_recipe,
@@ -54,6 +55,16 @@ from app.services.recipe_inventory import (
 from app.services.recipe_consumption import (
     build_recipe_consumption_plan,
     consume_recipe_inventory,
+)
+from app.services.cooking_undo import (
+    CookingUndoError,
+    build_cooking_undo_plan,
+    undo_latest_cooking,
+)
+from app.services.recipe_shopping_list import (
+    add_recipe_shortages_to_shopping_list,
+    build_recipe_shopping_list_candidates,
+    select_recipe_shopping_list_candidates,
 )
 
 
@@ -552,11 +563,21 @@ def list_cooking_histories(
 ):
     """調理履歴を新しい順に表示する。"""
     histories = get_cooking_histories(db=db)
+    undoable_history = (
+        get_latest_undoable_cooking_history(db=db)
+    )
 
     return templates.TemplateResponse(
         request=request,
         name="recipes/history_list.html",
-        context={"histories": histories},
+        context={
+            "histories": histories,
+            "undoable_history_id": (
+                undoable_history.id
+                if undoable_history is not None
+                else None
+            ),
+        },
     )
 
 
@@ -564,6 +585,14 @@ def list_cooking_histories(
 def show_cooking_history_detail(
     cooking_history_id: int,
     request: Request,
+    message: str | None = Query(
+        default=None,
+        max_length=200,
+    ),
+    error_message: str | None = Query(
+        default=None,
+        max_length=200,
+    ),
     db: Session = Depends(get_db),
 ):
     """材料ごとの調理履歴を表示する。"""
@@ -578,10 +607,106 @@ def show_cooking_history_detail(
             detail="調理履歴が見つかりません。",
         )
 
+    undoable_history = (
+        get_latest_undoable_cooking_history(db=db)
+    )
+
     return templates.TemplateResponse(
         request=request,
         name="recipes/history_detail.html",
-        context={"history": history},
+        context={
+            "history": history,
+            "message": message,
+            "error_message": error_message,
+            "is_undoable": (
+                undoable_history is not None
+                and undoable_history.id == history.id
+            ),
+        },
+    )
+
+
+@router.get("/history/{cooking_history_id}/undo")
+def show_cooking_undo_confirmation(
+    cooking_history_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """直前の調理取り消し確認画面を表示する。"""
+    try:
+        result = build_cooking_undo_plan(
+            db=db,
+            cooking_history_id=cooking_history_id,
+        )
+    except CookingUndoError as error:
+        parameters = urlencode({
+            "error_message": str(error),
+        })
+        return RedirectResponse(
+            url=(
+                f"/recipes/history/{cooking_history_id}"
+                f"?{parameters}"
+            ),
+            status_code=303,
+        )
+
+    if result is None:
+        raise HTTPException(
+            status_code=404,
+            detail="調理履歴が見つかりません。",
+        )
+
+    history, undo_plan = result
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/undo_confirm.html",
+        context={
+            "history": history,
+            "undo_plan": undo_plan,
+        },
+    )
+
+
+@router.post("/history/{cooking_history_id}/undo")
+def undo_cooking(
+    cooking_history_id: int,
+    db: Session = Depends(get_db),
+):
+    """直前の調理を取り消して元ロットへ在庫を戻す。"""
+    try:
+        history = undo_latest_cooking(
+            db=db,
+            cooking_history_id=cooking_history_id,
+        )
+    except CookingUndoError as error:
+        parameters = urlencode({
+            "error_message": str(error),
+        })
+        return RedirectResponse(
+            url=(
+                f"/recipes/history/{cooking_history_id}"
+                f"?{parameters}"
+            ),
+            status_code=303,
+        )
+
+    if history is None:
+        raise HTTPException(
+            status_code=404,
+            detail="調理履歴が見つかりません。",
+        )
+
+    parameters = urlencode({
+        "message": "調理を取り消し、在庫を元に戻しました。",
+    })
+
+    return RedirectResponse(
+        url=(
+            f"/recipes/history/{history.id}"
+            f"?{parameters}"
+        ),
+        status_code=303,
     )
 
 
@@ -701,6 +826,118 @@ def cook_recipe(
     )
 
 
+@router.get("/{recipe_id}/shopping-list")
+def show_recipe_shopping_list_confirmation(
+    recipe_id: int,
+    request: Request,
+    servings: int | None = Query(
+        default=None,
+        ge=1,
+        le=100,
+    ),
+    db: Session = Depends(get_db),
+):
+    """不足食材を買うものリストへ追加する前に表示する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    selected_servings = None
+    if recipe.yield_type == "servings":
+        selected_servings = (
+            servings
+            if servings is not None
+            else recipe.base_servings
+        )
+
+    candidates = build_recipe_shopping_list_candidates(
+        recipe=recipe,
+        target_servings=selected_servings,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/shopping_list_confirm.html",
+        context={
+            "recipe": recipe,
+            "selected_servings": selected_servings,
+            "candidates": candidates,
+        },
+    )
+
+
+@router.post("/{recipe_id}/shopping-list")
+def add_recipe_shortages(
+    recipe_id: int,
+    servings: int | None = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    """現在庫で不足を再判定し、買うものリストへ追加する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    selected_servings = None
+    if recipe.yield_type == "servings":
+        selected_servings = (
+            servings
+            if servings is not None
+            else recipe.base_servings
+        )
+        if (
+            selected_servings is None
+            or not 1 <= selected_servings <= 100
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail=(
+                    "人数は1から100で指定してください。"
+                ),
+            )
+
+    result = add_recipe_shortages_to_shopping_list(
+        db=db,
+        recipe=recipe,
+        target_servings=selected_servings,
+    )
+
+    if result.candidate_count == 0:
+        message = "追加対象の不足食材はありません。"
+    elif result.added_count == 0:
+        message = (
+            "不足食材はすでに"
+            "買うものリストへ追加されています。"
+        )
+    else:
+        message = (
+            f"不足食材{result.added_count}件を"
+            "買うものリストへ追加しました。"
+        )
+
+    parameters: dict[str, str | int] = {"message": message}
+    if selected_servings is not None:
+        parameters["servings"] = selected_servings
+
+    return RedirectResponse(
+        url=f"/recipes/{recipe.id}?{urlencode(parameters)}",
+        status_code=303,
+    )
+
+
 @router.get("/{recipe_id}")
 def show_recipe_detail(
     recipe_id: int,
@@ -753,6 +990,11 @@ def show_recipe_detail(
             target_servings=selected_servings,
         )
     )
+    shopping_list_candidates = (
+        select_recipe_shopping_list_candidates(
+            inventory_statuses
+        )
+    )
 
     return templates.TemplateResponse(
         request=request,
@@ -768,6 +1010,9 @@ def show_recipe_detail(
             ),
             "inventory_statuses": (
                 inventory_statuses
+            ),
+            "has_shopping_list_candidates": bool(
+                shopping_list_candidates
             ),
         },
     )

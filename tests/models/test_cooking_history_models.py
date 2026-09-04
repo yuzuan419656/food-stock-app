@@ -74,6 +74,7 @@ def test_create_cooking_history_with_relationships(
     db_session.commit()
 
     assert history.id is not None
+    assert history.undone_at is None
     assert history.recipe is recipe
     assert len(history.ingredients) == 1
     assert len(history.ingredients[0].inventory_consumptions) == 1
@@ -82,6 +83,12 @@ def test_create_cooking_history_with_relationships(
         .inventory_consumptions[0].inventory_id
         == inventory.id
     )
+
+    undone_at = datetime(2026, 9, 4, 19, 0)
+    history.undone_at = undone_at
+    db_session.commit()
+    db_session.refresh(history)
+    assert history.undone_at == undone_at
 
 
 def test_cooking_history_rejects_missing_required_value(

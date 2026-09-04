@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.inventory import Inventory
 from app.models.cooking_history import CookingHistory
 from app.models.recipe import Recipe
+from app.models.shopping_item import ShoppingItem
 from app.crud.recipe import (
     RecipeIngredientInput,
     RecipeStepInput,
@@ -1820,3 +1821,257 @@ def test_cooking_history_detail_is_displayed(
     assert "不足量" in response.text
     assert "2個" in response.text
     assert "1個" in response.text
+
+
+def test_only_latest_history_displays_undo_action(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=5,
+    )
+    for _ in range(2):
+        client.post(
+            f"/recipes/{recipe.id}/cook",
+            data={"servings": "2"},
+            follow_redirects=False,
+        )
+    histories = (
+        db_session.query(CookingHistory)
+        .order_by(CookingHistory.id)
+        .all()
+    )
+
+    old_detail = client.get(
+        f"/recipes/history/{histories[0].id}"
+    )
+    latest_detail = client.get(
+        f"/recipes/history/{histories[1].id}"
+    )
+    history_list = client.get("/recipes/history")
+
+    assert "この調理を取り消す" not in old_detail.text
+    assert "この調理を取り消す" in latest_detail.text
+    assert history_list.text.count("この調理を取り消す") == 1
+
+
+def test_cooking_undo_confirmation_does_not_restore_inventory(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+    history = db_session.query(CookingHistory).one()
+
+    response = client.get(
+        f"/recipes/history/{history.id}/undo"
+    )
+
+    assert response.status_code == 200
+    assert "調理取り消し確認" in response.text
+    assert recipe.name in response.text
+    assert "2人分" in response.text
+    assert "復元数量" in response.text
+    assert "2個" in response.text
+    db_session.refresh(inventory)
+    assert inventory.quantity == 1
+
+
+def test_cooking_undo_post_restores_inventory_and_redirects(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+    history = db_session.query(CookingHistory).one()
+
+    response = client.post(
+        f"/recipes/history/{history.id}/undo",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"].startswith(
+        f"/recipes/history/{history.id}?"
+    )
+    db_session.refresh(inventory)
+    db_session.refresh(history)
+    assert inventory.quantity == 3
+    assert history.undone_at is not None
+
+
+def test_undone_history_does_not_display_undo_action(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+    history = db_session.query(CookingHistory).one()
+    client.post(
+        f"/recipes/history/{history.id}/undo",
+        follow_redirects=False,
+    )
+
+    detail = client.get(f"/recipes/history/{history.id}")
+    history_list = client.get("/recipes/history")
+
+    assert "取り消し済み" in detail.text
+    assert "取り消し日時" in detail.text
+    assert "この調理を取り消す" not in detail.text
+    assert "取り消し済み" in history_list.text
+    assert "この調理を取り消す" not in history_list.text
+
+
+def test_repeated_undo_post_does_not_restore_twice(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+    history = db_session.query(CookingHistory).one()
+    client.post(
+        f"/recipes/history/{history.id}/undo",
+        follow_redirects=False,
+    )
+
+    response = client.post(
+        f"/recipes/history/{history.id}/undo",
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "error_message=" in response.headers["location"]
+    db_session.refresh(inventory)
+    assert inventory.quantity == 3
+
+
+def test_recipe_detail_displays_shopping_list_button_only_for_shortage(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session, inventory_quantity=1
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+    shortage_response = client.get(f"/recipes/{recipe.id}")
+
+    inventory.quantity = 3
+    db_session.commit()
+    sufficient_response = client.get(f"/recipes/{recipe.id}")
+
+    assert (
+        "不足食材を買うものリストへ追加"
+        in shortage_response.text
+    )
+    assert (
+        "不足食材を買うものリストへ追加"
+        not in sufficient_response.text
+    )
+
+
+def test_recipe_shopping_list_confirmation_keeps_servings_without_writing(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session, inventory_quantity=1
+    )
+
+    response = client.get(
+        f"/recipes/{recipe.id}/shopping-list?servings=4"
+    )
+
+    assert response.status_code == 200
+    assert "不足食材の追加確認" in response.text
+    assert "4人分" in response.text
+    assert "3" in response.text
+    assert 'name="servings"' in response.text
+    assert 'value="4"' in response.text
+    assert db_session.query(ShoppingItem).count() == 0
+
+
+def test_recipe_shopping_list_post_adds_and_redirects(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session, inventory_quantity=0
+    )
+
+    response = client.post(
+        f"/recipes/{recipe.id}/shopping-list",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"].startswith(
+        f"/recipes/{recipe.id}?"
+    )
+    assert "message=" in response.headers["location"]
+    item = db_session.query(ShoppingItem).one()
+    assert item.ingredient_id == recipe.ingredients[0].ingredient_id
+    assert item.is_purchased is False
+
+
+def test_recipe_shopping_list_post_recalculates_current_shortage(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session, inventory_quantity=0
+    )
+    confirmation = client.get(
+        f"/recipes/{recipe.id}/shopping-list?servings=2"
+    )
+    assert "追加対象の不足食材はありません" not in confirmation.text
+
+    db_session.add(
+        Inventory(
+            ingredient_id=recipe.ingredients[0].ingredient_id,
+            quantity=2,
+            purchase_date=date(2026, 9, 2),
+        )
+    )
+    db_session.commit()
+
+    response = client.post(
+        f"/recipes/{recipe.id}/shopping-list",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert db_session.query(ShoppingItem).count() == 0

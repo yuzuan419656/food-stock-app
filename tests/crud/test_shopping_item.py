@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.crud.ingredient import create_ingredient
 from app.crud.shopping_item import (
+    add_or_reactivate_ingredients_without_commit,
     add_custom_shopping_item,
     add_ingredients_to_shopping_list,
     delete_purchased_shopping_items,
@@ -86,6 +87,49 @@ def test_duplicate_ingredient_is_not_added(
     assert len(
         get_shopping_items(db=db_session)
     ) == 1
+
+
+def test_recipe_add_keeps_existing_unpurchased_item(db_session: Session):
+    ingredient = create_ingredient(
+        db=db_session,
+        name="玉ねぎ",
+        category="野菜",
+        default_unit="個",
+        quantity=0,
+        purchase_date=date(2026, 8, 6),
+    )
+    add_ingredients_to_shopping_list(db_session, [ingredient.id])
+
+    changed = add_or_reactivate_ingredients_without_commit(
+        db_session, [ingredient.id]
+    )
+    db_session.commit()
+
+    assert changed == 0
+    assert len(get_shopping_items(db_session)) == 1
+
+
+def test_recipe_add_reactivates_purchased_item(db_session: Session):
+    ingredient = create_ingredient(
+        db=db_session,
+        name="にんじん",
+        category="野菜",
+        default_unit="本",
+        quantity=0,
+        purchase_date=date(2026, 8, 6),
+    )
+    add_ingredients_to_shopping_list(db_session, [ingredient.id])
+    item = get_shopping_items(db_session)[0]
+    toggle_shopping_item(db_session, item.id)
+
+    changed = add_or_reactivate_ingredients_without_commit(
+        db_session, [ingredient.id]
+    )
+    db_session.commit()
+
+    assert changed == 1
+    assert len(get_shopping_items(db_session)) == 1
+    assert get_shopping_items(db_session)[0].is_purchased is False
 
 
 def test_toggle_shopping_item(

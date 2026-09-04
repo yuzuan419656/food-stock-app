@@ -162,6 +162,38 @@ def consume_inventory_quantity_without_commit(
     )
 
 
+def restore_inventory_lot_quantity_without_commit(
+    db: Session,
+    inventory_id: int,
+    amount: float,
+) -> Inventory | None:
+    """有効な元在庫ロットへ数量を戻し、commitは行わない。"""
+    if amount <= 0:
+        raise ValueError(
+            "復元量は0より大きい値にしてください。"
+        )
+
+    inventory = (
+        db.query(Inventory)
+        .join(Ingredient)
+        .filter(
+            Inventory.id == inventory_id,
+            Inventory.deleted_at.is_(None),
+            Ingredient.is_active.is_(True),
+        )
+        .first()
+    )
+
+    if inventory is None:
+        return None
+
+    inventory.quantity = (
+        float(inventory.quantity or 0) + amount
+    )
+
+    return inventory
+
+
 def get_active_inventory_lots(
     ingredient: Ingredient,
 ) -> list[Inventory]:

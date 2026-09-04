@@ -278,6 +278,15 @@
         </div>
 
         <div class="recipe-cook-action">
+            {% if has_shopping_list_candidates %}
+                <a
+                    href="/recipes/{{ recipe.id }}/shopping-list{% if selected_servings is not none %}?servings={{ selected_servings }}{% endif %}"
+                    class="secondary-button"
+                >
+                    不足食材を買うものリストへ追加
+                </a>
+            {% endif %}
+
             <a
                 href="/recipes/{{ recipe.id }}/cook{% if selected_servings is not none %}?servings={{ selected_servings }}{% endif %}"
                 class="primary-button"

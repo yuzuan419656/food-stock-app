@@ -1,3 +1,6 @@
+from datetime import datetime
+
+from sqlalchemy import func
 from sqlalchemy.orm import Session, joinedload, selectinload
 
 from app.models.cooking_history import CookingHistory
@@ -53,3 +56,56 @@ def get_cooking_history_by_id(
         .filter(CookingHistory.id == cooking_history_id)
         .first()
     )
+
+
+def get_latest_cooking_history(
+    db: Session,
+) -> CookingHistory | None:
+    """取り消し状態を問わず最後に確定した履歴を返す。"""
+    return (
+        db.query(CookingHistory)
+        .order_by(CookingHistory.id.desc())
+        .first()
+    )
+
+
+def get_latest_undoable_cooking_history(
+    db: Session,
+) -> CookingHistory | None:
+    """最後の履歴が未取り消しの場合だけ返す。"""
+    history = get_latest_cooking_history(db=db)
+
+    if history is None or history.undone_at is not None:
+        return None
+
+    return history
+
+
+def mark_latest_cooking_history_undone(
+    db: Session,
+    cooking_history_id: int,
+    undone_at: datetime,
+) -> bool:
+    """
+    対象が全履歴の最新かつ未取り消しの場合だけ更新する。
+
+    commitは呼び出し側が行う。
+    """
+    latest_id = db.query(
+        func.max(CookingHistory.id)
+    ).scalar_subquery()
+
+    updated_count = (
+        db.query(CookingHistory)
+        .filter(
+            CookingHistory.id == cooking_history_id,
+            CookingHistory.id == latest_id,
+            CookingHistory.undone_at.is_(None),
+        )
+        .update(
+            {CookingHistory.undone_at: undone_at},
+            synchronize_session=False,
+        )
+    )
+
+    return updated_count == 1

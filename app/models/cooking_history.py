@@ -34,6 +34,11 @@ class CookingHistory(Base):
         nullable=False,
         index=True,
     )
+    undone_at: Mapped[datetime | None] = mapped_column(
+        DateTime,
+        nullable=True,
+        index=True,
+    )
     yield_type: Mapped[str] = mapped_column(
         String(20),
         nullable=False,
