@@ -329,3 +329,42 @@ def test_inactive_recipe_is_excluded(db_session: Session):
 def test_invalid_mode_is_rejected(db_session: Session):
     with pytest.raises(ValueError, match="未対応"):
         recommend_recipes(db_session, mode="unknown", now=NOW)
+
+
+@pytest.mark.parametrize(
+    ("limit", "expected_names"),
+    [
+        (None, {"10分", "20分", "30分", "31分"}),
+        (10, {"10分"}),
+        (20, {"10分", "20分"}),
+        (30, {"10分", "20分", "30分"}),
+    ],
+)
+def test_cooking_time_filter(
+    db_session: Session,
+    limit: int | None,
+    expected_names: set[str],
+):
+    for minutes in (10, 20, 30, 31):
+        _create_recipe(
+            db_session,
+            name=f"{minutes}分",
+            cooking_time=minutes,
+        )
+
+    results = recommend_recipes(
+        db_session,
+        max_cooking_time=limit,
+        now=NOW,
+    )
+
+    assert {result.recipe.name for result in results} == expected_names
+
+
+def test_invalid_cooking_time_filter_is_rejected(db_session: Session):
+    with pytest.raises(ValueError, match="調理時間"):
+        recommend_recipes(
+            db_session,
+            max_cooking_time=15,
+            now=NOW,
+        )

@@ -1630,3 +1630,135 @@ select {
     gap: 10px;
     margin-top: 20px;
 }
+
+/* レシピレコメンド */
+
+.recipe-recommendation-filter {
+    margin: 24px 0;
+    padding: 18px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fafafa;
+}
+
+.recipe-recommendation-filter h3 {
+    margin-top: 0;
+}
+
+.recipe-recommendation-filter-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(160px, 1fr));
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.recipe-recommendation-filter-grid .form-group {
+    margin: 0;
+}
+
+.recipe-recommendation-filter-grid input,
+.recipe-recommendation-filter-grid select {
+    box-sizing: border-box;
+    width: 100%;
+}
+
+.recipe-recommendation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.recipe-recommendation-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 18px;
+    padding: 20px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    background-color: #fff;
+}
+
+.recipe-recommendation-rank {
+    color: #4f7cac;
+    font-size: 20px;
+    font-weight: bold;
+}
+
+.recipe-recommendation-title-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.recipe-recommendation-title-row h3 {
+    margin: 0;
+}
+
+.recipe-recommendation-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+    margin: 16px 0;
+}
+
+.recipe-recommendation-summary div,
+.recipe-recommendation-breakdown dl div {
+    padding: 8px;
+    border-radius: 4px;
+    background-color: #f5f5f5;
+}
+
+.recipe-recommendation-summary dt,
+.recipe-recommendation-breakdown dt {
+    color: #666;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.recipe-recommendation-summary dd,
+.recipe-recommendation-breakdown dd {
+    margin: 4px 0 0;
+}
+
+.recipe-recommendation-reasons {
+    margin: 8px 0 16px;
+    padding-left: 22px;
+}
+
+.recipe-recommendation-breakdown summary {
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.recipe-recommendation-breakdown dl {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 8px;
+}
+
+.recipe-recommendation-score {
+    min-width: 110px;
+    text-align: right;
+}
+
+.recipe-recommendation-score span {
+    display: block;
+    color: #666;
+    font-size: 12px;
+}
+
+.recipe-recommendation-score strong {
+    color: #2f5f8f;
+    font-size: 28px;
+}
+
+@media (max-width: 700px) {
+    .recipe-recommendation-filter-grid,
+    .recipe-recommendation-card {
+        grid-template-columns: 1fr;
+    }
+
+    .recipe-recommendation-score {
+        text-align: left;
+    }
+}
