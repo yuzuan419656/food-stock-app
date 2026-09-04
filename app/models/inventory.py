@@ -75,6 +75,12 @@ class Inventory(Base):
         back_populates="inventories",
     )
 
+    cooking_history_consumptions = relationship(
+        "CookingHistoryInventoryConsumption",
+        back_populates="inventory",
+        passive_deletes=True,
+    )
+
     __table_args__ = (
         CheckConstraint(
             "quantity >= 0",

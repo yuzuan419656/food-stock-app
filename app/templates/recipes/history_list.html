@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+
+{% block title %}
+調理履歴
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <h2>調理履歴</h2>
+            <p>これまでに調理したレシピを確認できます。</p>
+        </div>
+
+        <a href="/recipes" class="secondary-button">
+            レシピ一覧へ戻る
+        </a>
+    </div>
+
+    {% if histories %}
+        <div class="recipe-inventory-table-wrapper">
+            <table class="recipe-ingredient-table cooking-history-table">
+                <thead>
+                    <tr>
+                        <th>調理日時</th>
+                        <th>レシピ名</th>
+                        <th>作った量</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for history in histories %}
+                        <tr>
+                            <td>{{ history.cooked_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                            <td>
+                                <a href="/recipes/history/{{ history.id }}">
+                                    {{ history.recipe_name }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if history.yield_type == "servings" %}
+                                    {{ history.servings }}人分
+                                {% else %}
+                                    {{ history.fixed_yield_text }}
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>調理履歴はありません。</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -104,6 +104,12 @@ class Recipe(Base):
         order_by="RecipeStep.step_number",
     )
 
+    cooking_histories = relationship(
+        "CookingHistory",
+        back_populates="recipe",
+        passive_deletes=True,
+    )
+
     __table_args__ = (
         CheckConstraint(
             "length(trim(name)) > 0",

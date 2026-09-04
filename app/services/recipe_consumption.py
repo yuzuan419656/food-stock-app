@@ -1,12 +1,21 @@
 """レシピ調理による在庫消費処理。"""
 
 from dataclasses import dataclass
+from datetime import datetime
 
 from sqlalchemy.orm import Session
 
 from app.crud.inventory import (
     InventoryConsumptionResult,
     consume_inventory_quantity_without_commit,
+)
+from app.crud.cooking_history import add_cooking_history
+from app.models.cooking_history import CookingHistory
+from app.models.cooking_history_ingredient import (
+    CookingHistoryIngredient,
+)
+from app.models.cooking_history_inventory_consumption import (
+    CookingHistoryInventoryConsumption,
 )
 from app.services.recipe_inventory import (
     RecipeInventoryStatus,
@@ -38,6 +47,7 @@ class RecipeConsumptionResult:
         InventoryConsumptionResult, ...
     ]
     has_shortage: bool
+    cooking_history: CookingHistory
 
 
 def build_recipe_consumption_plan(
@@ -83,6 +93,7 @@ def consume_recipe_inventory(
     db: Session,
     recipe,
     target_servings: int | None = None,
+    cooked_at: datetime | None = None,
 ) -> RecipeConsumptionResult:
     """
     自動減算可能な全材料を1トランザクションで消費する。
@@ -96,39 +107,105 @@ def consume_recipe_inventory(
     inventory_results: list[
         InventoryConsumptionResult
     ] = []
+    cooking_history = CookingHistory(
+        recipe_id=recipe.id,
+        recipe_name=recipe.name,
+        cooked_at=cooked_at or datetime.now(),
+        yield_type=recipe.yield_type,
+        servings=(
+            (
+                target_servings
+                if target_servings is not None
+                else recipe.base_servings
+            )
+            if recipe.yield_type == "servings"
+            else None
+        ),
+        fixed_yield_text=(
+            recipe.fixed_yield_text
+            if recipe.yield_type == "fixed"
+            else None
+        ),
+    )
 
     try:
         for item in plan:
             status = item.inventory_status
+            inventory_result = None
 
-            if not status.is_automatically_checkable:
-                continue
+            if status.is_automatically_checkable:
+                required_quantity = status.required_quantity
 
-            required_quantity = (
-                status.required_quantity
-            )
+                if required_quantity is None:
+                    raise RecipeConsumptionError(
+                        "減算対象の必要量がありません。"
+                    )
 
-            if required_quantity is None:
-                continue
-
-            result = (
-                consume_inventory_quantity_without_commit(
-                    db=db,
-                    ingredient_id=(
-                        status.recipe_ingredient
-                        .ingredient_id
-                    ),
-                    amount=required_quantity,
-                )
-            )
-
-            if result is None:
-                raise RecipeConsumptionError(
-                    "減算対象の食材が見つかりません。"
+                inventory_result = (
+                    consume_inventory_quantity_without_commit(
+                        db=db,
+                        ingredient_id=(
+                            status.recipe_ingredient
+                            .ingredient_id
+                        ),
+                        amount=required_quantity,
+                    )
                 )
 
-            inventory_results.append(result)
+                if inventory_result is None:
+                    raise RecipeConsumptionError(
+                        "減算対象の食材が見つかりません。"
+                    )
 
+                inventory_results.append(inventory_result)
+
+            history_ingredient = CookingHistoryIngredient(
+                ingredient_id=(
+                    status.recipe_ingredient.ingredient_id
+                ),
+                ingredient_name=(
+                    status.recipe_ingredient.ingredient.name
+                ),
+                required_quantity=status.required_quantity,
+                required_quantity_text=(
+                    status.recipe_ingredient.quantity_text
+                    if status.required_quantity is None
+                    else None
+                ),
+                consumed_quantity=(
+                    inventory_result.consumed_quantity
+                    if inventory_result is not None
+                    else 0.0
+                ),
+                shortage_quantity=(
+                    inventory_result.shortage_quantity
+                    if inventory_result is not None
+                    else status.shortage_quantity
+                ),
+                unit=status.recipe_ingredient.unit,
+                inventory_consumed=(
+                    status.is_automatically_checkable
+                ),
+                status=status.status,
+            )
+
+            if inventory_result is not None:
+                history_ingredient.inventory_consumptions = [
+                    CookingHistoryInventoryConsumption(
+                        inventory_id=allocation.inventory_id,
+                        consumed_quantity=allocation.quantity,
+                    )
+                    for allocation in inventory_result.allocations
+                ]
+
+            cooking_history.ingredients.append(
+                history_ingredient
+            )
+
+        add_cooking_history(
+            db=db,
+            cooking_history=cooking_history,
+        )
         db.commit()
 
     except Exception:
@@ -141,4 +218,5 @@ def consume_recipe_inventory(
             result.shortage_quantity > 0
             for result in inventory_results
         ),
+        cooking_history=cooking_history,
     )

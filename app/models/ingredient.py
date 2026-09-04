@@ -77,3 +77,9 @@ class Ingredient(Base):
         back_populates="ingredient",
         passive_deletes=True,
     )
+
+    cooking_history_ingredients = relationship(
+        "CookingHistoryIngredient",
+        back_populates="ingredient",
+        passive_deletes=True,
+    )

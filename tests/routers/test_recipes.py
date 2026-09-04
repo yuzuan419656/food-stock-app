@@ -4,6 +4,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.models.inventory import Inventory
+from app.models.cooking_history import CookingHistory
 from app.models.recipe import Recipe
 from app.crud.recipe import (
     RecipeIngredientInput,
@@ -1741,3 +1742,81 @@ def test_cook_recipe_does_not_consume_not_applicable_item(
     assert response.status_code == 303
     db_session.refresh(inventory)
     assert inventory.quantity == 3
+
+
+def test_cook_recipe_creates_cooking_history(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+
+    response = client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "4"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    history = db_session.query(CookingHistory).one()
+    assert history.recipe_id == recipe.id
+    assert history.recipe_name == recipe.name
+    assert history.servings == 4
+    assert history.ingredients[0].required_quantity == 4
+    assert history.ingredients[0].consumed_quantity == 3
+    assert history.ingredients[0].shortage_quantity == 1
+
+
+def test_cooking_history_list_is_displayed(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    response = client.get("/recipes/history")
+
+    assert response.status_code == 200
+    assert "調理履歴" in response.text
+    assert recipe.name in response.text
+    assert "2人分" in response.text
+    history = db_session.query(CookingHistory).one()
+    assert f'/recipes/history/{history.id}' in response.text
+
+
+def test_cooking_history_detail_is_displayed(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=1,
+    )
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+    history = db_session.query(CookingHistory).one()
+
+    response = client.get(
+        f"/recipes/history/{history.id}"
+    )
+
+    assert response.status_code == 200
+    assert recipe.name in response.text
+    assert "2人分" in response.text
+    assert "必要量" in response.text
+    assert "実消費量" in response.text
+    assert "不足量" in response.text
+    assert "2個" in response.text
+    assert "1個" in response.text

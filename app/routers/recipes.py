@@ -23,6 +23,10 @@ from app.constants.recipe_options import (
     RECIPE_DISH_CATEGORY_OPTIONS,
 )
 from app.crud.ingredient import get_ingredients
+from app.crud.cooking_history import (
+    get_cooking_histories,
+    get_cooking_history_by_id,
+)
 from app.crud.recipe import (
     delete_recipe,
     get_recipe_by_id,
@@ -538,6 +542,46 @@ def delete_recipe_from_form(
     return RedirectResponse(
         url=f"/recipes?{parameters}",
         status_code=303,
+    )
+
+
+@router.get("/history")
+def list_cooking_histories(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """調理履歴を新しい順に表示する。"""
+    histories = get_cooking_histories(db=db)
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/history_list.html",
+        context={"histories": histories},
+    )
+
+
+@router.get("/history/{cooking_history_id}")
+def show_cooking_history_detail(
+    cooking_history_id: int,
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """材料ごとの調理履歴を表示する。"""
+    history = get_cooking_history_by_id(
+        db=db,
+        cooking_history_id=cooking_history_id,
+    )
+
+    if history is None:
+        raise HTTPException(
+            status_code=404,
+            detail="調理履歴が見つかりません。",
+        )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/history_detail.html",
+        context={"history": history},
     )
 
 
