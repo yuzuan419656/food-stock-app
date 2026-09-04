@@ -1,4 +1,5 @@
 from urllib.parse import urlencode
+from typing import Literal
 
 from fastapi import (
     APIRouter,
@@ -65,6 +66,9 @@ from app.services.recipe_shopping_list import (
     add_recipe_shortages_to_shopping_list,
     build_recipe_shopping_list_candidates,
     select_recipe_shopping_list_candidates,
+)
+from app.services.recipe_recommendation import (
+    recommend_recipes,
 )
 
 
@@ -243,6 +247,7 @@ def list_recipes(
     cleaned_cuisine_type = (
         cuisine_type.strip()
     )
+
     cleaned_dish_category = (
         dish_category.strip()
     )
@@ -298,6 +303,55 @@ def list_recipes(
                 ingredient_candidates
             ),
             "has_filters": has_filters,
+        },
+    )
+
+
+@router.get("/recommendations")
+def show_recipe_recommendations(
+    request: Request,
+    servings: int = Query(
+        default=2,
+        ge=1,
+        le=100,
+    ),
+    mode: Literal[
+        "balanced",
+        "expiring",
+        "quick",
+        "in_stock",
+    ] = Query(default="balanced"),
+    max_cooking_time: Literal[
+        "",
+        "10",
+        "20",
+        "30",
+    ] = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    """指定条件で採点したおすすめレシピを表示する。"""
+    selected_max_cooking_time = (
+        int(max_cooking_time)
+        if max_cooking_time
+        else None
+    )
+    recommendations = recommend_recipes(
+        db=db,
+        target_servings=servings,
+        mode=mode,
+        max_cooking_time=selected_max_cooking_time,
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/recommendations.html",
+        context={
+            "recommendations": recommendations,
+            "selected_servings": servings,
+            "selected_mode": mode,
+            "selected_max_cooking_time": (
+                selected_max_cooking_time
+            ),
         },
     )
 

@@ -1,5 +1,6 @@
 from datetime import date, datetime
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
@@ -2075,3 +2076,154 @@ def test_recipe_shopping_list_post_recalculates_current_shortage(
 
     assert response.status_code == 303
     assert db_session.query(ShoppingItem).count() == 0
+
+
+def test_recipe_recommendations_page_displays_results(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+
+    response = client.get("/recipes/recommendations")
+
+    assert response.status_code == 200
+    assert "おすすめレシピ" in response.text
+    assert recipe.name in response.text
+    assert "1位" in response.text
+    assert "合計スコア" in response.text
+    assert "必要な食材がすべて在庫にあります" in response.text
+    assert "不足食材" in response.text
+    assert "期限切迫食材" in response.text
+    assert "調理回数" in response.text
+    assert "最終調理日" in response.text
+
+
+@pytest.mark.parametrize(
+    ("mode", "label"),
+    [
+        ("balanced", "バランス"),
+        ("expiring", "期限が近い食材を優先"),
+        ("quick", "すぐ作れる"),
+        ("in_stock", "在庫だけで作れる"),
+    ],
+)
+def test_recipe_recommendation_modes_are_selected(
+    client: TestClient,
+    mode: str,
+    label: str,
+):
+    response = client.get(
+        f"/recipes/recommendations?mode={mode}"
+    )
+
+    assert response.status_code == 200
+    assert label in response.text
+    assert f'value="{mode}"' in response.text
+
+
+def test_recipe_recommendations_passes_servings_and_detail_link(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+
+    response = client.get(
+        "/recipes/recommendations?servings=4"
+    )
+
+    assert response.status_code == 200
+    assert 'value="4"' in response.text
+    assert "1種類" in response.text
+    assert (
+        f'/recipes/{recipe.id}?servings=4'
+        in response.text
+    )
+
+
+@pytest.mark.parametrize(
+    "max_cooking_time",
+    [10, 20, 30],
+)
+def test_recipe_recommendations_filters_cooking_time(
+    client: TestClient,
+    db_session: Session,
+    max_cooking_time: int,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+
+    response = client.get(
+        "/recipes/recommendations"
+        f"?max_cooking_time={max_cooking_time}"
+    )
+
+    assert response.status_code == 200
+    if max_cooking_time < recipe.cooking_time_minutes:
+        assert recipe.name not in response.text
+        assert "条件に合うレシピがありません" in response.text
+    else:
+        assert recipe.name in response.text
+
+
+def test_recipe_recommendations_without_time_filter(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    response = client.get("/recipes/recommendations")
+    assert recipe.name in response.text
+    assert "指定なし" in response.text
+
+
+def test_recipe_recommendations_displays_history_values(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    response = client.get("/recipes/recommendations")
+
+    assert "1回" in response.text
+    assert datetime.now().strftime("%Y-%m-%d") in response.text
+
+
+def test_recipe_recommendations_empty_state(client: TestClient):
+    response = client.get("/recipes/recommendations")
+    assert response.status_code == 200
+    assert "条件に合うレシピがありません" in response.text
+
+
+def test_recipe_recommendations_rejects_invalid_mode(
+    client: TestClient,
+):
+    response = client.get(
+        "/recipes/recommendations?mode=invalid"
+    )
+    assert response.status_code == 422
+
+
+def test_navigation_links_to_recipe_recommendations(
+    client: TestClient,
+):
+    response = client.get("/recipes")
+    assert 'href="/recipes/recommendations"' in response.text
+    assert "おすすめレシピ" in response.text

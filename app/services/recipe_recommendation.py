@@ -248,6 +248,7 @@ def recommend_recipes(
     db: Session,
     target_servings: int | None = None,
     mode: str = "balanced",
+    max_cooking_time: int | None = None,
     weights: RecommendationWeights | None = None,
     now: datetime | None = None,
 ) -> list[RecommendationResult]:
@@ -256,13 +257,25 @@ def recommend_recipes(
         raise ValueError(f"未対応の推薦モードです: {mode}")
     if target_servings is not None and not 1 <= target_servings <= 100:
         raise ValueError("人数は1から100で指定してください。")
+    if max_cooking_time not in {None, 10, 20, 30}:
+        raise ValueError(
+            "調理時間は10分、20分、30分のいずれかで指定してください。"
+        )
 
     selected_weights = weights or MODE_WEIGHTS[mode]
     evaluated_at = now or datetime.now()
     histories = get_recipe_history_summaries(db)
     results: list[RecommendationResult] = []
 
-    for recipe in get_recipes(db=db):
+    recipes = get_recipes(db=db)
+    if max_cooking_time is not None:
+        recipes = [
+            recipe
+            for recipe in recipes
+            if recipe.cooking_time_minutes <= max_cooking_time
+        ]
+
+    for recipe in recipes:
         selected_servings = None
         if recipe.yield_type == "servings":
             selected_servings = (
