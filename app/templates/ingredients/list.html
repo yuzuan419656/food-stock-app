@@ -1,8 +1,17 @@
 {% extends "base.html" %}
 
 {% block content %}
-<section>
-    <h2>食材一覧</h2>
+<div class="container">
+    <div class="recipe-list-header">
+        <div>
+            <h2>食材一覧</h2>
+            <p>登録されている食材と在庫状況を確認できます。</p>
+        </div>
+        <div class="recipe-list-header-actions">
+            <a href="/ingredients/new" class="primary-button">新しい食材を登録する</a>
+            <a href="/shopping-list" class="secondary-button">買うものリストを確認する</a>
+        </div>
+    </div>
 
     {% if expiration_message %}
         <p class="success-message">
@@ -16,12 +25,14 @@
         </p>
     {% endif %}
 
-    <div class="list-controls">
+    <section class="recipe-filter-panel">
+        <h3>食材を絞り込む</h3>
+
         <form
             action="/"
             method="get"
             autocomplete="off"
-            class="list-control-form"
+            class="recipe-filter-form"
         >
             {% for category in category_filters %}
                 <input
@@ -31,18 +42,9 @@
                 >
             {% endfor %}
 
-            {% if out_of_stock_first %}
-                <input
-                    type="hidden"
-                    name="out_of_stock_first"
-                    value="true"
-                >
-            {% endif %}
-
-            <div class="search-control">
-                <label for="keyword">
-                    食材名検索
-                </label>
+            <div class="recipe-filter-grid">
+                <div class="form-group">
+                    <label for="keyword">食材名</label>
 
                 <input
                     type="text"
@@ -52,21 +54,12 @@
                     autocomplete="off"
                 >
 
-                <button type="submit">
-                    検索
-                </button>
-            </div>
+                </div>
 
-            <div class="sort-control">
-                <label for="sort">
-                    並び替え
-                </label>
+                <div class="form-group">
+                    <label for="sort">並び替え</label>
 
-                <select
-                    id="sort"
-                    name="sort"
-                    onchange="this.form.submit()"
-                >
+                    <select id="sort" name="sort">
                     <option
                         value="category"
                         {% if sort == "category" %}selected{% endif %}
@@ -101,34 +94,21 @@
                     >
                         消費期限が遠い順
                     </option>
-                </select>
+                    </select>
+                </div>
+            </div>
+
+            <label class="recipe-filter-checkbox">
+                <input type="checkbox" name="out_of_stock_first" value="true" {% if out_of_stock_first %}checked{% endif %}>
+                在庫なしを先頭
+            </label>
+
+            <div class="recipe-filter-actions">
+                <button type="submit" class="primary-button">絞り込む</button>
+                <a href="/" class="secondary-button">条件をすべてクリア</a>
             </div>
         </form>
-
-        <div class="inventory-filter-actions">
-            {% if out_of_stock_first %}
-                <a
-                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort={{ sort }}"
-                    class="inventory-filter-button active"
-                >
-                    在庫なし優先を解除
-                </a>
-            {% else %}
-                <a
-                    href="/?keyword={{ keyword | urlencode }}{% for category in category_filters %}&category_filters={{ category | urlencode }}{% endfor %}&sort={{ sort }}&out_of_stock_first=true"
-                    class="inventory-filter-button"
-                >
-                    在庫なしを先頭
-                </a>
-            {% endif %}
-        </div>
-
-        <div class="clear-all-conditions">
-            <a href="/">
-                条件をすべてクリア
-            </a>
-        </div>
-    </div>
+    </section>
 
     {% if
         keyword
@@ -181,12 +161,6 @@
         </div>
     {% endif %}
 
-    <div class="ingredient-list-navigation">
-        <a href="/ingredients/new">
-            新しい食材を登録する
-        </a>
-    </div>
-
     {% if ingredients %}
         <div class="shopping-list-controls">
             <form
@@ -205,7 +179,7 @@
 
             <a
                 href="/shopping-list"
-                class="shopping-list-view-button"
+                class="secondary-button shopping-list-view-button"
             >
                 買うものリストを確認する
             </a>
@@ -217,7 +191,8 @@
             ></span>
         </div>
 
-        <table>
+        <div class="inventory-list-table-wrapper">
+        <table class="inventory-list-table">
             <thead>
                 <tr>
                     <th class="shopping-list-select-column">
@@ -530,11 +505,17 @@
                         </td>
 
                         <td>
-                            <a href="/ingredients/{{ ingredient.id }}/edit">
+                            <a
+                                href="/ingredients/{{ ingredient.id }}/edit"
+                                class="secondary-button"
+                            >
                                 編集
                             </a>
 
-                            <a href="/ingredients/{{ ingredient.id }}/delete">
+                            <a
+                                href="/ingredients/{{ ingredient.id }}/delete"
+                                class="danger-button"
+                            >
                                 削除
                             </a>
                         </td>
@@ -542,6 +523,7 @@
                 {% endfor %}
             </tbody>
         </table>
+        </div>
     {% else %}
         {% if keyword or category_filters %}
             <p>
@@ -553,7 +535,7 @@
             </p>
         {% endif %}
     {% endif %}
-</section>
+</div>
 
 <script>
     document.addEventListener("DOMContentLoaded", () => {
