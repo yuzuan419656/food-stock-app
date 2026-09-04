@@ -1516,13 +1516,27 @@ def _create_inventory_check_recipe(
     is_inventory_consumed: bool = True,
     inventory_quantity: float | None = 3,
 ) -> Recipe:
-    ingredient = Ingredient(
-        name="在庫判定用食材",
-        category="野菜",
-        default_unit=inventory_unit,
+    ingredient = (
+        db_session.query(Ingredient)
+        .filter(
+            Ingredient.name == "在庫判定用食材",
+            Ingredient.default_unit == inventory_unit,
+        )
+        .first()
     )
-    db_session.add(ingredient)
-    db_session.commit()
+    if ingredient is None:
+        ingredient_name = "在庫判定用食材"
+        if db_session.query(Ingredient).filter(
+            Ingredient.name == ingredient_name,
+        ).first() is not None:
+            ingredient_name = f"在庫判定用食材_{inventory_unit}"
+        ingredient = Ingredient(
+            name=ingredient_name,
+            category="野菜",
+            default_unit=inventory_unit,
+        )
+        db_session.add(ingredient)
+        db_session.commit()
 
     if inventory_quantity is not None:
         db_session.add(
