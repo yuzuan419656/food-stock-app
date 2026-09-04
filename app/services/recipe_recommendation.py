@@ -300,8 +300,10 @@ def recommend_recipes(
     max_cooking_time: int | None = None,
     weights: RecommendationWeights | None = None,
     now: datetime | None = None,
+    cuisine_type: str = "",
+    dish_category: str = "",
 ) -> list[RecommendationResult]:
-    """有効レシピを採点し、スコア降順・ID昇順で返す。"""
+    """条件に合う有効レシピを採点し、スコア順で返す。"""
     if mode not in RECOMMENDATION_MODES:
         raise ValueError(f"未対応の推薦モードです: {mode}")
     if target_servings is not None and not 1 <= target_servings <= 100:
@@ -319,7 +321,11 @@ def recommend_recipes(
     histories = get_recipe_history_summaries(db)
     results: list[RecommendationResult] = []
 
-    recipes = get_recipes(db=db)
+    recipes = get_recipes(
+        db=db,
+        cuisine_type=cuisine_type,
+        dish_category=dish_category,
+    )
     if max_cooking_time is not None:
         recipes = [
             recipe

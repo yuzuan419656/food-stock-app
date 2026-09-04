@@ -109,6 +109,25 @@ def _add_history(
     return history
 
 
+def test_recommend_recipes_filters_by_cuisine_and_category(
+    db_session: Session,
+):
+    japanese = _create_recipe(db_session, name="和食候補")
+    western = _create_recipe(db_session, name="洋食候補")
+    western.cuisine_type = "洋食"
+    western.dish_category = "副菜"
+    db_session.commit()
+
+    results = recommend_recipes(
+        db_session,
+        cuisine_type="洋食",
+        dish_category="副菜",
+    )
+
+    assert [item.recipe.id for item in results] == [western.id]
+    assert all(item.recipe.id != japanese.id for item in results)
+
+
 @pytest.mark.parametrize(
     ("days", "expected", "reason_fragment"),
     [
