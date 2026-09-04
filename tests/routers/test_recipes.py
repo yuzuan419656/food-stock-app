@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import date, datetime
 
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
@@ -1439,3 +1439,153 @@ def test_recipe_detail_adjusts_ingredient_quantity_by_servings(
     assert "3" in response.text
     assert "個" in response.text
     assert "少々" in response.text
+
+
+def _create_inventory_check_recipe(
+    db_session: Session,
+    *,
+    recipe_unit: str = "個",
+    inventory_unit: str = "個",
+    quantity: float | None = 2,
+    quantity_text: str | None = None,
+    is_seasoning: bool = False,
+    is_inventory_consumed: bool = True,
+    inventory_quantity: float | None = 3,
+) -> Recipe:
+    ingredient = Ingredient(
+        name="在庫判定用食材",
+        category="野菜",
+        default_unit=inventory_unit,
+    )
+    db_session.add(ingredient)
+    db_session.commit()
+
+    if inventory_quantity is not None:
+        db_session.add(
+            Inventory(
+                ingredient_id=ingredient.id,
+                quantity=inventory_quantity,
+                purchase_date=date(2026, 9, 1),
+                expiration_date=date(2026, 9, 10),
+            )
+        )
+        db_session.commit()
+
+    return create_recipe(
+        db=db_session,
+        name="在庫判定テスト",
+        cooking_time_minutes=20,
+        cuisine_type="和食",
+        dish_category="主菜",
+        yield_type="servings",
+        base_servings=2,
+        fixed_yield_text=None,
+        ingredients=[
+            RecipeIngredientInput(
+                ingredient_id=ingredient.id,
+                quantity=quantity,
+                quantity_text=quantity_text,
+                unit=(
+                    recipe_unit
+                    if quantity is not None
+                    else None
+                ),
+                is_seasoning=is_seasoning,
+                is_inventory_consumed=(
+                    is_inventory_consumed
+                ),
+            ),
+        ],
+        steps=[
+            RecipeStepInput(
+                step_number=1,
+                description="調理する。",
+            ),
+        ],
+    )
+
+
+def test_recipe_detail_displays_inventory_status(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+
+    response = client.get(f"/recipes/{recipe.id}")
+
+    assert response.status_code == 200
+    assert "在庫状況" in response.text
+    for heading in (
+        "材料名",
+        "必要量",
+        "在庫",
+        "不足",
+        "単位",
+        "状態",
+    ):
+        assert f"<th>{heading}</th>" in response.text
+    assert "2個" in response.text
+    assert "3個" in response.text
+    assert "在庫あり" in response.text
+
+
+def test_recipe_detail_updates_inventory_status_by_servings(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+
+    response = client.get(
+        f"/recipes/{recipe.id}?servings=4"
+    )
+
+    assert response.status_code == 200
+    assert "4個" in response.text
+    assert "3個" in response.text
+    assert "1個" in response.text
+    assert "不足" in response.text
+
+
+def test_recipe_detail_displays_unit_mismatch(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        recipe_unit="g",
+        inventory_unit="個",
+    )
+
+    response = client.get(f"/recipes/{recipe.id}")
+
+    assert response.status_code == 200
+    assert "不一致（レシピ：g／在庫：個）" in (
+        response.text
+    )
+    assert "自動判定不可" in response.text
+
+
+def test_recipe_detail_displays_not_applicable(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        quantity=None,
+        quantity_text="適量",
+        is_seasoning=True,
+        is_inventory_consumed=False,
+        inventory_quantity=None,
+    )
+
+    response = client.get(f"/recipes/{recipe.id}")
+
+    assert response.status_code == 200
+    assert "適量" in response.text
+    assert "在庫判定対象外" in response.text
