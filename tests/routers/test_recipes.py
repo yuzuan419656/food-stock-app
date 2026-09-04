@@ -133,11 +133,42 @@ def test_recipe_list_displays_active_recipes(
         in response.text
     )
     assert (
+        f'href="/recipes/{favorite_recipe.id}/edit"'
+        in response.text
+    )
+    assert (
+        f'href="/recipes/{favorite_recipe.id}/delete?return_to=/recipes"'
+        in response.text
+    )
+    assert (
         f'action="/recipes/{favorite_recipe.id}/favorite"'
         in response.text
     )
     assert "お気に入りを解除" in response.text
     assert "お気に入りに追加" in response.text
+
+
+def test_recipe_list_filters_by_name_with_other_conditions(
+    client: TestClient,
+    db_session: Session,
+):
+    target = _create_recipe(name="名前検索カレー")
+    target.cuisine_type = "洋食"
+    target.dish_category = "主菜"
+    other = _create_recipe(name="別のカレー")
+    other.cuisine_type = "洋食"
+    other.dish_category = "主菜"
+    db_session.add_all([target, other])
+    db_session.commit()
+
+    response = client.get(
+        "/recipes?name_keyword=名前検索&cuisine_type=洋食&dish_category=主菜"
+    )
+
+    assert response.status_code == 200
+    assert target.name in response.text
+    assert other.name not in response.text
+    assert 'name="name_keyword"' in response.text
 
 
 def test_recipe_list_displays_empty_state(
@@ -1115,7 +1146,36 @@ def test_recipe_delete_confirmation_is_displayed(
         f'action="/recipes/{recipe_id}/delete"'
         in response.text
     )
+    assert 'href="/recipes"' in response.text
     assert "レシピを削除する" in response.text
+
+
+def test_recipe_delete_cancel_returns_to_detail(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(name="詳細から削除するレシピ")
+    db_session.add(recipe)
+    db_session.commit()
+
+    response = client.get(f"/recipes/{recipe.id}/delete?return_to=/recipes/{recipe.id}")
+
+    assert response.status_code == 200
+    assert f'href="/recipes/{recipe.id}"' in response.text
+
+
+def test_recipe_delete_cancel_from_list_returns_to_list(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_recipe(name="一覧から削除するレシピ")
+    db_session.add(recipe)
+    db_session.commit()
+
+    response = client.get(f"/recipes/{recipe.id}/delete?return_to=/recipes")
+
+    assert response.status_code == 200
+    assert 'href="/recipes"' in response.text
 
 
 def test_recipe_can_be_logically_deleted(
@@ -2100,6 +2160,28 @@ def test_recipe_recommendations_page_displays_results(
     assert "期限切迫食材" in response.text
     assert "調理回数" in response.text
     assert "最終調理日" in response.text
+    assert 'name="cuisine_type"' in response.text
+    assert 'name="dish_category"' in response.text
+
+
+def test_recipe_recommendations_filters_by_cuisine_and_category(
+    client: TestClient,
+    db_session: Session,
+):
+    japanese = _create_inventory_check_recipe(db_session, inventory_quantity=3)
+    western = _create_inventory_check_recipe(db_session, inventory_quantity=3)
+    western.name = "洋食副菜候補"
+    western.cuisine_type = "洋食"
+    western.dish_category = "副菜"
+    db_session.commit()
+
+    response = client.get(
+        "/recipes/recommendations?cuisine_type=洋食&dish_category=副菜"
+    )
+
+    assert response.status_code == 200
+    assert western.name in response.text
+    assert japanese.name not in response.text
 
 
 @pytest.mark.parametrize(

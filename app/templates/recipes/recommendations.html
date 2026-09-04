@@ -71,6 +71,36 @@
                         {% endfor %}
                     </select>
                 </div>
+
+                <div class="form-group">
+                    <label for="recommendation-cuisine">料理系統</label>
+                    <select id="recommendation-cuisine" name="cuisine_type">
+                        <option value="">指定なし</option>
+                        {% for option in cuisine_type_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_cuisine_type == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recommendation-category">料理区分</label>
+                    <select id="recommendation-category" name="dish_category">
+                        <option value="">指定なし</option>
+                        {% for option in dish_category_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_dish_category == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <details class="recipe-weight-settings">

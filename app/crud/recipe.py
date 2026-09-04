@@ -47,6 +47,7 @@ def get_recipes(
     cuisine_type: str = "",
     dish_category: str = "",
     ingredient_keyword: str = "",
+    name_keyword: str = "",
 ) -> list[Recipe]:
     """
     レシピ一覧を材料・食材・手順と一緒に取得する。
@@ -76,6 +77,12 @@ def get_recipes(
     if favorite_only:
         query = query.filter(
             Recipe.is_favorite.is_(True)
+        )
+
+    normalized_name_keyword = name_keyword.strip()
+    if normalized_name_keyword:
+        query = query.filter(
+            Recipe.name.contains(normalized_name_keyword)
         )
 
     normalized_cuisine_type = (

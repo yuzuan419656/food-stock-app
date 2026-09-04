@@ -90,6 +90,7 @@ def build_recipe_list_url(
     cuisine_type: str = "",
     dish_category: str = "",
     ingredient_keyword: str = "",
+    name_keyword: str = "",
 ) -> str:
     """レシピ一覧の検索条件を含むURLを作成する。"""
     parameters: list[
@@ -100,6 +101,10 @@ def build_recipe_list_url(
         parameters.append(
             ("message", message)
         )
+
+    cleaned_name_keyword = name_keyword.strip()
+    if cleaned_name_keyword:
+        parameters.append(("name_keyword", cleaned_name_keyword))
 
     if favorite_only:
         parameters.append(
@@ -243,6 +248,10 @@ def list_recipes(
         default="",
         max_length=100,
     ),
+    name_keyword: str = Query(
+        default="",
+        max_length=100,
+    ),
     db: Session = Depends(get_db),
 ):
     """有効なレシピの一覧を表示する。"""
@@ -256,6 +265,7 @@ def list_recipes(
     cleaned_ingredient_keyword = (
         ingredient_keyword.strip()
     )
+    cleaned_name_keyword = name_keyword.strip()
 
     recipes = get_recipes(
         db=db,
@@ -265,6 +275,7 @@ def list_recipes(
         ingredient_keyword=(
             cleaned_ingredient_keyword
         ),
+        name_keyword=cleaned_name_keyword,
     )
 
     ingredient_candidates = get_ingredients(
@@ -277,6 +288,7 @@ def list_recipes(
         or cleaned_cuisine_type
         or cleaned_dish_category
         or cleaned_ingredient_keyword
+        or cleaned_name_keyword
     )
 
     return templates.TemplateResponse(
@@ -295,6 +307,7 @@ def list_recipes(
             "ingredient_keyword": (
                 cleaned_ingredient_keyword
             ),
+            "name_keyword": cleaned_name_keyword,
             "cuisine_options": (
                 RECIPE_CUISINE_OPTIONS
             ),
@@ -329,6 +342,8 @@ def show_recipe_recommendations(
         "20",
         "30",
     ] = Query(default=""),
+    cuisine_type: str = Query(default=""),
+    dish_category: str = Query(default=""),
     expiration_weight: float = Query(
         default=DEFAULT_RECOMMENDATION_WEIGHTS.expiration,
         ge=0.0,
@@ -367,6 +382,16 @@ def show_recipe_recommendations(
     db: Session = Depends(get_db),
 ):
     """指定条件で採点したおすすめレシピを表示する。"""
+    selected_cuisine_type = (
+        cuisine_type.strip()
+        if cuisine_type.strip() in RECIPE_CUISINE_OPTIONS
+        else ""
+    )
+    selected_dish_category = (
+        dish_category.strip()
+        if dish_category.strip() in RECIPE_DISH_CATEGORY_OPTIONS
+        else ""
+    )
     selected_max_cooking_time = (
         int(max_cooking_time)
         if max_cooking_time
@@ -387,6 +412,8 @@ def show_recipe_recommendations(
         mode=mode,
         max_cooking_time=selected_max_cooking_time,
         weights=custom_weights,
+        cuisine_type=selected_cuisine_type,
+        dish_category=selected_dish_category,
     )
 
     return templates.TemplateResponse(
@@ -396,6 +423,10 @@ def show_recipe_recommendations(
             "recommendations": recommendations,
             "selected_servings": servings,
             "selected_mode": mode,
+            "selected_cuisine_type": selected_cuisine_type,
+            "selected_dish_category": selected_dish_category,
+            "cuisine_type_options": RECIPE_CUISINE_OPTIONS,
+            "dish_category_options": RECIPE_DISH_CATEGORY_OPTIONS,
             "selected_max_cooking_time": (
                 selected_max_cooking_time
             ),
@@ -608,6 +639,7 @@ async def create_recipe_from_form(
 def show_recipe_delete_confirmation(
     recipe_id: int,
     request: Request,
+    return_to: str = Query(default="/recipes", max_length=200),
     db: Session = Depends(get_db),
 ):
     """レシピ削除確認画面を表示する。"""
@@ -622,11 +654,22 @@ def show_recipe_delete_confirmation(
             detail="レシピが見つかりません。",
         )
 
+    # Only allow internal recipe paths as the cancellation destination.
+    # This keeps the convenience of returning to the detail page without
+    # allowing an externally supplied URL to become an open redirect.
+    cancel_url = return_to.strip()
+    if not (
+        cancel_url == "/recipes"
+        or (cancel_url.startswith("/recipes/") and not cancel_url.startswith("//"))
+    ):
+        cancel_url = "/recipes"
+
     return templates.TemplateResponse(
         request=request,
         name="recipes/delete.html",
         context={
             "recipe": recipe,
+            "cancel_url": cancel_url,
         },
     )
 
@@ -1128,6 +1171,7 @@ def update_recipe_favorite_from_list(
     cuisine_type: str = Form(""),
     dish_category: str = Form(""),
     ingredient_keyword: str = Form(""),
+    name_keyword: str = Form(""),
     db: Session = Depends(get_db),
 ):
     """一覧画面からお気に入り状態を更新する。"""
@@ -1161,6 +1205,7 @@ def update_recipe_favorite_from_list(
             ingredient_keyword=(
                 ingredient_keyword
             ),
+            name_keyword=name_keyword,
         ),
         status_code=303,
     )

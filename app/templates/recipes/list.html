@@ -49,6 +49,21 @@
         >
             <div class="recipe-filter-grid">
                 <div class="form-group">
+                    <label for="recipe-name-filter">
+                        レシピ名
+                    </label>
+
+                    <input
+                        type="text"
+                        id="recipe-name-filter"
+                        name="name_keyword"
+                        value="{{ name_keyword }}"
+                        maxlength="100"
+                        placeholder="レシピ名を入力"
+                    >
+                </div>
+
+                <div class="form-group">
                     <label for="recipe-cuisine-filter">
                         料理系統
                     </label>
@@ -168,6 +183,13 @@
                     </li>
                 {% endif %}
 
+                {% if name_keyword %}
+                    <li>
+                        レシピ名：
+                        {{ name_keyword }}
+                    </li>
+                {% endif %}
+
                 {% if selected_cuisine_type %}
                     <li>
                         料理系統：
@@ -204,6 +226,7 @@
                     <th>区分</th>
                     <th>所要時間</th>
                     <th>基準量</th>
+                    <th>操作</th>
                 </tr>
             </thead>
 
@@ -244,6 +267,12 @@
                                     type="hidden"
                                     name="ingredient_keyword"
                                     value="{{ ingredient_keyword }}"
+                                >
+
+                                <input
+                                    type="hidden"
+                                    name="name_keyword"
+                                    value="{{ name_keyword }}"
                                 >
 
                                 <button
@@ -290,6 +319,16 @@
                             {% else %}
                                 {{ recipe.fixed_yield_text }}
                             {% endif %}
+                        </td>
+
+                        <td>
+                            <a href="/recipes/{{ recipe.id }}/edit">
+                                編集
+                            </a>
+
+                            <a href="/recipes/{{ recipe.id }}/delete?return_to=/recipes">
+                                削除
+                            </a>
                         </td>
                     </tr>
                 {% endfor %}

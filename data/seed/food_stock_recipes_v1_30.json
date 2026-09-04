@@ -1,0 +1,3513 @@
+{
+  "dataset_name": "food-stock-app trusted recipes v1",
+  "recipe_count": 30,
+  "default_servings": 2,
+  "policy": {
+    "seasonings_are_registered": true,
+    "seasonings_inventory_consumed": false,
+    "main_ingredients_inventory_consumed": true,
+    "all_recipes_are_servings_based": true
+  },
+  "recipes": [
+    {
+      "name": "肉じゃが",
+      "cooking_time_minutes": 35,
+      "cuisine_type": "和食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "牛こま切れ肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "じゃがいも",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 2,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.75,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "本",
+          "display_order": 4
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "だし汁",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 250,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 30,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 30,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "g",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "じゃがいも、玉ねぎ、にんじんを食べやすい大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋にサラダ油を熱し、牛こま切れ肉をほぐしながら炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "野菜を加えて軽く炒め、だし汁を加えて煮立たせる。"
+        },
+        {
+          "step_number": 4,
+          "description": "醤油、みりん、砂糖を加え、落としぶたをして野菜がやわらかくなるまで煮る。"
+        },
+        {
+          "step_number": 5,
+          "description": "煮汁がほどよく残る程度まで煮詰めて仕上げる。"
+        }
+      ]
+    },
+    {
+      "name": "鶏の照り焼き",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "和食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 300,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 2
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 30,
+          "unit": "ml",
+          "display_order": 3
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 30,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "g",
+          "display_order": 5
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏もも肉は厚い部分を開き、火が通りやすい厚さに整える。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにサラダ油を熱し、鶏肉を皮目から中火で焼く。"
+        },
+        {
+          "step_number": 3,
+          "description": "焼き色が付いたら裏返し、ふたをして中まで火を通す。"
+        },
+        {
+          "step_number": 4,
+          "description": "余分な脂を拭き、醤油、みりん、砂糖を加える。"
+        },
+        {
+          "step_number": 5,
+          "description": "たれを煮詰めながら鶏肉にからめ、食べやすく切る。"
+        }
+      ]
+    },
+    {
+      "name": "豚の生姜焼き",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "和食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚ロース薄切り肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "しょうが",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "酒",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "玉ねぎは薄切りにし、しょうがはすりおろす。"
+        },
+        {
+          "step_number": 2,
+          "description": "醤油、みりん、酒、砂糖、しょうがを混ぜてたれを作る。"
+        },
+        {
+          "step_number": 3,
+          "description": "フライパンにサラダ油を熱し、豚肉と玉ねぎを炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "豚肉に火が通ったらたれを加え、汁気が少なくなるまでからめる。"
+        }
+      ]
+    },
+    {
+      "name": "親子丼",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "和食",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 180,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "卵",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 3,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "ご飯",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 400,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "だし汁",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 120,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏もも肉は一口大、玉ねぎは薄切りにする。卵は軽く溶く。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにだし汁、醤油、みりん、砂糖、玉ねぎを入れて煮る。"
+        },
+        {
+          "step_number": 3,
+          "description": "玉ねぎがしんなりしたら鶏肉を加え、中まで火を通す。"
+        },
+        {
+          "step_number": 4,
+          "description": "溶き卵の3分の2を回し入れ、少し固まったら残りを加える。"
+        },
+        {
+          "step_number": 5,
+          "description": "卵が好みの固さになったら、ご飯を盛った器にのせる。"
+        }
+      ]
+    },
+    {
+      "name": "牛丼",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "和食",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "牛こま切れ肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.75,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "ご飯",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 400,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 180,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 35,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "酒",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 12,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "しょうが",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 10,
+          "unit": "g",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "玉ねぎは薄切り、しょうがは細切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋に水、醤油、みりん、酒、砂糖、しょうがを入れて煮立たせる。"
+        },
+        {
+          "step_number": 3,
+          "description": "玉ねぎを加えてやわらかくなるまで煮る。"
+        },
+        {
+          "step_number": 4,
+          "description": "牛肉を広げながら加え、アクを取りつつ火を通す。"
+        },
+        {
+          "step_number": 5,
+          "description": "ご飯を盛った器に具と煮汁をかける。"
+        }
+      ]
+    },
+    {
+      "name": "さばの味噌煮",
+      "cooking_time_minutes": 30,
+      "cuisine_type": "和食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "さば切り身",
+          "category": "魚介類",
+          "default_unit": "切れ",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 2,
+          "unit": "切れ",
+          "display_order": 1
+        },
+        {
+          "name": "しょうが",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 150,
+          "unit": "ml",
+          "display_order": 3
+        },
+        {
+          "name": "味噌",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 35,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "酒",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 40,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 7
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "さばは皮に浅く切り込みを入れ、しょうがは薄切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋に水、酒、みりん、砂糖、醤油、しょうがを入れて煮立てる。"
+        },
+        {
+          "step_number": 3,
+          "description": "さばを皮目を上にして加え、落としぶたをして中火で煮る。"
+        },
+        {
+          "step_number": 4,
+          "description": "煮汁で味噌を溶いて鍋に戻し、弱めの中火でさらに煮る。"
+        },
+        {
+          "step_number": 5,
+          "description": "煮汁にとろみが付き、さばに味がなじんだら火を止める。"
+        }
+      ]
+    },
+    {
+      "name": "筑前煮",
+      "cooking_time_minutes": 40,
+      "cuisine_type": "和食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 180,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "れんこん",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "本",
+          "display_order": 3
+        },
+        {
+          "name": "ごぼう",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 80,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "しいたけ",
+          "category": "きのこ類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 4,
+          "unit": "個",
+          "display_order": 5
+        },
+        {
+          "name": "こんにゃく",
+          "category": "その他",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "だし汁",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 300,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 30,
+          "unit": "ml",
+          "display_order": 9
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 25,
+          "unit": "ml",
+          "display_order": 10
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "g",
+          "display_order": 11
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏肉と野菜、こんにゃくを食べやすい大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋にサラダ油を熱し、鶏肉を炒めて表面の色を変える。"
+        },
+        {
+          "step_number": 3,
+          "description": "れんこん、にんじん、ごぼう、しいたけ、こんにゃくを加えて炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "だし汁を加えて煮立て、アクを取る。"
+        },
+        {
+          "step_number": 5,
+          "description": "醤油、みりん、砂糖を加え、具材がやわらかくなり煮汁が少なくなるまで煮る。"
+        }
+      ]
+    },
+    {
+      "name": "豚汁",
+      "cooking_time_minutes": 30,
+      "cuisine_type": "和食",
+      "dish_category": "汁物",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚バラ薄切り肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "大根",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.4,
+          "unit": "本",
+          "display_order": 3
+        },
+        {
+          "name": "ごぼう",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 60,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "長ねぎ",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "本",
+          "display_order": 5
+        },
+        {
+          "name": "こんにゃく",
+          "category": "その他",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 80,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "だし汁",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 500,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "味噌",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 40,
+          "unit": "g",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "豚肉、野菜、こんにゃくを食べやすい大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋にだし汁、大根、にんじん、ごぼう、こんにゃくを入れて煮る。"
+        },
+        {
+          "step_number": 3,
+          "description": "野菜が少しやわらかくなったら豚肉を加え、アクを取る。"
+        },
+        {
+          "step_number": 4,
+          "description": "具材に火が通ったら火を弱め、味噌を溶き入れる。"
+        },
+        {
+          "step_number": 5,
+          "description": "長ねぎを加え、煮立たせないように温めて仕上げる。"
+        }
+      ]
+    },
+    {
+      "name": "きんぴらごぼう",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "和食",
+      "dish_category": "副菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "ごぼう",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.3,
+          "unit": "本",
+          "display_order": 2
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 3
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 8,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "白いりごま",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 7
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "ごぼうとにんじんを細切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにごま油を熱し、ごぼうとにんじんを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "しんなりしたら醤油、みりん、砂糖を加える。"
+        },
+        {
+          "step_number": 4,
+          "description": "汁気がほぼなくなるまで炒め、白いりごまを混ぜる。"
+        }
+      ]
+    },
+    {
+      "name": "ほうれん草のごま和え",
+      "cooking_time_minutes": 15,
+      "cuisine_type": "和食",
+      "dish_category": "副菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "ほうれん草",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 200,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "すりごま",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 3
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 4
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "ほうれん草を沸騰した湯でさっとゆで、冷水に取る。"
+        },
+        {
+          "step_number": 2,
+          "description": "水気をよく絞り、食べやすい長さに切る。"
+        },
+        {
+          "step_number": 3,
+          "description": "すりごま、醤油、砂糖を混ぜる。"
+        },
+        {
+          "step_number": 4,
+          "description": "ほうれん草を加えて全体を和える。"
+        }
+      ]
+    },
+    {
+      "name": "だし巻き卵",
+      "cooking_time_minutes": 15,
+      "cuisine_type": "和食",
+      "dish_category": "副菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "卵",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 3,
+          "unit": "個",
+          "display_order": 1
+        },
+        {
+          "name": "だし汁",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 45,
+          "unit": "ml",
+          "display_order": 2
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 3
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "適量",
+          "display_order": 5
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "卵をボウルに割り、だし汁、醤油、砂糖を加えて混ぜる。"
+        },
+        {
+          "step_number": 2,
+          "description": "卵焼き器に薄くサラダ油をなじませ、卵液の一部を流す。"
+        },
+        {
+          "step_number": 3,
+          "description": "半熟になったら手前に巻き、空いた部分に油を薄く塗る。"
+        },
+        {
+          "step_number": 4,
+          "description": "卵液を数回に分けて流して巻く作業を繰り返す。"
+        },
+        {
+          "step_number": 5,
+          "description": "形を整えてから食べやすく切る。"
+        }
+      ]
+    },
+    {
+      "name": "お好み焼き",
+      "cooking_time_minutes": 30,
+      "cuisine_type": "和食",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "キャベツ",
+          "category": "野菜",
+          "default_unit": "玉",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.25,
+          "unit": "玉",
+          "display_order": 1
+        },
+        {
+          "name": "豚バラ薄切り肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "卵",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 2,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "薄力粉",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "だし汁",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 120,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "お好み焼きソース",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "適量",
+          "display_order": 7
+        },
+        {
+          "name": "マヨネーズ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "適量",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "キャベツを粗みじん切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "ボウルに薄力粉、だし汁、卵を入れて混ぜ、キャベツを加える。"
+        },
+        {
+          "step_number": 3,
+          "description": "フライパンにサラダ油を熱し、生地を丸く広げて豚肉をのせる。"
+        },
+        {
+          "step_number": 4,
+          "description": "焼き色が付いたら裏返し、中まで火が通るまで焼く。"
+        },
+        {
+          "step_number": 5,
+          "description": "器に盛り、お好み焼きソースとマヨネーズをかける。"
+        }
+      ]
+    },
+    {
+      "name": "ハンバーグ",
+      "cooking_time_minutes": 35,
+      "cuisine_type": "洋食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "合いびき肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 300,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "卵",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 1,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "パン粉",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 25,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "牛乳",
+          "category": "乳製品",
+          "default_unit": "ml",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 40,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 2,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 7
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "ケチャップ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 30,
+          "unit": "g",
+          "display_order": 9
+        },
+        {
+          "name": "ウスターソース",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 10
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "玉ねぎをみじん切りにして炒め、粗熱を取る。"
+        },
+        {
+          "step_number": 2,
+          "description": "パン粉に牛乳を含ませる。"
+        },
+        {
+          "step_number": 3,
+          "description": "合いびき肉、玉ねぎ、卵、パン粉、塩、こしょうをよく混ぜ、2等分して成形する。"
+        },
+        {
+          "step_number": 4,
+          "description": "フライパンにサラダ油を熱し、両面に焼き色を付けてふたをし、中まで火を通す。"
+        },
+        {
+          "step_number": 5,
+          "description": "ハンバーグを取り出し、同じフライパンでケチャップとウスターソースを温めてソースにする。"
+        }
+      ]
+    },
+    {
+      "name": "チキンカレー",
+      "cooking_time_minutes": 40,
+      "cuisine_type": "洋食",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 1,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "じゃがいも",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 1.333,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.67,
+          "unit": "本",
+          "display_order": 4
+        },
+        {
+          "name": "ご飯",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 400,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 500,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "カレールウ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 70,
+          "unit": "g",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏肉、じゃがいも、にんじんを一口大、玉ねぎを薄切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋にサラダ油を熱し、鶏肉と玉ねぎを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "じゃがいもとにんじんを加えて軽く炒め、水を加える。"
+        },
+        {
+          "step_number": 4,
+          "description": "沸騰したらアクを取り、具材がやわらかくなるまで煮る。"
+        },
+        {
+          "step_number": 5,
+          "description": "火を止めてカレールウを溶かし、再び弱火でとろみが付くまで煮る。"
+        },
+        {
+          "step_number": 6,
+          "description": "ご飯と一緒に器に盛る。"
+        }
+      ]
+    },
+    {
+      "name": "オムライス",
+      "cooking_time_minutes": 30,
+      "cuisine_type": "洋食",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 120,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "ご飯",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 400,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "卵",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 4,
+          "unit": "個",
+          "display_order": 4
+        },
+        {
+          "name": "ケチャップ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 70,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 1,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 7
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏肉は小さめに切り、玉ねぎはみじん切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにサラダ油の一部を熱し、鶏肉と玉ねぎを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "ご飯を加えてほぐし、ケチャップ、塩、こしょうで味付けして2皿に分ける。"
+        },
+        {
+          "step_number": 4,
+          "description": "卵を2個ずつ溶き、残りの油を使って薄く焼く。"
+        },
+        {
+          "step_number": 5,
+          "description": "卵をご飯にかぶせて形を整える。"
+        }
+      ]
+    },
+    {
+      "name": "ナポリタン",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "洋食",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "スパゲッティ",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 180,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "ウインナー",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 100,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "ピーマン",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 60,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "ケチャップ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 80,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 7
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "玉ねぎは薄切り、ピーマンは細切り、ウインナーは斜め切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "スパゲッティを表示時間を目安にゆでる。"
+        },
+        {
+          "step_number": 3,
+          "description": "フライパンにサラダ油を熱し、ウインナー、玉ねぎ、ピーマンを炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "ケチャップを加えて軽く炒め、ゆでたスパゲッティを加える。"
+        },
+        {
+          "step_number": 5,
+          "description": "全体をよく混ぜ、塩とこしょうで味を整える。"
+        }
+      ]
+    },
+    {
+      "name": "クリームシチュー",
+      "cooking_time_minutes": 40,
+      "cuisine_type": "洋食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.75,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "じゃがいも",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 1.333,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.67,
+          "unit": "本",
+          "display_order": 4
+        },
+        {
+          "name": "ブロッコリー",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 100,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "牛乳",
+          "category": "乳製品",
+          "default_unit": "ml",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 300,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "クリームシチュールウ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 70,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏肉と野菜を食べやすい大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋にサラダ油を熱し、鶏肉、玉ねぎ、にんじん、じゃがいもを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "水を加えて煮立て、アクを取りながら具材がやわらかくなるまで煮る。"
+        },
+        {
+          "step_number": 4,
+          "description": "火を止めてクリームシチュールウを溶かす。"
+        },
+        {
+          "step_number": 5,
+          "description": "牛乳とブロッコリーを加え、弱火で混ぜながら数分煮る。"
+        }
+      ]
+    },
+    {
+      "name": "ポークソテー",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "洋食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚ロース肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 300,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "にんにく",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 2,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 4
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "みりん",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 7
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "豚ロース肉は筋切りをし、塩とこしょうを振る。"
+        },
+        {
+          "step_number": 2,
+          "description": "にんにくを薄切りにする。"
+        },
+        {
+          "step_number": 3,
+          "description": "フライパンにサラダ油とにんにくを入れて弱火で香りを出す。"
+        },
+        {
+          "step_number": 4,
+          "description": "にんにくを取り出し、豚肉を両面焼いて中まで火を通す。"
+        },
+        {
+          "step_number": 5,
+          "description": "醤油とみりんを加えて軽く煮詰め、豚肉にからめる。"
+        }
+      ]
+    },
+    {
+      "name": "ミネストローネ",
+      "cooking_time_minutes": 30,
+      "cuisine_type": "洋食",
+      "dish_category": "汁物",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 1
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "本",
+          "display_order": 2
+        },
+        {
+          "name": "キャベツ",
+          "category": "野菜",
+          "default_unit": "玉",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.12,
+          "unit": "玉",
+          "display_order": 3
+        },
+        {
+          "name": "じゃがいも",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.8,
+          "unit": "個",
+          "display_order": 4
+        },
+        {
+          "name": "ベーコン",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 60,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "カットトマト缶",
+          "category": "その他",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 200,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 300,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "コンソメ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "オリーブオイル",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 9,
+          "unit": "g",
+          "display_order": 9
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 10
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 11
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "野菜とベーコンを1cm程度の大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "鍋にオリーブオイルを熱し、ベーコンと玉ねぎを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "残りの野菜を加えて軽く炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "カットトマト缶、水、コンソメを加え、野菜がやわらかくなるまで煮る。"
+        },
+        {
+          "step_number": 5,
+          "description": "塩とこしょうで味を整える。"
+        }
+      ]
+    },
+    {
+      "name": "ポテトサラダ",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "洋食",
+      "dish_category": "副菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "じゃがいも",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 2,
+          "unit": "個",
+          "display_order": 1
+        },
+        {
+          "name": "きゅうり",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.8,
+          "unit": "本",
+          "display_order": 2
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.3,
+          "unit": "本",
+          "display_order": 3
+        },
+        {
+          "name": "ハム",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 50,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "マヨネーズ",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 50,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 1,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 7
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "じゃがいもは皮をむいて切り、やわらかくなるまでゆでる。"
+        },
+        {
+          "step_number": 2,
+          "description": "きゅうりは薄切りにして少量の塩でもみ、水気を絞る。"
+        },
+        {
+          "step_number": 3,
+          "description": "にんじんは薄切りにしてさっとゆで、ハムは細切りにする。"
+        },
+        {
+          "step_number": 4,
+          "description": "じゃがいもを粗くつぶして冷ます。"
+        },
+        {
+          "step_number": 5,
+          "description": "すべての具材をマヨネーズで和え、塩とこしょうで味を整える。"
+        }
+      ]
+    },
+    {
+      "name": "マカロニグラタン",
+      "cooking_time_minutes": 40,
+      "cuisine_type": "洋食",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "マカロニ",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 100,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "鶏もも肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "玉ねぎ",
+          "category": "野菜",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "個",
+          "display_order": 3
+        },
+        {
+          "name": "牛乳",
+          "category": "乳製品",
+          "default_unit": "ml",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 350,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "ピザ用チーズ",
+          "category": "乳製品",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 60,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "薄力粉",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 25,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "バター",
+          "category": "乳製品",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 25,
+          "unit": "g",
+          "display_order": 7
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 2,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "マカロニを表示時間を目安にゆでる。鶏肉は小さめ、玉ねぎは薄切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンでバターを溶かし、鶏肉と玉ねぎを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "薄力粉を加えて粉っぽさがなくなるまで混ぜ、牛乳を少しずつ加える。"
+        },
+        {
+          "step_number": 4,
+          "description": "とろみが付いたらマカロニを加え、塩とこしょうで味を整える。"
+        },
+        {
+          "step_number": 5,
+          "description": "耐熱皿に入れてチーズをのせ、表面に焼き色が付くまでオーブンまたはトースターで焼く。"
+        }
+      ]
+    },
+    {
+      "name": "麻婆豆腐",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "中華",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "木綿豆腐",
+          "category": "豆・豆製品",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 350,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "豚ひき肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "長ねぎ",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "本",
+          "display_order": 3
+        },
+        {
+          "name": "にんにく",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "しょうが",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "豆板醤",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "g",
+          "display_order": 7
+        },
+        {
+          "name": "甜麺醤",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 9
+        },
+        {
+          "name": "鶏がらスープ",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 180,
+          "unit": "ml",
+          "display_order": 10
+        },
+        {
+          "name": "片栗粉",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 8,
+          "unit": "g",
+          "display_order": 11
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "notes": "水溶き片栗粉用",
+          "display_order": 12
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "豆腐は2cm角、長ねぎ、にんにく、しょうがはみじん切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにごま油を熱し、にんにく、しょうが、豆板醤を弱火で炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "豚ひき肉を加えてほぐしながら炒め、甜麺醤と醤油を加える。"
+        },
+        {
+          "step_number": 4,
+          "description": "鶏がらスープと豆腐を加え、数分煮る。"
+        },
+        {
+          "step_number": 5,
+          "description": "長ねぎを加え、片栗粉を水で溶いて回し入れ、とろみを付ける。"
+        }
+      ]
+    },
+    {
+      "name": "青椒肉絲",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "中華",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚もも薄切り肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 200,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "ピーマン",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "たけのこ水煮",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 100,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "オイスターソース",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "酒",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "片栗粉",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 8,
+          "unit": "g",
+          "display_order": 7
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 8
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "豚肉、ピーマン、たけのこを細切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "豚肉に酒の一部、醤油の一部、片栗粉をもみ込む。"
+        },
+        {
+          "step_number": 3,
+          "description": "フライパンにごま油を熱し、豚肉をほぐしながら炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "たけのことピーマンを加えて手早く炒める。"
+        },
+        {
+          "step_number": 5,
+          "description": "残りの醤油、酒、オイスターソースを加えて全体にからめる。"
+        }
+      ]
+    },
+    {
+      "name": "回鍋肉",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "中華",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚バラ薄切り肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 200,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "キャベツ",
+          "category": "野菜",
+          "default_unit": "玉",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.25,
+          "unit": "玉",
+          "display_order": 2
+        },
+        {
+          "name": "ピーマン",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 80,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "長ねぎ",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.6,
+          "unit": "本",
+          "display_order": 4
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "甜麺醤",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "豆板醤",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 7
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "酒",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "豚肉は食べやすく切り、キャベツとピーマンは大きめ、長ねぎは斜め切りにする。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにごま油を熱し、豚肉を炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "長ねぎ、キャベツ、ピーマンを加えて強めの火で炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "甜麺醤、豆板醤、醤油、酒を混ぜて加える。"
+        },
+        {
+          "step_number": 5,
+          "description": "野菜の食感が残る程度に手早く炒め合わせる。"
+        }
+      ]
+    },
+    {
+      "name": "八宝菜",
+      "cooking_time_minutes": 30,
+      "cuisine_type": "中華",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚こま切れ肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "むきえび",
+          "category": "魚介類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 100,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "白菜",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.4,
+          "unit": "本",
+          "display_order": 4
+        },
+        {
+          "name": "しいたけ",
+          "category": "きのこ類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 3,
+          "unit": "個",
+          "display_order": 5
+        },
+        {
+          "name": "うずら卵水煮",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 6,
+          "unit": "個",
+          "display_order": 6
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "鶏がらスープ",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 200,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 9
+        },
+        {
+          "name": "オイスターソース",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "g",
+          "display_order": 10
+        },
+        {
+          "name": "片栗粉",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "g",
+          "display_order": 11
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "notes": "水溶き片栗粉用",
+          "display_order": 12
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "白菜、にんじん、しいたけ、豚肉を食べやすい大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにごま油を熱し、豚肉とむきえびを炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "にんじん、しいたけ、白菜を加えて炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "鶏がらスープ、醤油、オイスターソース、うずら卵を加えて煮る。"
+        },
+        {
+          "step_number": 5,
+          "description": "片栗粉を水で溶いて加え、とろみを付ける。"
+        }
+      ]
+    },
+    {
+      "name": "五目炒飯",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "中華",
+      "dish_category": "主食",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "ご飯",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 400,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "卵",
+          "category": "卵類",
+          "default_unit": "個",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 2,
+          "unit": "個",
+          "display_order": 2
+        },
+        {
+          "name": "焼豚",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 80,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "長ねぎ",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.5,
+          "unit": "本",
+          "display_order": 4
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.25,
+          "unit": "本",
+          "display_order": 5
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "鶏がらスープの素",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 9
+        },
+        {
+          "name": "こしょう",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity_text": "少々",
+          "display_order": 10
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "焼豚、長ねぎ、にんじんを細かく切り、卵を溶く。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにサラダ油を熱して卵を入れ、すぐにご飯を加えてほぐす。"
+        },
+        {
+          "step_number": 3,
+          "description": "焼豚とにんじんを加えて炒める。"
+        },
+        {
+          "step_number": 4,
+          "description": "長ねぎ、鶏がらスープの素、醤油を加えて炒め合わせる。"
+        },
+        {
+          "step_number": 5,
+          "description": "塩とこしょうで味を整える。"
+        }
+      ]
+    },
+    {
+      "name": "焼き餃子",
+      "cooking_time_minutes": 40,
+      "cuisine_type": "中華",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "餃子の皮",
+          "category": "穀類",
+          "default_unit": "枚",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 20,
+          "unit": "枚",
+          "display_order": 1
+        },
+        {
+          "name": "豚ひき肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 180,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "キャベツ",
+          "category": "野菜",
+          "default_unit": "玉",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.15,
+          "unit": "玉",
+          "display_order": 3
+        },
+        {
+          "name": "にら",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 50,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "にんにく",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "しょうが",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 6
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "塩",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 1,
+          "unit": "g",
+          "display_order": 9
+        },
+        {
+          "name": "サラダ油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 10
+        },
+        {
+          "name": "水",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 80,
+          "unit": "ml",
+          "display_order": 11
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "キャベツとにらを細かく切り、にんにくとしょうがをすりおろす。"
+        },
+        {
+          "step_number": 2,
+          "description": "豚ひき肉、野菜、醤油、ごま油、塩を混ぜて餡を作る。"
+        },
+        {
+          "step_number": 3,
+          "description": "餃子の皮に餡をのせ、縁に水を付けてひだを作りながら包む。"
+        },
+        {
+          "step_number": 4,
+          "description": "フライパンにサラダ油を熱して餃子を並べ、底に焼き色を付ける。"
+        },
+        {
+          "step_number": 5,
+          "description": "水を加えてふたをし、蒸し焼きにする。"
+        },
+        {
+          "step_number": 6,
+          "description": "水分がなくなったらふたを外し、底をカリッと仕上げる。"
+        }
+      ]
+    },
+    {
+      "name": "棒棒鶏",
+      "cooking_time_minutes": 25,
+      "cuisine_type": "中華",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "鶏むね肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 250,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "きゅうり",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 1.2,
+          "unit": "本",
+          "display_order": 2
+        },
+        {
+          "name": "長ねぎ",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.3,
+          "unit": "本",
+          "display_order": 3
+        },
+        {
+          "name": "酒",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 4
+        },
+        {
+          "name": "練りごま",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "g",
+          "display_order": 5
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 15,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "酢",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 7
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 8,
+          "unit": "g",
+          "display_order": 8
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "ml",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "鶏むね肉に酒を振り、耐熱容器に入れて中まで火が通るまで加熱する。"
+        },
+        {
+          "step_number": 2,
+          "description": "鶏肉を冷ましてから食べやすく裂く。"
+        },
+        {
+          "step_number": 3,
+          "description": "きゅうりは細切り、長ねぎはみじん切りにする。"
+        },
+        {
+          "step_number": 4,
+          "description": "練りごま、醤油、酢、砂糖、ごま油、長ねぎを混ぜてたれを作る。"
+        },
+        {
+          "step_number": 5,
+          "description": "きゅうりと鶏肉を盛り、たれをかける。"
+        }
+      ]
+    },
+    {
+      "name": "春雨サラダ",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "中華",
+      "dish_category": "副菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "春雨",
+          "category": "穀類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 60,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "きゅうり",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.8,
+          "unit": "本",
+          "display_order": 2
+        },
+        {
+          "name": "にんじん",
+          "category": "野菜",
+          "default_unit": "本",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 0.25,
+          "unit": "本",
+          "display_order": 3
+        },
+        {
+          "name": "ハム",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 50,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "酢",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 20,
+          "unit": "ml",
+          "display_order": 6
+        },
+        {
+          "name": "砂糖",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 8,
+          "unit": "g",
+          "display_order": 7
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 8,
+          "unit": "ml",
+          "display_order": 8
+        },
+        {
+          "name": "白いりごま",
+          "category": "調味料",
+          "default_unit": "g",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 5,
+          "unit": "g",
+          "display_order": 9
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "春雨を表示時間を目安に戻し、水気を切って食べやすい長さに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "きゅうり、にんじん、ハムを細切りにする。"
+        },
+        {
+          "step_number": 3,
+          "description": "にんじんはさっとゆでる。"
+        },
+        {
+          "step_number": 4,
+          "description": "醤油、酢、砂糖、ごま油を混ぜてたれを作る。"
+        },
+        {
+          "step_number": 5,
+          "description": "春雨と具材をたれで和え、白いりごまを混ぜる。"
+        }
+      ]
+    },
+    {
+      "name": "豚キムチ",
+      "cooking_time_minutes": 20,
+      "cuisine_type": "韓国風",
+      "dish_category": "主菜",
+      "yield_type": "servings",
+      "base_servings": 2,
+      "fixed_yield_text": null,
+      "ingredients": [
+        {
+          "name": "豚バラ薄切り肉",
+          "category": "肉類",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 200,
+          "unit": "g",
+          "display_order": 1
+        },
+        {
+          "name": "白菜キムチ",
+          "category": "その他",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 180,
+          "unit": "g",
+          "display_order": 2
+        },
+        {
+          "name": "もやし",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 150,
+          "unit": "g",
+          "display_order": 3
+        },
+        {
+          "name": "にら",
+          "category": "野菜",
+          "default_unit": "g",
+          "is_seasoning": false,
+          "is_inventory_consumed": true,
+          "quantity": 50,
+          "unit": "g",
+          "display_order": 4
+        },
+        {
+          "name": "ごま油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 5
+        },
+        {
+          "name": "醤油",
+          "category": "調味料",
+          "default_unit": "ml",
+          "is_seasoning": true,
+          "is_inventory_consumed": false,
+          "quantity": 10,
+          "unit": "ml",
+          "display_order": 6
+        }
+      ],
+      "steps": [
+        {
+          "step_number": 1,
+          "description": "豚肉とにらを食べやすい大きさに切る。"
+        },
+        {
+          "step_number": 2,
+          "description": "フライパンにごま油を熱し、豚肉を炒める。"
+        },
+        {
+          "step_number": 3,
+          "description": "豚肉に火が通ったら白菜キムチともやしを加える。"
+        },
+        {
+          "step_number": 4,
+          "description": "もやしがしんなりしたらにらと醤油を加え、手早く炒め合わせる。"
+        }
+      ]
+    }
+  ]
+}
