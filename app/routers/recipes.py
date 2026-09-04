@@ -47,6 +47,10 @@ from app.services.recipe_serving import (
 from app.services.recipe_inventory import (
     build_recipe_inventory_statuses,
 )
+from app.services.recipe_consumption import (
+    build_recipe_consumption_plan,
+    consume_recipe_inventory,
+)
 
 
 router = APIRouter(
@@ -533,6 +537,122 @@ def delete_recipe_from_form(
 
     return RedirectResponse(
         url=f"/recipes?{parameters}",
+        status_code=303,
+    )
+
+
+@router.get("/{recipe_id}/cook")
+def show_recipe_cook_confirmation(
+    recipe_id: int,
+    request: Request,
+    servings: int | None = Query(
+        default=None,
+        ge=1,
+        le=100,
+    ),
+    db: Session = Depends(get_db),
+):
+    """調理前の在庫消費内容を表示する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    selected_servings = None
+
+    if recipe.yield_type == "servings":
+        selected_servings = (
+            servings
+            if servings is not None
+            else recipe.base_servings
+        )
+
+    consumption_plan = (
+        build_recipe_consumption_plan(
+            recipe=recipe,
+            target_servings=selected_servings,
+        )
+    )
+
+    return templates.TemplateResponse(
+        request=request,
+        name="recipes/cook_confirm.html",
+        context={
+            "recipe": recipe,
+            "selected_servings": selected_servings,
+            "consumption_plan": consumption_plan,
+        },
+    )
+
+
+@router.post("/{recipe_id}/cook")
+def cook_recipe(
+    recipe_id: int,
+    servings: int | None = Form(default=None),
+    db: Session = Depends(get_db),
+):
+    """確認済みのレシピ材料を在庫から消費する。"""
+    recipe = get_recipe_by_id(
+        db=db,
+        recipe_id=recipe_id,
+    )
+
+    if recipe is None:
+        raise HTTPException(
+            status_code=404,
+            detail="レシピが見つかりません。",
+        )
+
+    selected_servings = None
+
+    if recipe.yield_type == "servings":
+        selected_servings = (
+            servings
+            if servings is not None
+            else recipe.base_servings
+        )
+
+        if (
+            selected_servings is None
+            or not 1 <= selected_servings <= 100
+        ):
+            raise HTTPException(
+                status_code=422,
+                detail="人数は1から100で指定してください。",
+            )
+
+    result = consume_recipe_inventory(
+        db=db,
+        recipe=recipe,
+        target_servings=selected_servings,
+    )
+
+    message = "在庫を更新しました。"
+
+    if result.has_shortage:
+        message = (
+            "一部材料が不足していたため、"
+            "在庫にある分だけ消費しました。"
+        )
+
+    parameters: dict[str, str | int] = {
+        "message": message,
+    }
+
+    if selected_servings is not None:
+        parameters["servings"] = selected_servings
+
+    return RedirectResponse(
+        url=(
+            f"/recipes/{recipe.id}?"
+            f"{urlencode(parameters)}"
+        ),
         status_code=303,
     )
 

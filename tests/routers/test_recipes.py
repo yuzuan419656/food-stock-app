@@ -1589,3 +1589,155 @@ def test_recipe_detail_displays_not_applicable(
     assert response.status_code == 200
     assert "適量" in response.text
     assert "在庫判定対象外" in response.text
+
+
+def test_recipe_cook_confirmation_displays_plan_without_consuming(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+
+    response = client.get(
+        f"/recipes/{recipe.id}/cook?servings=2"
+    )
+
+    assert response.status_code == 200
+    assert "調理確認" in response.text
+    assert "在庫消費予定" in response.text
+    assert "2人分" in response.text
+    assert "消費予定量" in response.text
+    assert "2個" in response.text
+    db_session.refresh(inventory)
+    assert inventory.quantity == 3
+
+
+def test_recipe_cook_confirmation_keeps_selected_servings(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=5,
+    )
+
+    response = client.get(
+        f"/recipes/{recipe.id}/cook?servings=4"
+    )
+
+    assert response.status_code == 200
+    assert "4人分" in response.text
+    assert 'name="servings"' in response.text
+    assert 'value="4"' in response.text
+    assert "4個" in response.text
+
+
+def test_cook_recipe_consumes_inventory_and_redirects(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+
+    response = client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert response.headers["location"].startswith(
+        f"/recipes/{recipe.id}?"
+    )
+    assert "servings=2" in response.headers["location"]
+    assert "%E5%9C%A8%E5%BA%AB" in (
+        response.headers["location"]
+    )
+    db_session.refresh(inventory)
+    assert inventory.quantity == 1
+
+
+def test_cook_recipe_partially_consumes_shortage(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        inventory_quantity=1,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+
+    response = client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    assert response.status_code == 303
+    assert "%E4%B8%80%E9%83%A8%E6%9D%90%E6%96%99" in (
+        response.headers["location"]
+    )
+    db_session.refresh(inventory)
+    assert inventory.quantity == 0
+
+
+def test_cook_recipe_does_not_consume_unit_mismatch(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        recipe_unit="g",
+        inventory_unit="個",
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+
+    confirmation = client.get(
+        f"/recipes/{recipe.id}/cook?servings=2"
+    )
+    response = client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    assert "自動判定不可" in confirmation.text
+    assert response.status_code == 303
+    db_session.refresh(inventory)
+    assert inventory.quantity == 3
+
+
+def test_cook_recipe_does_not_consume_not_applicable_item(
+    client: TestClient,
+    db_session: Session,
+):
+    recipe = _create_inventory_check_recipe(
+        db_session,
+        quantity=None,
+        quantity_text="適量",
+        is_seasoning=True,
+        is_inventory_consumed=False,
+        inventory_quantity=3,
+    )
+    inventory = recipe.ingredients[0].ingredient.inventories[0]
+
+    confirmation = client.get(
+        f"/recipes/{recipe.id}/cook?servings=2"
+    )
+    response = client.post(
+        f"/recipes/{recipe.id}/cook",
+        data={"servings": "2"},
+        follow_redirects=False,
+    )
+
+    assert "自動減算対象外" in confirmation.text
+    assert response.status_code == 303
+    db_session.refresh(inventory)
+    assert inventory.quantity == 3
