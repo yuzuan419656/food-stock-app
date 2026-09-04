@@ -41,6 +41,54 @@ button {
     cursor: pointer;
 }
 
+/* 共通操作ボタン（リンク・フォームボタン） */
+
+.primary-button,
+.secondary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 34px;
+    padding: 6px 12px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    font-size: inherit;
+    line-height: 1.4;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.primary-button {
+    border-color: #337ab7;
+    background-color: #337ab7;
+    color: #fff;
+}
+
+.primary-button:hover {
+    border-color: #286090;
+    background-color: #286090;
+    color: #fff;
+}
+
+.secondary-button {
+    border-color: #999;
+    background-color: #fff;
+    color: #333;
+}
+
+.secondary-button:hover {
+    border-color: #777;
+    background-color: #f0f0f0;
+    color: #333;
+}
+
+.primary-button:focus-visible,
+.secondary-button:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
+}
+
 [hidden] {
     display: none !important;
 }
@@ -60,14 +108,28 @@ button {
 /* 削除ボタン */
 
 .danger-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+    min-height: 34px;
+    padding: 6px 12px;
     border: none;
     border-radius: 4px;
     background-color: #d9534f;
     color: white;
+    text-decoration: none;
 }
 
 .danger-button:hover {
     background-color: #c9302c;
+    color: white;
+    text-decoration: none;
+}
+
+.danger-button:focus-visible {
+    outline: 2px solid #005fcc;
+    outline-offset: 2px;
 }
 
 /* カテゴリフィルター */
@@ -150,10 +212,10 @@ button {
 
 .quantity-control {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     align-items: center;
     justify-content: center;
-    gap: 8px;
+    gap: 4px;
 }
 
 .quantity-form {
@@ -213,7 +275,45 @@ a.quantity-button:visited {
     display: flex;
     flex-direction: column;
     align-items: center;
+    gap: 4px;
     min-width: 50px;
+    white-space: nowrap;
+}
+
+.inventory-list-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.inventory-list-table {
+    min-width: 980px;
+}
+
+.inventory-list-table th {
+    white-space: nowrap;
+}
+
+.shopping-list-select-all-label,
+.table-header-filter {
+    white-space: nowrap;
+}
+
+.inventory-list-table th:first-child {
+    min-width: 64px;
+}
+
+.inventory-list-table th:nth-child(3) {
+    min-width: 100px;
+}
+
+.inventory-list-table th:nth-child(8),
+.inventory-list-table td:last-child {
+    min-width: 150px;
+    white-space: nowrap;
+}
+
+.inventory-list-table td:last-child {
+    text-align: center;
 }
 
 .out-of-stock-label {
@@ -744,6 +844,10 @@ a.quantity-button:visited {
     }
 
     .shopping-list-controls {
+        flex-wrap: wrap;
+    }
+
+    .quantity-control {
         flex-wrap: wrap;
     }
 
