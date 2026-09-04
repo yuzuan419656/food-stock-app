@@ -4,6 +4,7 @@ import pytest
 
 from app.crud.inventory import (
     consume_inventory_quantity,
+    consume_inventory_quantity_without_commit,
     create_inventory_lot,
     get_inventory_expiration_date,
     get_inventory_purchase_date,
@@ -1077,6 +1078,37 @@ def test_increment_ignores_empty_latest_lot(
     assert empty_lot.quantity == pytest.approx(
         0
     )
+
+
+def test_consume_without_commit_can_be_rolled_back(
+    db_session,
+):
+    ingredient = create_ingredient_with_lots(
+        db_session=db_session,
+        lots=[
+            {
+                "quantity": 2.0,
+                "purchase_date": date(2026, 8, 1),
+                "expiration_date": date(2026, 8, 10),
+            },
+        ],
+    )
+    inventory_id = ingredient.inventories[0].id
+
+    result = consume_inventory_quantity_without_commit(
+        db=db_session,
+        ingredient_id=ingredient.id,
+        amount=1.0,
+    )
+
+    assert result is not None
+    assert result.consumed_quantity == 1.0
+
+    db_session.rollback()
+    inventory = db_session.get(Inventory, inventory_id)
+
+    assert inventory is not None
+    assert inventory.quantity == 2.0
 
 
 def test_increment_returns_none_without_active_lot(

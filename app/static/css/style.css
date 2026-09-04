@@ -1607,7 +1607,21 @@ select {
     min-width: 680px;
 }
 
+.recipe-consumption-table {
+    min-width: 860px;
+}
+
 .recipe-inventory-table th,
-.recipe-inventory-table td {
+.recipe-inventory-table td,
+.recipe-consumption-table th,
+.recipe-consumption-table td {
     white-space: nowrap;
+}
+
+.recipe-cook-action,
+.recipe-cook-confirm-form {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 20px;
 }

@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+
+{% block title %}
+調理確認
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <h2>調理確認</h2>
+            <p>在庫から消費する内容を確認してください。</p>
+        </div>
+
+        <a
+            href="/recipes/{{ recipe.id }}{% if selected_servings is not none %}?servings={{ selected_servings }}{% endif %}"
+            class="secondary-button"
+        >
+            レシピ詳細へ戻る
+        </a>
+    </div>
+
+    <section class="recipe-summary">
+        <h3>{{ recipe.name }}</h3>
+
+        <dl class="recipe-summary-list">
+            <div>
+                <dt>今回作る量</dt>
+                <dd>
+                    {% if selected_servings is not none %}
+                        {{ selected_servings }}人分
+                    {% else %}
+                        {{ recipe.fixed_yield_text }}
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="recipe-detail-section">
+        <h3>在庫消費予定</h3>
+
+        <div class="recipe-inventory-table-wrapper">
+            <table class="recipe-ingredient-table recipe-consumption-table">
+                <thead>
+                    <tr>
+                        <th>材料名</th>
+                        <th>必要量</th>
+                        <th>現在庫</th>
+                        <th>消費予定量</th>
+                        <th>不足量</th>
+                        <th>単位</th>
+                        <th>状態</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in consumption_plan %}
+                        {% set status = item.inventory_status %}
+                        <tr>
+                            <td>{{ status.recipe_ingredient.ingredient.name }}</td>
+                            <td>
+                                {{ status.display_required_quantity }}{% if status.recipe_ingredient.quantity is not none %}{{ status.recipe_ingredient.unit }}{% endif %}
+                            </td>
+                            <td>
+                                {% if status.is_automatically_checkable %}
+                                    {{ status.display_inventory_quantity }}{{ status.recipe_ingredient.unit }}
+                                {% else %}
+                                    ―
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.display_planned_consumption_quantity is not none %}
+                                    {{ item.display_planned_consumption_quantity }}{{ status.recipe_ingredient.unit }}
+                                {% else %}
+                                    ―
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if status.is_automatically_checkable and status.shortage_quantity %}
+                                    {{ status.display_shortage_quantity }}{{ status.recipe_ingredient.unit }}
+                                {% else %}
+                                    ―
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if status.is_unit_matched %}
+                                    一致
+                                {% elif status.status == "unit_mismatch" %}
+                                    不一致
+                                {% else %}
+                                    ―
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if status.status == "sufficient" %}
+                                    在庫あり
+                                {% elif status.status == "shortage" %}
+                                    不足
+                                {% elif status.status == "unit_mismatch" %}
+                                    自動判定不可
+                                {% else %}
+                                    自動減算対象外
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <form
+        action="/recipes/{{ recipe.id }}/cook"
+        method="post"
+        class="recipe-cook-confirm-form"
+    >
+        {% if selected_servings is not none %}
+            <input
+                type="hidden"
+                name="servings"
+                value="{{ selected_servings }}"
+            >
+        {% endif %}
+
+        <button type="submit" class="primary-button">
+            調理を確定して在庫を減らす
+        </button>
+
+        <a
+            href="/recipes/{{ recipe.id }}{% if selected_servings is not none %}?servings={{ selected_servings }}{% endif %}"
+            class="secondary-button"
+        >
+            キャンセル
+        </a>
+    </form>
+</div>
+{% endblock %}

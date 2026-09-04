@@ -67,6 +67,29 @@ def consume_inventory_quantity(
     ingredient_id: int,
     amount: float,
 ) -> InventoryConsumptionResult | None:
+    result = consume_inventory_quantity_without_commit(
+        db=db,
+        ingredient_id=ingredient_id,
+        amount=amount,
+    )
+
+    if result is not None:
+        db.commit()
+
+    return result
+
+
+def consume_inventory_quantity_without_commit(
+    db: Session,
+    ingredient_id: int,
+    amount: float,
+) -> InventoryConsumptionResult | None:
+    """
+    在庫を期限順に減算し、commitせず結果を返す。
+
+    複数材料を1トランザクションで扱う処理向け。
+    呼び出し側がcommitまたはrollbackを行う。
+    """
     ingredient = get_ingredient_by_id(
         db=db,
         ingredient_id=ingredient_id,
@@ -130,8 +153,6 @@ def consume_inventory_quantity(
     consumed_quantity = (
         amount - remaining_quantity
     )
-
-    db.commit()
 
     return InventoryConsumptionResult(
         requested_quantity=amount,

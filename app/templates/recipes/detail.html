@@ -255,7 +255,7 @@
                                 {% if item.is_unit_matched %}
                                     一致
                                 {% elif item.status == "unit_mismatch" %}
-                                    不一致
+                                    不一致（レシピ：{{ item.recipe_ingredient.unit }}／在庫：{{ item.recipe_ingredient.ingredient.default_unit or "未設定" }}）
                                 {% else %}
                                     ―
                                 {% endif %}
@@ -275,6 +275,15 @@
                     {% endfor %}
                 </tbody>
             </table>
+        </div>
+
+        <div class="recipe-cook-action">
+            <a
+                href="/recipes/{{ recipe.id }}/cook{% if selected_servings is not none %}?servings={{ selected_servings }}{% endif %}"
+                class="primary-button"
+            >
+                このレシピを作る
+            </a>
         </div>
     </section>
 
