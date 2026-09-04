@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}
+レシピ削除確認
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <section class="recipe-delete-confirmation">
+        <h2>レシピ削除確認</h2>
+
+        <p>
+            以下のレシピを一覧から削除しても
+            よろしいですか？
+        </p>
+
+        <p class="form-guidance-message">
+            削除後、このレシピは通常の一覧や
+            詳細画面に表示されなくなります。
+            レシピ情報、材料、調理手順は
+            履歴保持のためデータベース上に残ります。
+        </p>
+
+        <table class="recipe-delete-summary">
+            <tbody>
+                <tr>
+                    <th>レシピ名</th>
+                    <td>{{ recipe.name }}</td>
+                </tr>
+
+                <tr>
+                    <th>料理系統</th>
+                    <td>{{ recipe.cuisine_type }}</td>
+                </tr>
+
+                <tr>
+                    <th>区分</th>
+                    <td>{{ recipe.dish_category }}</td>
+                </tr>
+
+                <tr>
+                    <th>所要時間</th>
+                    <td>
+                        {{ recipe.cooking_time_minutes }}分
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>基準量</th>
+                    <td>
+                        {% if recipe.yield_type == "servings" %}
+                            {{ recipe.base_servings }}人分
+                        {% else %}
+                            {{ recipe.fixed_yield_text }}
+                        {% endif %}
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>材料数</th>
+                    <td>
+                        {{ recipe.ingredients | length }}件
+                    </td>
+                </tr>
+
+                <tr>
+                    <th>手順数</th>
+                    <td>
+                        {{ recipe.steps | length }}件
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <form
+            action="/recipes/{{ recipe.id }}/delete"
+            method="post"
+            class="recipe-delete-form"
+        >
+            <div class="form-actions">
+                <button
+                    type="submit"
+                    class="danger-button"
+                >
+                    レシピを削除する
+                </button>
+
+                <a
+                    href="{{ cancel_url }}"
+                    class="secondary-button"
+                >
+                    キャンセル
+                </a>
+            </div>
+        </form>
+    </section>
+</div>
+{% endblock %}

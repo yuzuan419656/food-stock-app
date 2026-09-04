@@ -1,0 +1,302 @@
+{% extends "base.html" %}
+
+{% block title %}
+おすすめレシピ
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-list-header">
+        <div>
+            <h2>おすすめレシピ</h2>
+            <p>現在の在庫や期限、調理履歴からおすすめ順に表示します。</p>
+        </div>
+
+        <a href="/recipes" class="secondary-button">
+            レシピ一覧へ戻る
+        </a>
+    </div>
+
+    <section class="recipe-recommendation-filter">
+        <h3>推薦条件</h3>
+
+        <form method="get" action="/recipes/recommendations">
+            <div class="recipe-recommendation-filter-grid">
+                <div class="form-group">
+                    <label for="recommendation-servings">人数</label>
+                    <input
+                        type="number"
+                        id="recommendation-servings"
+                        name="servings"
+                        value="{{ selected_servings }}"
+                        min="1"
+                        max="100"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="recommendation-mode">推薦モード</label>
+                    <select id="recommendation-mode" name="mode">
+                        {% for value, label in [
+                            ("balanced", "バランス"),
+                            ("expiring", "期限が近い食材を優先"),
+                            ("quick", "すぐ作れる"),
+                            ("in_stock", "在庫だけで作れる")
+                        ] %}
+                            <option
+                                value="{{ value }}"
+                                {% if selected_mode == value %}selected{% endif %}
+                            >
+                                {{ label }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recommendation-time">調理時間</label>
+                    <select
+                        id="recommendation-time"
+                        name="max_cooking_time"
+                    >
+                        <option value="">指定なし</option>
+                        {% for minutes in [10, 20, 30] %}
+                            <option
+                                value="{{ minutes }}"
+                                {% if selected_max_cooking_time == minutes %}selected{% endif %}
+                            >
+                                {{ minutes }}分以内
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recommendation-cuisine">料理系統</label>
+                    <select id="recommendation-cuisine" name="cuisine_type">
+                        <option value="">指定なし</option>
+                        {% for option in cuisine_type_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_cuisine_type == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="recommendation-category">料理区分</label>
+                    <select id="recommendation-category" name="dish_category">
+                        <option value="">指定なし</option>
+                        {% for option in dish_category_options %}
+                            <option
+                                value="{{ option }}"
+                                {% if selected_dish_category == option %}selected{% endif %}
+                            >
+                                {{ option }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <details class="recipe-weight-settings">
+                <summary>重みを調整</summary>
+
+                <p class="recipe-weight-guide">
+                    推薦モードの重みに対する倍率です。0で無効、
+                    1で標準、3で最も強く反映します。
+                </p>
+
+                <div class="recipe-weight-grid">
+                    <label class="recipe-weight-control">
+                        <span>期限</span>
+                        <small>期限が近い食材を使うレシピを優先</small>
+                        <input type="range" name="expiration_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.expiration }}" data-weight-output="expiration-weight-value">
+                        <output id="expiration-weight-value">{{ recommendation_weights.expiration }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>在庫</span>
+                        <small>現在の在庫だけで作りやすいレシピを優先</small>
+                        <input type="range" name="inventory_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.inventory }}" data-weight-output="inventory-weight-value">
+                        <output id="inventory-weight-value">{{ recommendation_weights.inventory }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>お気に入り</span>
+                        <small>お気に入り登録済みレシピを優先</small>
+                        <input type="range" name="favorite_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.favorite }}" data-weight-output="favorite-weight-value">
+                        <output id="favorite-weight-value">{{ recommendation_weights.favorite }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>調理履歴</span>
+                        <small>過去によく作ったレシピを少し優先</small>
+                        <input type="range" name="history_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.history }}" data-weight-output="history-weight-value">
+                        <output id="history-weight-value">{{ recommendation_weights.history }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>最近作っていない</span>
+                        <small>最後の調理から時間が空いたレシピを優先</small>
+                        <input type="range" name="recency_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.recency }}" data-weight-output="recency-weight-value">
+                        <output id="recency-weight-value">{{ recommendation_weights.recency }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>調理時間</span>
+                        <small>短時間で作れるレシピを優先</small>
+                        <input type="range" name="cooking_time_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.cooking_time }}" data-weight-output="cooking-time-weight-value">
+                        <output id="cooking-time-weight-value">{{ recommendation_weights.cooking_time }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>不足ペナルティ</span>
+                        <small>不足食材があるレシピを下げる強さ</small>
+                        <input type="range" name="shortage_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.shortage }}" data-weight-output="shortage-weight-value">
+                        <output id="shortage-weight-value">{{ recommendation_weights.shortage }}</output>
+                    </label>
+                </div>
+
+                <a
+                    href="/recipes/recommendations?servings={{ selected_servings }}&mode={{ selected_mode }}{% if selected_max_cooking_time is not none %}&max_cooking_time={{ selected_max_cooking_time }}{% endif %}"
+                    class="secondary-button recipe-weight-reset"
+                >
+                    標準に戻す
+                </a>
+            </details>
+
+            <button type="submit" class="primary-button">
+                おすすめを表示
+            </button>
+        </form>
+    </section>
+
+    {% if recommendations %}
+        <div class="recipe-recommendation-list">
+            {% for item in recommendations %}
+                <article class="recipe-recommendation-card">
+                    <div class="recipe-recommendation-rank">
+                        {{ loop.index }}位
+                    </div>
+
+                    <div class="recipe-recommendation-main">
+                        <div class="recipe-recommendation-title-row">
+                            <h3>
+                                <a
+                                    href="/recipes/{{ item.recipe.id }}{% if item.selected_servings is not none %}?servings={{ item.selected_servings }}{% endif %}"
+                                >
+                                    {{ item.recipe.name }}
+                                </a>
+                            </h3>
+
+                            {% if item.recipe.is_favorite %}
+                                <span
+                                    class="recipe-favorite-mark"
+                                    aria-label="お気に入り"
+                                >★</span>
+                            {% endif %}
+                        </div>
+
+                        <dl class="recipe-recommendation-summary">
+                            <div>
+                                <dt>調理時間</dt>
+                                <dd>{{ item.recipe.cooking_time_minutes }}分</dd>
+                            </div>
+                            <div>
+                                <dt>不足食材</dt>
+                                <dd>{{ item.shortage_ingredient_count }}種類</dd>
+                            </div>
+                            <div>
+                                <dt>期限切迫食材</dt>
+                                <dd>{{ item.urgent_ingredient_count }}種類</dd>
+                            </div>
+                            <div>
+                                <dt>調理回数</dt>
+                                <dd>{{ item.cooking_count }}回</dd>
+                            </div>
+                            <div>
+                                <dt>最終調理日</dt>
+                                <dd>
+                                    {% if item.last_cooked_at %}
+                                        {{ item.last_cooked_at.strftime("%Y-%m-%d") }}
+                                    {% else %}
+                                        未調理
+                                    {% endif %}
+                                </dd>
+                            </div>
+                        </dl>
+
+                        <h4>おすすめ理由</h4>
+                        {% if item.recommendation_reasons %}
+                            <ul class="recipe-recommendation-reasons">
+                                {% for reason in item.recommendation_reasons %}
+                                    <li>{{ reason }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p>現在の条件に基づく候補です。</p>
+                        {% endif %}
+
+                        <details class="recipe-recommendation-breakdown">
+                            <summary>スコア内訳</summary>
+                            <dl>
+                                <div>
+                                    <dt>期限</dt>
+                                    <dd>{{ "%.1f" | format(item.expiration_score) }}</dd>
+                                </div>
+                                <div>
+                                    <dt>在庫</dt>
+                                    <dd>{{ "%.1f" | format(item.inventory_score) }}</dd>
+                                </div>
+                                <div>
+                                    <dt>お気に入り</dt>
+                                    <dd>{{ "%.1f" | format(item.favorite_score) }}</dd>
+                                </div>
+                                <div>
+                                    <dt>履歴</dt>
+                                    <dd>{{ "%.1f" | format(item.history_score) }}</dd>
+                                </div>
+                                <div>
+                                    <dt>最近作っていない</dt>
+                                    <dd>{{ "%.1f" | format(item.recency_score) }}</dd>
+                                </div>
+                                <div>
+                                    <dt>調理時間</dt>
+                                    <dd>{{ "%.1f" | format(item.cooking_time_score) }}</dd>
+                                </div>
+                                <div>
+                                    <dt>不足ペナルティ</dt>
+                                    <dd>-{{ "%.1f" | format(item.shortage_penalty) }}</dd>
+                                </div>
+                            </dl>
+                        </details>
+                    </div>
+
+                    <div class="recipe-recommendation-score">
+                        <span>合計スコア</span>
+                        <strong>{{ "%.1f" | format(item.total_score) }}</strong>
+                    </div>
+                </article>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="empty-state">
+            <p>条件に合うレシピがありません</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    document.querySelectorAll("[data-weight-output]").forEach((slider) => {
+        const output = document.getElementById(slider.dataset.weightOutput);
+        slider.addEventListener("input", () => {
+            output.value = Number(slider.value).toFixed(1);
+        });
+    });
+</script>
+{% endblock %}

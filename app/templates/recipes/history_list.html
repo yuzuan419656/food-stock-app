@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block title %}
+調理履歴
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <h2>調理履歴</h2>
+            <p>これまでに調理したレシピを確認できます。</p>
+        </div>
+
+        <a href="/recipes" class="secondary-button">
+            レシピ一覧へ戻る
+        </a>
+    </div>
+
+    {% if histories %}
+        <div class="recipe-inventory-table-wrapper">
+            <table class="recipe-ingredient-table cooking-history-table">
+                <thead>
+                    <tr>
+                        <th>調理日時</th>
+                        <th>レシピ名</th>
+                        <th>作った量</th>
+                        <th>状態</th>
+                        <th>操作</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for history in histories %}
+                        <tr>
+                            <td>{{ history.cooked_at.strftime("%Y-%m-%d %H:%M") }}</td>
+                            <td>
+                                <a href="/recipes/history/{{ history.id }}">
+                                    {{ history.recipe_name }}
+                                </a>
+                            </td>
+                            <td>
+                                {% if history.yield_type == "servings" %}
+                                    {{ history.servings }}人分
+                                {% else %}
+                                    {{ history.fixed_yield_text }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if history.undone_at is not none %}
+                                    取り消し済み
+                                {% else %}
+                                    調理済み
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if history.id == undoable_history_id %}
+                                    <a
+                                        href="/recipes/history/{{ history.id }}/undo"
+                                        class="danger-button recipe-delete-link"
+                                    >
+                                        この調理を取り消す
+                                    </a>
+                                {% else %}
+                                    ―
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p>調理履歴はありません。</p>
+    {% endif %}
+</div>
+{% endblock %}

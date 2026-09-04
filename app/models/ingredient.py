@@ -71,3 +71,15 @@ class Ingredient(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
+
+    recipe_ingredients = relationship(
+        "RecipeIngredient",
+        back_populates="ingredient",
+        passive_deletes=True,
+    )
+
+    cooking_history_ingredients = relationship(
+        "CookingHistoryIngredient",
+        back_populates="ingredient",
+        passive_deletes=True,
+    )

@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+
+{% block title %}
+調理取り消し確認
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <h2>調理取り消し確認</h2>
+            <p>次の調理で消費した在庫を元のロットへ戻します。</p>
+        </div>
+
+        <a
+            href="/recipes/history/{{ history.id }}"
+            class="secondary-button"
+        >
+            履歴詳細へ戻る
+        </a>
+    </div>
+
+    <section class="recipe-summary">
+        <h3>{{ history.recipe_name }}</h3>
+        <dl class="recipe-summary-list">
+            <div>
+                <dt>調理日時</dt>
+                <dd>{{ history.cooked_at.strftime("%Y-%m-%d %H:%M") }}</dd>
+            </div>
+            <div>
+                <dt>作った量</dt>
+                <dd>
+                    {% if history.yield_type == "servings" %}
+                        {{ history.servings }}人分
+                    {% else %}
+                        {{ history.fixed_yield_text }}
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="recipe-detail-section">
+        <h3>復元予定</h3>
+
+        {% if undo_plan %}
+            <table class="recipe-ingredient-table">
+                <thead>
+                    <tr>
+                        <th>材料名</th>
+                        <th>復元数量</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in undo_plan %}
+                        <tr>
+                            <td>{{ item.ingredient_name }}</td>
+                            <td>{{ "%g" | format(item.restore_quantity) }}{{ item.unit or "" }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% else %}
+            <p>復元する在庫はありません。</p>
+        {% endif %}
+    </section>
+
+    <form
+        action="/recipes/history/{{ history.id }}/undo"
+        method="post"
+        class="recipe-cook-confirm-form"
+    >
+        <button type="submit" class="danger-button">
+            調理を取り消して在庫を戻す
+        </button>
+        <a
+            href="/recipes/history/{{ history.id }}"
+            class="secondary-button"
+        >
+            キャンセル
+        </a>
+    </form>
+</div>
+{% endblock %}
