@@ -148,6 +148,66 @@ def add_ingredients_to_shopping_list(
     return len(new_ingredient_ids)
 
 
+def add_or_reactivate_ingredients_without_commit(
+    db: Session,
+    ingredient_ids: list[int],
+) -> int:
+    """有効な食材を追加し、購入済みなら未購入へ戻す。
+
+    レシピからの一括追加用にcommitは呼び出し側へ委ねる。
+    戻り値は新規追加または未購入へ戻した件数。
+    """
+    unique_ingredient_ids = set(ingredient_ids)
+
+    if not unique_ingredient_ids:
+        return 0
+
+    active_ingredient_ids = {
+        ingredient_id
+        for (ingredient_id,) in (
+            db.query(Ingredient.id)
+            .filter(
+                Ingredient.id.in_(unique_ingredient_ids),
+                Ingredient.is_active.is_(True),
+            )
+            .all()
+        )
+    }
+
+    existing_items = {
+        item.ingredient_id: item
+        for item in (
+            db.query(ShoppingItem)
+            .filter(
+                ShoppingItem.ingredient_id.in_(
+                    active_ingredient_ids
+                )
+            )
+            .all()
+        )
+        if item.ingredient_id is not None
+    }
+
+    changed_count = 0
+
+    for ingredient_id in sorted(active_ingredient_ids):
+        existing_item = existing_items.get(ingredient_id)
+
+        if existing_item is None:
+            db.add(
+                ShoppingItem(
+                    ingredient_id=ingredient_id,
+                    is_purchased=False,
+                )
+            )
+            changed_count += 1
+        elif existing_item.is_purchased:
+            existing_item.is_purchased = False
+            changed_count += 1
+
+    return changed_count
+
+
 def add_custom_shopping_item(
     db: Session,
     custom_name: str,

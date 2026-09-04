@@ -5,6 +5,12 @@
 {% endblock %}
 
 {% block content %}
+{% if message %}
+    <p class="success-message">{{ message }}</p>
+{% endif %}
+{% if error_message %}
+    <p class="error-message">{{ error_message }}</p>
+{% endif %}
 <div class="container">
     <div class="recipe-detail-header">
         <div>
@@ -35,6 +41,22 @@
                     {% endif %}
                 </dd>
             </div>
+            <div>
+                <dt>状態</dt>
+                <dd>
+                    {% if history.undone_at is not none %}
+                        取り消し済み
+                    {% else %}
+                        調理済み
+                    {% endif %}
+                </dd>
+            </div>
+            {% if history.undone_at is not none %}
+                <div>
+                    <dt>取り消し日時</dt>
+                    <dd>{{ history.undone_at.strftime("%Y-%m-%d %H:%M") }}</dd>
+                </div>
+            {% endif %}
         </dl>
     </section>
 
@@ -89,5 +111,16 @@
             </table>
         </div>
     </section>
+
+    {% if is_undoable %}
+        <div class="recipe-cook-action">
+            <a
+                href="/recipes/history/{{ history.id }}/undo"
+                class="danger-button recipe-delete-link"
+            >
+                この調理を取り消す
+            </a>
+        </div>
+    {% endif %}
 </div>
 {% endblock %}

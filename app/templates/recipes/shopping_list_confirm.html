@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}不足食材の追加確認{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <h2>不足食材の追加確認</h2>
+            <p>{{ recipe.name }}</p>
+            <p>
+                {% if recipe.yield_type == "servings" %}
+                    {{ selected_servings }}人分
+                {% else %}
+                    {{ recipe.fixed_yield_text }}
+                {% endif %}
+            </p>
+        </div>
+        <a
+            href="/recipes/{{ recipe.id }}{% if selected_servings is not none %}?servings={{ selected_servings }}{% endif %}"
+            class="secondary-button"
+        >
+            レシピ詳細へ戻る
+        </a>
+    </div>
+
+    {% if candidates %}
+        <div class="recipe-inventory-table-wrapper">
+            <table class="recipe-ingredient-table recipe-inventory-table">
+                <thead>
+                    <tr>
+                        <th>材料名</th>
+                        <th>不足量</th>
+                        <th>単位</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in candidates %}
+                        <tr>
+                            <td>{{ item.ingredient.name }}</td>
+                            <td>{{ item.display_shortage_quantity }}</td>
+                            <td>{{ item.unit }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <form
+            method="post"
+            action="/recipes/{{ recipe.id }}/shopping-list"
+        >
+            {% if selected_servings is not none %}
+                <input
+                    type="hidden"
+                    name="servings"
+                    value="{{ selected_servings }}"
+                >
+            {% endif %}
+            <button type="submit" class="primary-button">
+                買うものリストへ追加する
+            </button>
+        </form>
+    {% else %}
+        <p class="empty-state">追加対象の不足食材はありません</p>
+    {% endif %}
+</div>
+{% endblock %}

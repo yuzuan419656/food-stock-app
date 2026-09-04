@@ -25,6 +25,8 @@
                         <th>調理日時</th>
                         <th>レシピ名</th>
                         <th>作った量</th>
+                        <th>状態</th>
+                        <th>操作</th>
                     </tr>
                 </thead>
 
@@ -42,6 +44,25 @@
                                     {{ history.servings }}人分
                                 {% else %}
                                     {{ history.fixed_yield_text }}
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if history.undone_at is not none %}
+                                    取り消し済み
+                                {% else %}
+                                    調理済み
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if history.id == undoable_history_id %}
+                                    <a
+                                        href="/recipes/history/{{ history.id }}/undo"
+                                        class="danger-button recipe-delete-link"
+                                    >
+                                        この調理を取り消す
+                                    </a>
+                                {% else %}
+                                    ―
                                 {% endif %}
                             </td>
                         </tr>
