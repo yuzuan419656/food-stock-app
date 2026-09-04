@@ -2,6 +2,7 @@
 
 from dataclasses import dataclass
 from datetime import date, datetime
+from math import isfinite
 
 from sqlalchemy import func
 from sqlalchemy.orm import Session
@@ -31,6 +32,9 @@ class RecommendationWeights:
     recency: float = 1.0
     cooking_time: float = 1.0
     shortage: float = 1.0
+
+
+DEFAULT_RECOMMENDATION_WEIGHTS = RecommendationWeights()
 
 
 @dataclass(frozen=True)
@@ -79,7 +83,7 @@ class RecommendationResult:
 
 
 MODE_WEIGHTS = {
-    "balanced": RecommendationWeights(),
+    "balanced": DEFAULT_RECOMMENDATION_WEIGHTS,
     "expiring": RecommendationWeights(
         expiration=2.0,
         cooking_time=0.5,
@@ -93,6 +97,51 @@ MODE_WEIGHTS = {
         shortage=3.0,
     ),
 }
+
+
+def validate_recommendation_weights(
+    weights: RecommendationWeights,
+) -> None:
+    """UIから受け取る倍率が有限かつ0.0～3.0か検証する。"""
+    values = (
+        weights.expiration,
+        weights.inventory,
+        weights.favorite,
+        weights.history,
+        weights.recency,
+        weights.cooking_time,
+        weights.shortage,
+    )
+    if any(
+        not isfinite(value) or not 0.0 <= value <= 3.0
+        for value in values
+    ):
+        raise ValueError(
+            "推薦の重みは0.0から3.0の有限値で指定してください。"
+        )
+
+
+def combine_recommendation_weights(
+    mode: str,
+    custom_weights: RecommendationWeights | None,
+) -> RecommendationWeights:
+    """mode別の重みとユーザー指定倍率を掛け合わせる。"""
+    mode_weights = MODE_WEIGHTS[mode]
+    if custom_weights is None:
+        return mode_weights
+
+    validate_recommendation_weights(custom_weights)
+    return RecommendationWeights(
+        expiration=mode_weights.expiration * custom_weights.expiration,
+        inventory=mode_weights.inventory * custom_weights.inventory,
+        favorite=mode_weights.favorite * custom_weights.favorite,
+        history=mode_weights.history * custom_weights.history,
+        recency=mode_weights.recency * custom_weights.recency,
+        cooking_time=(
+            mode_weights.cooking_time * custom_weights.cooking_time
+        ),
+        shortage=mode_weights.shortage * custom_weights.shortage,
+    )
 
 
 def get_recipe_history_summaries(
@@ -262,7 +311,10 @@ def recommend_recipes(
             "調理時間は10分、20分、30分のいずれかで指定してください。"
         )
 
-    selected_weights = weights or MODE_WEIGHTS[mode]
+    selected_weights = combine_recommendation_weights(
+        mode=mode,
+        custom_weights=weights,
+    )
     evaluated_at = now or datetime.now()
     histories = get_recipe_history_summaries(db)
     results: list[RecommendationResult] = []
@@ -308,14 +360,21 @@ def recommend_recipes(
         recency_score = recency_raw * selected_weights.recency
         cooking_time_score = time_raw * selected_weights.cooking_time
         shortage_penalty = shortage_raw * selected_weights.shortage
-        reasons = list(expiration.reasons) + list(inventory_reasons)
-        if recipe.is_favorite:
+        reasons: list[str] = []
+        if expiration_score:
+            reasons.extend(expiration.reasons)
+        if (
+            inventory_score
+            or shortage_penalty
+        ):
+            reasons.extend(inventory_reasons)
+        if favorite_score:
             reasons.append("お気に入りのレシピです")
-        if history.cooking_count:
+        if history_score:
             reasons.append(f"これまでに{history.cooking_count}回作っています")
-        if recency_reason:
+        if recency_score and recency_reason:
             reasons.append(recency_reason)
-        if time_reason:
+        if cooking_time_score and time_reason:
             reasons.append(time_reason)
 
         results.append(

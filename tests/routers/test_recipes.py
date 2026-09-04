@@ -1,4 +1,5 @@
 from datetime import date, datetime
+import re
 
 import pytest
 from fastapi.testclient import TestClient
@@ -2227,3 +2228,133 @@ def test_navigation_links_to_recipe_recommendations(
     response = client.get("/recipes")
     assert 'href="/recipes/recommendations"' in response.text
     assert "おすすめレシピ" in response.text
+
+
+def test_recipe_recommendations_displays_weight_controls(
+    client: TestClient,
+):
+    response = client.get("/recipes/recommendations")
+
+    assert response.status_code == 200
+    assert "重みを調整" in response.text
+    for name in (
+        "expiration_weight",
+        "inventory_weight",
+        "favorite_weight",
+        "history_weight",
+        "recency_weight",
+        "cooking_time_weight",
+        "shortage_weight",
+    ):
+        assert f'name="{name}"' in response.text
+    assert 'min="0"' in response.text
+    assert 'max="3"' in response.text
+    assert 'step="0.1"' in response.text
+    assert 'value="1.0"' in response.text
+
+
+def test_recipe_recommendations_keeps_custom_weights(
+    client: TestClient,
+):
+    response = client.get(
+        "/recipes/recommendations"
+        "?expiration_weight=0.5"
+        "&inventory_weight=1.2"
+        "&favorite_weight=1.3"
+        "&history_weight=1.4"
+        "&recency_weight=1.5"
+        "&cooking_time_weight=1.6"
+        "&shortage_weight=1.7"
+    )
+
+    assert response.status_code == 200
+    for value in ("0.5", "1.2", "1.3", "1.4", "1.5", "1.6", "1.7"):
+        assert f'value="{value}"' in response.text
+
+
+@pytest.mark.parametrize(
+    "query",
+    [
+        "expiration_weight=-0.1",
+        "inventory_weight=3.1",
+        "favorite_weight=abc",
+        "history_weight=nan",
+        "recency_weight=inf",
+    ],
+)
+def test_recipe_recommendations_rejects_invalid_weights(
+    client: TestClient,
+    query: str,
+):
+    response = client.get(
+        f"/recipes/recommendations?{query}"
+    )
+    assert response.status_code == 422
+
+
+def test_recipe_recommendation_weight_reset_keeps_basic_conditions(
+    client: TestClient,
+):
+    response = client.get(
+        "/recipes/recommendations"
+        "?servings=4&mode=quick&max_cooking_time=20"
+        "&expiration_weight=2"
+    )
+
+    assert response.status_code == 200
+    assert "標準に戻す" in response.text
+    reset_link = re.search(
+        r'href="([^"]+)"[^>]*class="[^"]*recipe-weight-reset',
+        response.text,
+    )
+    assert reset_link is not None
+    reset_url = urlparse(reset_link.group(1))
+    assert reset_url.path == "/recipes/recommendations"
+    assert parse_qs(reset_url.query) == {
+        "servings": ["4"],
+        "mode": ["quick"],
+        "max_cooking_time": ["20"],
+    }
+
+
+def test_custom_weight_changes_recommendation_order(
+    client: TestClient,
+    db_session: Session,
+):
+    standard = _create_recipe("標準レシピ")
+    favorite = _create_recipe(
+        "お気に入りレシピ",
+        is_favorite=True,
+    )
+    db_session.add_all([standard, favorite])
+    db_session.commit()
+
+    default_response = client.get(
+        "/recipes/recommendations"
+    )
+    zero_favorite_response = client.get(
+        "/recipes/recommendations?favorite_weight=0"
+    )
+
+    assert default_response.text.index("お気に入りレシピ") < (
+        default_response.text.index("標準レシピ")
+    )
+    assert zero_favorite_response.text.index("標準レシピ") < (
+        zero_favorite_response.text.index("お気に入りレシピ")
+    )
+
+
+def test_custom_weights_combine_with_other_recommendation_conditions(
+    client: TestClient,
+):
+    response = client.get(
+        "/recipes/recommendations"
+        "?servings=3&mode=expiring&max_cooking_time=30"
+        "&expiration_weight=2.5"
+    )
+
+    assert response.status_code == 200
+    assert 'value="3"' in response.text
+    assert 'value="expiring"' in response.text
+    assert 'value="30"' in response.text
+    assert 'value="2.5"' in response.text
