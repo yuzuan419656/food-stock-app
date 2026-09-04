@@ -1518,7 +1518,15 @@ def test_recipe_detail_displays_inventory_status(
 
     assert response.status_code == 200
     assert "在庫状況" in response.text
-    assert "必要量" in response.text
+    for heading in (
+        "材料名",
+        "必要量",
+        "在庫",
+        "不足",
+        "単位",
+        "状態",
+    ):
+        assert f"<th>{heading}</th>" in response.text
     assert "2個" in response.text
     assert "3個" in response.text
     assert "在庫あり" in response.text

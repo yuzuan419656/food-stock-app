@@ -1598,55 +1598,16 @@ select {
     }
 }
 
-.recipe-inventory-list {
-    display: grid;
-    gap: 12px;
+.recipe-inventory-table-wrapper {
+    max-width: 100%;
+    overflow-x: auto;
 }
 
-.recipe-inventory-item {
-    padding: 14px 16px;
-    border: 1px solid #ddd;
-    border-left: 4px solid #888;
-    border-radius: 6px;
-    background-color: #fafafa;
+.recipe-inventory-table {
+    min-width: 680px;
 }
 
-.recipe-inventory-item h4 {
-    margin: 0 0 10px;
-}
-
-.recipe-inventory-item dl {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 24px;
-    margin: 0;
-}
-
-.recipe-inventory-item dl div {
-    display: flex;
-    gap: 6px;
-}
-
-.recipe-inventory-item dt {
-    font-weight: bold;
-}
-
-.recipe-inventory-item dd {
-    margin: 0;
-}
-
-.recipe-inventory-sufficient {
-    border-left-color: #2e7d32;
-    background-color: #f3faf4;
-}
-
-.recipe-inventory-shortage {
-    border-left-color: #c62828;
-    background-color: #fff5f5;
-}
-
-.recipe-inventory-unit_mismatch,
-.recipe-inventory-not_applicable {
-    border-left-color: #b26a00;
-    background-color: #fff9ed;
+.recipe-inventory-table th,
+.recipe-inventory-table td {
+    white-space: nowrap;
 }
