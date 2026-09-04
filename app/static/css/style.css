@@ -1611,6 +1611,11 @@ select {
     min-width: 860px;
 }
 
+.cooking-history-table,
+.cooking-history-detail-table {
+    min-width: 680px;
+}
+
 .recipe-inventory-table th,
 .recipe-inventory-table td,
 .recipe-consumption-table th,

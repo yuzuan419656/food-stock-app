@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block title %}
+調理履歴詳細
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="recipe-detail-header">
+        <div>
+            <h2>{{ history.recipe_name }}</h2>
+            <p>調理時の材料使用量を確認できます。</p>
+        </div>
+
+        <a href="/recipes/history" class="secondary-button">
+            調理履歴へ戻る
+        </a>
+    </div>
+
+    <section class="recipe-summary">
+        <h3>調理情報</h3>
+
+        <dl class="recipe-summary-list">
+            <div>
+                <dt>調理日時</dt>
+                <dd>{{ history.cooked_at.strftime("%Y-%m-%d %H:%M") }}</dd>
+            </div>
+            <div>
+                <dt>作った量</dt>
+                <dd>
+                    {% if history.yield_type == "servings" %}
+                        {{ history.servings }}人分
+                    {% else %}
+                        {{ history.fixed_yield_text }}
+                    {% endif %}
+                </dd>
+            </div>
+        </dl>
+    </section>
+
+    <section class="recipe-detail-section">
+        <h3>材料</h3>
+
+        <div class="recipe-inventory-table-wrapper">
+            <table class="recipe-ingredient-table cooking-history-detail-table">
+                <thead>
+                    <tr>
+                        <th>材料名</th>
+                        <th>必要量</th>
+                        <th>実消費量</th>
+                        <th>不足量</th>
+                        <th>状態</th>
+                    </tr>
+                </thead>
+
+                <tbody>
+                    {% for item in history.ingredients %}
+                        <tr>
+                            <td>{{ item.ingredient_name }}</td>
+                            <td>
+                                {% if item.required_quantity is not none %}
+                                    {{ "%g" | format(item.required_quantity) }}{{ item.unit or "" }}
+                                {% else %}
+                                    {{ item.required_quantity_text }}
+                                {% endif %}
+                            </td>
+                            <td>{{ "%g" | format(item.consumed_quantity) }}{{ item.unit or "" }}</td>
+                            <td>
+                                {% if item.shortage_quantity is not none %}
+                                    {{ "%g" | format(item.shortage_quantity) }}{{ item.unit or "" }}
+                                {% else %}
+                                    ―
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if item.status == "sufficient" %}
+                                    在庫あり
+                                {% elif item.status == "shortage" %}
+                                    不足
+                                {% elif item.status == "unit_mismatch" %}
+                                    自動判定不可
+                                {% else %}
+                                    自動減算対象外
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
+</div>
+{% endblock %}

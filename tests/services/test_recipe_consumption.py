@@ -2,6 +2,7 @@ from datetime import date, datetime
 
 import pytest
 
+from app.models.cooking_history import CookingHistory
 from app.models.ingredient import Ingredient
 from app.models.inventory import Inventory
 from app.models.recipe import Recipe
@@ -125,6 +126,11 @@ def test_consumes_available_stock_and_reports_shortage(
     assert result.inventory_results[0].consumed_quantity == 1
     assert result.inventory_results[0].shortage_quantity == 1
     assert item.ingredient.inventories[0].quantity == 0
+    history_item = result.cooking_history.ingredients[0]
+    assert history_item.required_quantity == 2
+    assert history_item.consumed_quantity == 1
+    assert history_item.shortage_quantity == 1
+    assert history_item.unit == "個"
 
 
 def test_zero_stock_is_not_decreased(
@@ -137,6 +143,8 @@ def test_zero_stock_is_not_decreased(
 
     assert result.inventory_results[0].consumed_quantity == 0
     assert result.inventory_results[0].shortage_quantity == 2
+    assert result.cooking_history.ingredients[0].consumed_quantity == 0
+    assert result.cooking_history.ingredients[0].shortage_quantity == 2
 
 
 def test_consumes_multiple_lots_in_expiration_order(
@@ -163,12 +171,26 @@ def test_consumes_multiple_lots_in_expiration_order(
     )
     recipe = _recipe(db_session, [item])
 
-    consume_recipe_inventory(db_session, recipe)
+    result = consume_recipe_inventory(db_session, recipe)
 
     assert earlier.quantity == 0
     assert later.quantity == 0
     assert no_expiration.quantity == pytest.approx(1.5)
     assert deleted.quantity == 10
+    allocations = (
+        result.cooking_history.ingredients[0]
+        .inventory_consumptions
+    )
+    assert [item.inventory_id for item in allocations] == [
+        earlier.id,
+        later.id,
+        no_expiration.id,
+    ]
+    assert [item.consumed_quantity for item in allocations] == [
+        1,
+        1,
+        0.5,
+    ]
 
 
 def test_consumption_uses_scaled_servings(
@@ -177,13 +199,15 @@ def test_consumption_uses_scaled_servings(
     item = _ingredient_item("肉", lots=[_lot(5)])
     recipe = _recipe(db_session, [item])
 
-    consume_recipe_inventory(
+    result = consume_recipe_inventory(
         db_session,
         recipe,
         target_servings=4,
     )
 
     assert item.ingredient.inventories[0].quantity == 1
+    assert result.cooking_history.servings == 4
+    assert result.cooking_history.ingredients[0].required_quantity == 4
 
 
 def test_fixed_yield_uses_registered_quantity(
@@ -197,9 +221,11 @@ def test_fixed_yield_uses_registered_quantity(
         base_servings=None,
     )
 
-    consume_recipe_inventory(db_session, recipe)
+    result = consume_recipe_inventory(db_session, recipe)
 
     assert item.ingredient.inventories[0].quantity == 1
+    assert result.cooking_history.servings is None
+    assert result.cooking_history.fixed_yield_text == "4個"
 
 
 def test_non_automatic_items_are_not_consumed(
@@ -241,6 +267,15 @@ def test_non_automatic_items_are_not_consumed(
     result = consume_recipe_inventory(db_session, recipe)
 
     assert result.inventory_results == ()
+    assert len(result.cooking_history.ingredients) == 4
+    assert {
+        item.status
+        for item in result.cooking_history.ingredients
+    } == {"unit_mismatch", "not_applicable"}
+    assert all(
+        item.consumed_quantity == 0
+        for item in result.cooking_history.ingredients
+    )
     for item in recipe.ingredients:
         assert item.ingredient.inventories[0].quantity == 3
 
@@ -292,6 +327,7 @@ def test_all_ingredients_are_committed_once(
     consume_recipe_inventory(db_session, recipe)
 
     assert commit_count == 1
+    assert db_session.query(CookingHistory).count() == 1
 
 
 def test_exception_rolls_back_all_ingredients(
@@ -330,3 +366,28 @@ def test_exception_rolls_back_all_ingredients(
     db_session.expire_all()
     assert first.ingredient.inventories[0].quantity == 3
     assert second.ingredient.inventories[0].quantity == 3
+    assert db_session.query(CookingHistory).count() == 0
+
+
+def test_history_failure_rolls_back_inventory(
+    db_session,
+    monkeypatch,
+):
+    item = _ingredient_item("材料A", lots=[_lot(3)])
+    recipe = _recipe(db_session, [item])
+
+    def fail_history(**_kwargs):
+        raise RuntimeError("履歴保存失敗")
+
+    monkeypatch.setattr(
+        recipe_consumption,
+        "add_cooking_history",
+        fail_history,
+    )
+
+    with pytest.raises(RuntimeError, match="履歴保存失敗"):
+        consume_recipe_inventory(db_session, recipe)
+
+    db_session.expire_all()
+    assert item.ingredient.inventories[0].quantity == 3
+    assert db_session.query(CookingHistory).count() == 0
