@@ -296,10 +296,10 @@ def test_custom_weights_are_applied(db_session: Session):
     _create_recipe(db_session, name="重み", favorite=True)
     result = recommend_recipes(
         db_session,
-        weights=RecommendationWeights(favorite=10),
+        weights=RecommendationWeights(favorite=3),
         now=NOW,
     )[0]
-    assert result.favorite_score == 30
+    assert result.favorite_score == 9
 
 
 def test_results_are_sorted_and_ties_are_stable(db_session: Session):
@@ -366,5 +366,105 @@ def test_invalid_cooking_time_filter_is_rejected(db_session: Session):
         recommend_recipes(
             db_session,
             max_cooking_time=15,
+            now=NOW,
+        )
+
+
+@pytest.mark.parametrize(
+    ("weight_name", "result_name"),
+    [
+        ("expiration", "expiration_score"),
+        ("inventory", "inventory_score"),
+        ("favorite", "favorite_score"),
+        ("history", "history_score"),
+        ("recency", "recency_score"),
+        ("cooking_time", "cooking_time_score"),
+        ("shortage", "shortage_penalty"),
+    ],
+)
+def test_zero_custom_weight_disables_component(
+    db_session: Session,
+    weight_name: str,
+    result_name: str,
+):
+    recipe = _create_recipe(
+        db_session,
+        name=f"ゼロ重み{weight_name}",
+        quantities=[(2, 2, 1), (2, 1, None)],
+        cooking_time=10,
+        favorite=True,
+    )
+    _add_history(
+        db_session,
+        recipe,
+        NOW - timedelta(days=30),
+    )
+    values = {
+        "expiration": 1.0,
+        "inventory": 1.0,
+        "favorite": 1.0,
+        "history": 1.0,
+        "recency": 1.0,
+        "cooking_time": 1.0,
+        "shortage": 1.0,
+    }
+    values[weight_name] = 0.0
+
+    result = recommend_recipes(
+        db_session,
+        weights=RecommendationWeights(**values),
+        now=NOW,
+    )[0]
+
+    assert getattr(result, result_name) == 0
+
+
+def test_upper_weight_value_is_supported(db_session: Session):
+    _create_recipe(db_session, name="上限重み", favorite=True)
+    result = recommend_recipes(
+        db_session,
+        weights=RecommendationWeights(
+            expiration=3,
+            inventory=3,
+            favorite=3,
+            history=3,
+            recency=3,
+            cooking_time=3,
+            shortage=3,
+        ),
+        now=NOW,
+    )[0]
+    assert result.favorite_score == 9
+
+
+def test_mode_and_custom_weights_are_multiplied(db_session: Session):
+    _create_recipe(
+        db_session,
+        name="モード重み併用",
+        cooking_time=10,
+    )
+    result = recommend_recipes(
+        db_session,
+        mode="quick",
+        weights=RecommendationWeights(cooking_time=2),
+        now=NOW,
+    )[0]
+    assert result.cooking_time_score == 24
+
+
+@pytest.mark.parametrize(
+    "invalid_weight",
+    [-0.1, 3.1, float("nan"), float("inf")],
+)
+def test_invalid_custom_weight_is_rejected(
+    db_session: Session,
+    invalid_weight: float,
+):
+    with pytest.raises(ValueError, match="0.0から3.0"):
+        recommend_recipes(
+            db_session,
+            weights=RecommendationWeights(
+                expiration=invalid_weight
+            ),
             now=NOW,
         )

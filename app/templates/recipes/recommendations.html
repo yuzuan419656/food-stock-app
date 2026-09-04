@@ -73,6 +73,73 @@
                 </div>
             </div>
 
+            <details class="recipe-weight-settings">
+                <summary>重みを調整</summary>
+
+                <p class="recipe-weight-guide">
+                    推薦モードの重みに対する倍率です。0で無効、
+                    1で標準、3で最も強く反映します。
+                </p>
+
+                <div class="recipe-weight-grid">
+                    <label class="recipe-weight-control">
+                        <span>期限</span>
+                        <small>期限が近い食材を使うレシピを優先</small>
+                        <input type="range" name="expiration_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.expiration }}" data-weight-output="expiration-weight-value">
+                        <output id="expiration-weight-value">{{ recommendation_weights.expiration }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>在庫</span>
+                        <small>現在の在庫だけで作りやすいレシピを優先</small>
+                        <input type="range" name="inventory_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.inventory }}" data-weight-output="inventory-weight-value">
+                        <output id="inventory-weight-value">{{ recommendation_weights.inventory }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>お気に入り</span>
+                        <small>お気に入り登録済みレシピを優先</small>
+                        <input type="range" name="favorite_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.favorite }}" data-weight-output="favorite-weight-value">
+                        <output id="favorite-weight-value">{{ recommendation_weights.favorite }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>調理履歴</span>
+                        <small>過去によく作ったレシピを少し優先</small>
+                        <input type="range" name="history_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.history }}" data-weight-output="history-weight-value">
+                        <output id="history-weight-value">{{ recommendation_weights.history }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>最近作っていない</span>
+                        <small>最後の調理から時間が空いたレシピを優先</small>
+                        <input type="range" name="recency_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.recency }}" data-weight-output="recency-weight-value">
+                        <output id="recency-weight-value">{{ recommendation_weights.recency }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>調理時間</span>
+                        <small>短時間で作れるレシピを優先</small>
+                        <input type="range" name="cooking_time_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.cooking_time }}" data-weight-output="cooking-time-weight-value">
+                        <output id="cooking-time-weight-value">{{ recommendation_weights.cooking_time }}</output>
+                    </label>
+
+                    <label class="recipe-weight-control">
+                        <span>不足ペナルティ</span>
+                        <small>不足食材があるレシピを下げる強さ</small>
+                        <input type="range" name="shortage_weight" min="0" max="3" step="0.1" value="{{ recommendation_weights.shortage }}" data-weight-output="shortage-weight-value">
+                        <output id="shortage-weight-value">{{ recommendation_weights.shortage }}</output>
+                    </label>
+                </div>
+
+                <a
+                    href="/recipes/recommendations?servings={{ selected_servings }}&mode={{ selected_mode }}{% if selected_max_cooking_time is not none %}&max_cooking_time={{ selected_max_cooking_time }}{% endif %}"
+                    class="secondary-button recipe-weight-reset"
+                >
+                    標準に戻す
+                </a>
+            </details>
+
             <button type="submit" class="primary-button">
                 おすすめを表示
             </button>
@@ -193,4 +260,13 @@
         </div>
     {% endif %}
 </div>
+
+<script>
+    document.querySelectorAll("[data-weight-output]").forEach((slider) => {
+        const output = document.getElementById(slider.dataset.weightOutput);
+        slider.addEventListener("input", () => {
+            output.value = Number(slider.value).toFixed(1);
+        });
+    });
+</script>
 {% endblock %}

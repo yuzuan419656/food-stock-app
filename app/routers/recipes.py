@@ -68,6 +68,8 @@ from app.services.recipe_shopping_list import (
     select_recipe_shopping_list_candidates,
 )
 from app.services.recipe_recommendation import (
+    DEFAULT_RECOMMENDATION_WEIGHTS,
+    RecommendationWeights,
     recommend_recipes,
 )
 
@@ -327,6 +329,41 @@ def show_recipe_recommendations(
         "20",
         "30",
     ] = Query(default=""),
+    expiration_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.expiration,
+        ge=0.0,
+        le=3.0,
+    ),
+    inventory_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.inventory,
+        ge=0.0,
+        le=3.0,
+    ),
+    favorite_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.favorite,
+        ge=0.0,
+        le=3.0,
+    ),
+    history_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.history,
+        ge=0.0,
+        le=3.0,
+    ),
+    recency_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.recency,
+        ge=0.0,
+        le=3.0,
+    ),
+    cooking_time_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.cooking_time,
+        ge=0.0,
+        le=3.0,
+    ),
+    shortage_weight: float = Query(
+        default=DEFAULT_RECOMMENDATION_WEIGHTS.shortage,
+        ge=0.0,
+        le=3.0,
+    ),
     db: Session = Depends(get_db),
 ):
     """指定条件で採点したおすすめレシピを表示する。"""
@@ -335,11 +372,21 @@ def show_recipe_recommendations(
         if max_cooking_time
         else None
     )
+    custom_weights = RecommendationWeights(
+        expiration=expiration_weight,
+        inventory=inventory_weight,
+        favorite=favorite_weight,
+        history=history_weight,
+        recency=recency_weight,
+        cooking_time=cooking_time_weight,
+        shortage=shortage_weight,
+    )
     recommendations = recommend_recipes(
         db=db,
         target_servings=servings,
         mode=mode,
         max_cooking_time=selected_max_cooking_time,
+        weights=custom_weights,
     )
 
     return templates.TemplateResponse(
@@ -352,6 +399,7 @@ def show_recipe_recommendations(
             "selected_max_cooking_time": (
                 selected_max_cooking_time
             ),
+            "recommendation_weights": custom_weights,
         },
     )
 
